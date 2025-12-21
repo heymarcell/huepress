@@ -1,0 +1,27 @@
+name = "huepress-api"
+main = "src/api/index.ts"
+compatibility_date = "2024-12-18"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "huepress-db"
+database_id = "53c9b8ee-8ac3-411f-9f09-abe402cc36ff"
+
+# R2 Storage - Private (PDFs for subscribers)
+[[r2_buckets]]
+binding = "ASSETS_PRIVATE"
+bucket_name = "huepress-assets-private"
+
+# R2 Storage - Public (Watermarked previews)
+[[r2_buckets]]
+binding = "ASSETS_PUBLIC"
+bucket_name = "huepress-assets-public"
+
+# Environment variables (set via wrangler secret)
+# CLERK_SECRET_KEY
+# STRIPE_SECRET_KEY
+# STRIPE_WEBHOOK_SECRET
+
+[vars]
+ENVIRONMENT = "development"
