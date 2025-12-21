@@ -19,6 +19,15 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Middleware
 app.use("*", cors());
 
+// Root route
+app.get("/", (c) => {
+  return c.json({ 
+    name: "HuePress API", 
+    version: "1.0.0",
+    endpoints: ["/api/health", "/api/assets", "/api/download/:id"]
+  });
+});
+
 // Health check
 app.get("/api/health", (c) => {
   return c.json({ status: "ok", env: c.env.ENVIRONMENT });

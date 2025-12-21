@@ -1,8 +1,11 @@
 // Stripe client utilities 
 // Uses the Checkout Session URL redirect approach (no Stripe.js SDK needed for checkout)
 
+// API base URL - uses env var in production, relative URL in development
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 export async function createCheckoutSession(priceId: string) {
-  const response = await fetch("/api/checkout", {
+  const response = await fetch(`${API_URL}/api/checkout`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ priceId }),
@@ -19,7 +22,7 @@ export async function createCheckoutSession(priceId: string) {
 }
 
 export async function createPortalSession() {
-  const response = await fetch("/api/portal", {
+  const response = await fetch(`${API_URL}/api/portal`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
   });
