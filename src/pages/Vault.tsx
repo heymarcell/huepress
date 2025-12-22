@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
 import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button, StickyCTA } from "@/components/ui";
-import { Gift, Sparkles, Send, ArrowUpDown } from "lucide-react";
+import { Gift, Sparkles, Send, ArrowUpDown, Check } from "lucide-react";
 import SEO from "@/components/SEO";
 
 // Mock data with real thumbnails
@@ -99,7 +99,7 @@ function FreeSampleBanner() {
       <div className="bg-secondary text-white rounded-2xl p-6 text-center shadow-lg transform transition-all animate-fade-in">
         <Sparkles className="w-8 h-8 text-yellow-300 mx-auto mb-3" strokeWidth={2} />
         <h3 className="font-serif text-xl font-bold mb-1">Check your inbox!</h3>
-        <p className="text-white/80">Your free designs are on the way.</p>
+        <p className="text-white/80">Sent. Check your inbox (and Promotions).</p>
       </div>
     );
   }
@@ -117,14 +117,14 @@ function FreeSampleBanner() {
           </div>
           <div>
             <h3 className="font-serif text-2xl font-bold mb-1">Try 3 Free Pages</h3>
-            <p className="text-white/90 text-sm md:text-base">See the difference bold lines make. Sent to your inbox instantly.</p>
+            <p className="text-white/90 text-sm md:text-base">See the difference bold lines make. Sent in 1–2 minutes.</p>
           </div>
         </div>
         
         {/* Right: Form */}
-        <form onSubmit={handleSubmit} className="w-full lg:w-auto flex flex-col sm:flex-row gap-2 items-end">
-          <div className="flex-1 w-full sm:w-auto">
-             <label htmlFor="vault-email" className="block text-xs font-bold text-white/90 mb-1 ml-1">Email address</label>
+        <form onSubmit={handleSubmit} className="w-full lg:w-auto flex flex-col gap-1">
+          <label htmlFor="vault-email" className="block text-xs font-bold text-white/90 ml-1">Email address</label>
+          <div className="flex flex-col sm:flex-row gap-2">
              <input
               id="vault-email"
               type="email"
@@ -133,18 +133,19 @@ function FreeSampleBanner() {
               placeholder="mom@example.com"
               required
               aria-label="Email address for free sample pack"
-              className="w-full sm:w-64 px-4 py-3 text-sm bg-white border border-transparent rounded-md text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-sm"
+              className="w-full sm:w-64 px-4 py-3 text-sm bg-white border border-transparent rounded-md text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-sm h-[48px]"
             />
+            <Button 
+              variant="primary" 
+              size="lg" 
+              type="submit" 
+              className="w-full sm:w-auto whitespace-nowrap shadow-lg !bg-white !text-secondary hover:!bg-gray-50 border-none !rounded-md h-[48px]"
+              rightIcon={<Send className="w-4 h-4" />}
+            >
+              Send Free Pages
+            </Button>
           </div>
-          <Button 
-            variant="primary" 
-            size="lg" 
-            type="submit" 
-            className="w-full sm:w-auto whitespace-nowrap shadow-lg !bg-white !text-secondary hover:!bg-gray-50 border-none !rounded-md h-[46px]" // manual height alignment
-            rightIcon={<Send className="w-4 h-4" />}
-          >
-            Send Free Pages
-          </Button>
+          <p className="text-[10px] text-white/80 ml-1">No credit card. Sent in 1–2 minutes.</p>
         </form>
       </div>
     </div>
@@ -239,15 +240,17 @@ export default function VaultPage() {
 
         {/* Sorting & Free Toggle */}
         <div className="flex items-center justify-between mb-6">
-           <label className="flex items-center gap-2 cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={showFreeOnly} 
-                onChange={(e) => setShowFreeOnly(e.target.checked)}
-                className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
-              />
-              <span className="text-sm font-medium text-ink">Show Free Samples</span>
-           </label>
+           <button
+             onClick={() => setShowFreeOnly(!showFreeOnly)}
+             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+               showFreeOnly
+                 ? "bg-primary text-white border border-primary"
+                 : "bg-white text-ink border border-gray-200 hover:border-primary"
+             }`}
+           >
+             {showFreeOnly && <Check className="w-3.5 h-3.5" />}
+             Free samples
+           </button>
 
            <div className="flex items-center gap-2">
               <ArrowUpDown className="w-4 h-4 text-gray-400" />
@@ -342,9 +345,12 @@ export default function VaultPage() {
         {!isSubscriber && (
           <div className="mt-12 text-center">
             <p className="text-gray-500 mb-4">Ready to unlock the full vault?</p>
-            <Link to="/pricing">
-              <Button variant="primary" size="lg">Join to download</Button>
-            </Link>
+            <div className="flex flex-col items-center gap-2">
+              <Link to="/pricing">
+                <Button variant="primary" size="lg">Join for instant downloads</Button>
+              </Link>
+              <p className="text-sm text-gray-400">Just $5/mo, cancel anytime</p>
+            </div>
           </div>
         )}
 

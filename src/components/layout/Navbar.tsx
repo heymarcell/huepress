@@ -103,7 +103,7 @@ export function Navbar() {
             {/* Contextual CTA for Pricing Page */}
             {isPricingPage && (
                <div className="hidden lg:block ml-4 animate-fade-in">
-                  <span className="text-secondary text-sm font-bold bg-secondary/10 px-3 py-1 rounded-full">
+                  <span className="text-secondary text-sm font-bold bg-secondary/10 px-3 py-1 rounded-md">
                     Save 25% on Annual
                   </span>
                </div>

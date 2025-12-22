@@ -23,6 +23,7 @@ const plans = [
     priceId: "price_1Sh99kRzWblq3ch1ACXHv20y",
     popular: false,
     cta: "Join for $5/mo",
+    intent: "Best for trying it",
   },
   {
     name: "Annual",
@@ -34,6 +35,7 @@ const plans = [
     popular: true,
     popularLabel: "BEST VALUE",
     cta: "Get Annual (Save 25%)",
+    intent: "Most popular, save 25%",
   },
 ];
 
@@ -132,6 +134,10 @@ export default function PricingPage() {
                     <span className={`font-serif text-5xl font-bold ${plan.popular ? "text-white" : "text-ink"}`}>{plan.price}</span>
                     <span className={plan.popular ? "text-white/70" : "text-gray-500"}>{plan.period}</span>
                   </div>
+                  {/* Intent Label */}
+                   <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${plan.popular ? "text-secondary" : "text-primary"}`}>
+                     {plan.intent}
+                   </p>
                   {plan.popular && (
                       <p className="text-white font-medium bg-white/20 inline-block px-3 py-1 rounded-md text-sm mt-3">
                         Just $3.75/mo

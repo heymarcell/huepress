@@ -97,7 +97,7 @@ function FreeSampleCapture() {
       <div className="bg-success/10 border border-success/20 rounded-xl p-4 text-center animate-fade-in">
         <Sparkles className="w-6 h-6 text-success mx-auto mb-2" />
         <p className="text-success-dark font-bold">Check your inbox!</p>
-        <p className="text-gray-600 text-sm">Your 3 free pages are on the way.</p>
+        <p className="text-gray-600 text-sm">Sent. Check your inbox (and Promotions).</p>
       </div>
     );
   }
@@ -123,7 +123,7 @@ function FreeSampleCapture() {
             error ? "border-error focus:border-error focus:ring-error/10" : "border-gray-200 focus:border-secondary focus:ring-secondary/10"
           }`}
         />
-        <p className="text-[10px] text-gray-500 mt-1 ml-1">No credit card, sent instantly.</p>
+        <p className="text-[10px] text-gray-500 mt-1 ml-1">No credit card. Sent in 1–2 minutes.</p>
       </div>
       <div className="mt-6 sm:mt-[22px]"> 
         {/* Align with input box, accounting for label height */}
@@ -176,7 +176,7 @@ export default function HomePage() {
                     </Button>
                   </Link>
                   <a href="#free-sample">
-                    <Button variant="secondary" size="lg" className="shadow-md hover:scale-105 transition-all w-full sm:w-auto">
+                    <Button variant="outline" size="lg" className="shadow-md hover:scale-105 transition-all w-full sm:w-auto">
                       Get 3 Free Pages
                     </Button>
                   </a>
@@ -269,9 +269,17 @@ export default function HomePage() {
            </div>
            
           <div className="text-center mt-10">
-            <Link to="/vault">
-              <Button variant="primary" size="lg">Browse the Vault →</Button>
-            </Link>
+            <div className="flex flex-col items-center gap-4">
+               <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                 <Link to="/pricing">
+                   <Button variant="primary" size="lg">Join for $5/mo</Button>
+                 </Link>
+                 <Link to="/vault">
+                   <Button variant="outline" size="lg">Browse the Vault</Button>
+                 </Link>
+               </div>
+               <p className="text-sm text-gray-500">Instant access to 500+ designs</p>
+            </div>
           </div>
         </div>
       </section>

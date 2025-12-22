@@ -7,6 +7,7 @@ import {
   Printer, 
   PenTool, 
   Sparkles,
+  Star,
   Download,
   Unlock,
   Gift,
@@ -102,13 +103,20 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
         </Button>
       </Link>
       
+      {/* Social Proof */}
+      <div className="flex items-center justify-center gap-1.5 mt-2 mb-1">
+        <Star className="w-3.5 h-3.5 text-yellow-400 fill-current" />
+        <span className="text-sm font-medium text-ink">4.9/5 from 500+ families</span>
+      </div>
+      
       {/* 3-Step Reassurance Micro-row - New for Sprint 3 */}
-      <div className="flex items-center justify-between px-2 text-[10px] text-gray-500 font-medium">
-         <span className="flex items-center gap-1">1. Join</span>
+      {/* 3-Step Reassurance Micro-row - Improved readability */}
+      <div className="flex items-center justify-center gap-2 mt-3 text-xs text-gray-500 font-medium text-center">
+         <span className="flex items-center">Join</span>
          <span className="text-gray-300">→</span>
-         <span className="flex items-center gap-1">2. Download PDF</span>
+         <span className="flex items-center">Download</span>
          <span className="text-gray-300">→</span>
-         <span className="flex items-center gap-1">3. Print & Color</span>
+         <span className="flex items-center">Print & Color</span>
       </div>
       <p className="text-center text-xs text-gray-400">
         $5/mo, cancel anytime
