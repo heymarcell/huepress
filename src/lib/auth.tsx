@@ -42,7 +42,7 @@ export function AuthButtons() {
           </button>
         </SignInButton>
         <SignUpButton mode="modal">
-          <button className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-full font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 text-sm">
+          <button className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 lg:py-3 rounded-full font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 text-sm">
             Join the Club
           </button>
         </SignUpButton>

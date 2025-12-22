@@ -43,7 +43,7 @@ export function Footer() {
                 <span className="font-serif font-bold text-xl">HuePress</span>
               </div>
             </div>
-            <p className="text-gray-400 max-w-md">
+            <p className="text-gray-300 max-w-md">
               Curated, therapy-grade coloring pages for design-conscious parents
               and pediatric professionals. Bold lines, big calm.
             </p>
@@ -59,7 +59,7 @@ export function Footer() {
                 <li key={link.to}>
                   <Link
                     to={link.to}
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-gray-300 hover:text-white transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -78,7 +78,7 @@ export function Footer() {
                 <li key={link.to}>
                   <Link
                     to={link.to}
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-gray-300 hover:text-white transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -90,7 +90,7 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-300 text-sm">
             © {new Date().getFullYear()} HuePress. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
@@ -100,7 +100,7 @@ export function Footer() {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-300 hover:text-white transition-colors"
               >
                 {link.label}
               </a>

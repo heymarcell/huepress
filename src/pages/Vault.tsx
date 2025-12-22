@@ -115,12 +115,15 @@ function FreeSampleCard() {
       </div>
       <p className="text-xs text-gray-500 mb-4 px-2">Includes: 1 Calm, 1 Focus, 1 Bold page. Instant link via email.</p>
       <form onSubmit={handleSubmit} className="w-full space-y-2">
+        <label htmlFor="vault-email" className="sr-only">Email Address</label>
         <input
+          id="vault-email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Your email"
           required
+          aria-label="Email address for free sample pack"
           className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none"
         />
         <Button variant="primary" size="sm" className="w-full" type="submit">

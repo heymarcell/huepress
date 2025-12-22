@@ -90,12 +90,17 @@ function FreeSampleCapture() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
+      <label htmlFor="email-capture" className="sr-only">
+        Email Address
+      </label>
       <input
+        id="email-capture"
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="Enter your email"
+        placeholder="you@example.com"
         required
+        aria-label="Email address for free sample pack"
         className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-secondary focus:ring-2 focus:ring-secondary/10 outline-none text-ink placeholder:text-gray-400"
       />
       <Button variant="outline" type="submit" className="whitespace-nowrap">
@@ -120,33 +125,25 @@ export default function HomePage() {
                 <span className="w-2 h-2 rounded-full bg-success"></span>
                 Designed for Fine Motor Skills
               </div>
-              <h1 className="font-serif text-display lg:text-5xl text-ink mb-6">
-                Print calm in{" "}
-                <span className="text-secondary">60 seconds</span>
+              <h1 className="font-serif text-display lg:text-5xl text-ink mb-4">
+                Therapy-Grade Coloring Pages.{" "}
+                <span className="text-secondary">Print Calm in 60 Seconds</span>
               </h1>
-              <p className="text-lg text-gray-500 mb-2 max-w-lg mx-auto lg:mx-0">
+              <p className="text-lg text-gray-500 mb-8 max-w-lg mx-auto lg:mx-0">
                 Bold, beautiful coloring pages your kids can actually finish.
                 No ads, no pixelated prints, just clean lines that work.
               </p>
-              <p className="text-base text-ink font-medium mb-8">
-                $5/mo, cancel anytime.
-              </p>
               
-              {/* Primary CTAs */}
-              <div className="flex flex-col gap-4 mb-8">
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                  <a href="#free-sample">
-                    <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-xl shadow-primary/20 hover:scale-105 transition-all">
-                      Get 3 Free Pages
-                    </Button>
-                  </a>
-                  <Link to="/pricing">
-                    <Button variant="outline" size="lg" className="w-full sm:w-auto border-2 hover:bg-gray-50">
-                      Join for $5/mo
-                    </Button>
-                  </Link>
-                </div>
-                <p className="text-sm text-gray-400 font-medium">No credit card. We email an instant download link.</p>
+              {/* Primary CTA */}
+              <div className="mb-8">
+                <a href="#free-sample">
+                  <Button variant="primary" size="lg" className="shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+                    Get 3 Free Pages
+                  </Button>
+                </a>
+                <p className="text-sm text-gray-500 mt-3">
+                  Then <Link to="/pricing" className="font-semibold text-ink hover:text-primary">$5/mo</Link> for unlimited access. Cancel anytime.
+                </p>
               </div>
 
               {/* Trust/Social Proof - replacing the cluttered form */}
@@ -187,21 +184,45 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Trust Strip - P1 Item 7 */}
-      <section className="bg-white border-b border-gray-100 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-           <div className="grid md:grid-cols-3 gap-6 text-center divide-y md:divide-y-0 md:divide-x divide-gray-100">
-              <div className="px-4 py-2">
-                 <p className="text-sm font-bold text-ink mb-1">"The only way I get 20 mins of peace."</p>
-                 <p className="text-xs text-gray-400 uppercase tracking-wide opacity-60">Sarah, Parent</p>
+      {/* Social Proof - Testimonials */}
+      <section className="bg-accent py-12 lg:py-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+           <p className="text-center text-sm text-gray-500 mb-8">Loved by parents, teachers, and therapists</p>
+           <div className="grid md:grid-cols-3 gap-6">
+              {/* Testimonial 1 */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                 <div className="flex items-center gap-3 mb-4">
+                    <img src="/avatars/avatar_mom_1.png" alt="Sarah" className="w-12 h-12 rounded-full object-cover" />
+                    <div>
+                       <p className="font-bold text-ink text-sm">Sarah M.</p>
+                       <p className="text-xs text-gray-400">Mom of 2</p>
+                    </div>
+                 </div>
+                 <p className="text-gray-600 italic">"This is the only way I get 20 minutes of peace. My kids ask for these pages every day!"</p>
               </div>
-              <div className="px-4 py-2">
-                 <p className="text-sm font-bold text-ink mb-1">"Perfect for my fine-motor groups."</p>
-                 <p className="text-xs text-gray-400 uppercase tracking-wide opacity-60">Michelle, O.T.</p>
+              
+              {/* Testimonial 2 */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                 <div className="flex items-center gap-3 mb-4">
+                    <img src="/avatars/avatar_teacher_1.png" alt="Michelle" className="w-12 h-12 rounded-full object-cover" />
+                    <div>
+                       <p className="font-bold text-ink text-sm">Michelle R.</p>
+                       <p className="text-xs text-gray-400">Pediatric OT</p>
+                    </div>
+                 </div>
+                 <p className="text-gray-600 italic">"Perfect for my fine-motor groups. The bold lines are exactly what my patients need."</p>
               </div>
-              <div className="px-4 py-2">
-                 <p className="text-sm font-bold text-ink mb-1">"Zero ads, safe for my classroom."</p>
-                 <p className="text-xs text-gray-400 uppercase tracking-wide opacity-60">Mr. D, Teacher</p>
+              
+              {/* Testimonial 3 */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                 <div className="flex items-center gap-3 mb-4">
+                    <img src="/avatars/avatar_dad_1.png" alt="David" className="w-12 h-12 rounded-full object-cover" />
+                    <div>
+                       <p className="font-bold text-ink text-sm">David T.</p>
+                       <p className="text-xs text-gray-400">3rd Grade Teacher</p>
+                    </div>
+                 </div>
+                 <p className="text-gray-600 italic">"Zero ads, completely safe for my classroom. I use these for quiet time every week."</p>
               </div>
            </div>
         </div>
@@ -210,12 +231,12 @@ export default function HomePage() {
       {/* Free Sample - Full Width Strip - Better Integrated */}
       <section id="free-sample" className="bg-secondary/5 border-b border-secondary/10 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-           <div className="flex flex-col md:flex-row items-center justify-center gap-8 text-center md:text-left">
-              <div className="max-w-md">
+           <div className="flex flex-col lg:flex-row items-center justify-center gap-8 text-center lg:text-left">
+              <div className="max-w-sm">
                  <h3 className="font-serif text-2xl text-ink mb-2">Not ready to subscribe?</h3>
-                 <p className="text-gray-600">Get a <strong>free sample pack</strong> (3 full-resolution PDFs) sent to your inbox. No credit card required.</p>
+                 <p className="text-gray-600">Get <strong>3 free coloring pages</strong> sent to your inbox.</p>
               </div>
-              <div className="w-full md:w-auto min-w-[320px]">
+              <div className="w-full lg:w-auto lg:min-w-[520px]">
                  <FreeSampleCapture />
               </div>
            </div>

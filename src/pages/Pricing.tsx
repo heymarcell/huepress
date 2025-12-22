@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@/components/ui";
+import { Button, Accordion } from "@/components/ui";
 import { createCheckoutSession } from "@/lib/stripe";
 import { 
   Check, 
@@ -111,42 +111,48 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <section className="py-16 -mt-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 items-stretch">
             {plans.map((plan) => (
-              <div key={plan.name} className={`relative bg-white rounded-2xl shadow-lg p-8 ${plan.popular ? "border-2 border-primary ring-4 ring-primary/10" : "border border-gray-200"}`}>
+              <div 
+                key={plan.name} 
+                className={`relative rounded-2xl flex flex-col ${
+                  plan.popular 
+                    ? "bg-primary text-white shadow-2xl shadow-primary/30 p-10 md:scale-105" 
+                    : "bg-white border border-gray-200 shadow-lg p-8"
+                }`}
+              >
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap">
-                    {plan.popularLabel || "BEST VALUE"}
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-secondary text-white text-xs font-bold px-6 py-2 rounded-full whitespace-nowrap shadow-lg">
+                    ⭐ MOST POPULAR — Save 25%
                   </div>
                 )}
                 <div className="text-center mb-6">
-                  <h2 className="font-serif text-h2 text-ink mb-2">{plan.name}</h2>
+                  <h2 className={`font-serif text-h2 mb-2 ${plan.popular ? "text-white" : "text-ink"}`}>{plan.name}</h2>
                   <div className="flex items-baseline justify-center gap-1">
-                    <span className="font-serif text-5xl font-bold text-ink">{plan.price}</span>
-                    <span className="text-gray-500">{plan.period}</span>
+                    <span className={`font-serif text-5xl font-bold ${plan.popular ? "text-white" : "text-ink"}`}>{plan.price}</span>
+                    <span className={plan.popular ? "text-white/70" : "text-gray-500"}>{plan.period}</span>
                   </div>
-                  <p className="text-sm text-gray-500 mt-2">{plan.description}</p>
+                  <p className={`text-sm mt-2 ${plan.popular ? "text-white/80" : "text-gray-500"}`}>{plan.description}</p>
                 </div>
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-3 mb-8 flex-grow">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-3">
-                      <Check className="w-5 h-5 text-success flex-shrink-0" strokeWidth={2} />
-                      <span className="text-gray-600">{feature}</span>
+                      <Check className={`w-5 h-5 flex-shrink-0 ${plan.popular ? "text-secondary" : "text-success"}`} strokeWidth={2} />
+                      <span className={plan.popular ? "text-white/90" : "text-gray-600"}>{feature}</span>
                     </li>
                   ))}
                 </ul>
-                <Button
-                  variant={plan.popular ? "primary" : "outline"}
-                  size="lg"
-                  className="w-full"
-                  onClick={() => handleSubscribe(plan.priceId)}
-                  isLoading={loading === plan.priceId}
-                >
-                  {isSubscriber ? "Already a Member" : plan.cta}
-                </Button>
-                {!isSubscriber && !plan.popular && (
-                   <p className="text-center text-xs text-gray-400 mt-2">Cancel anytime</p>
-                )}
+                <div className="mt-auto">
+                  <Button
+                    variant={plan.popular ? "secondary" : "outline"}
+                    size="lg"
+                    className="w-full"
+                    onClick={() => handleSubscribe(plan.priceId)}
+                    isLoading={loading === plan.priceId}
+                  >
+                    {isSubscriber ? "Already a Member" : plan.cta}
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -192,14 +198,7 @@ export default function PricingPage() {
       <section className="py-16 lg:py-24">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="font-serif text-h1 text-ink text-center mb-12">Frequently Asked Questions</h2>
-          <div className="space-y-6">
-            {faqs.map((faq) => (
-              <div key={faq.question} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h3 className="font-bold text-ink mb-2">{faq.question}</h3>
-                <p className="text-gray-500">{faq.answer}</p>
-              </div>
-            ))}
-          </div>
+          <Accordion items={faqs} />
         </div>
       </section>
 
