@@ -10,7 +10,6 @@ import {
   Star,
   Download,
   Unlock,
-  Gift,
   Check
 } from "lucide-react";
 import SEO from "@/components/SEO";
@@ -138,8 +137,7 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
           onClick={() => setShowEmailCapture(true)}
           className="w-full py-3 px-4 border-2 border-dashed border-gray-200 rounded-md text-gray-500 hover:border-primary hover:text-primary transition-colors text-sm font-medium flex items-center justify-center gap-2"
         >
-          <Gift className="w-4 h-4" />
-          Get a free sample pack
+          Get 3 Free Pages
         </button>
       ) : (
         <form onSubmit={handleFreeSample} className="space-y-2">
@@ -152,7 +150,7 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
             className="w-full px-4 py-3 border border-gray-200 rounded-md focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none text-sm"
           />
           <Button variant="outline" size="md" className="w-full" type="submit">
-            Send me 3 free pages
+            Get 3 Free Pages
           </Button>
           <p className="text-[10px] text-gray-400 text-center">
             Watermarked samples. No spam, unsubscribe anytime.
@@ -286,6 +284,7 @@ export default function ResourceDetailPage() {
             </div>
           </div>
         </div>
+        <div className="h-24 md:h-0" />
       </div>
       <StickyCTA />
     </div>

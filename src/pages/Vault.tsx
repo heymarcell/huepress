@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
 import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button, StickyCTA } from "@/components/ui";
-import { Gift, Sparkles, Send, ArrowUpDown, Check } from "lucide-react";
+import { Gift, Sparkles, Send, ArrowUpDown, Check, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
 
 // Mock data with real thumbnails
@@ -142,7 +142,7 @@ function FreeSampleBanner() {
               className="w-full sm:w-auto whitespace-nowrap shadow-lg !bg-white !text-secondary hover:!bg-gray-50 border-none !rounded-md h-[48px]"
               rightIcon={<Send className="w-4 h-4" />}
             >
-              Send Free Pages
+              Get 3 Free Pages
             </Button>
           </div>
           <p className="text-[10px] text-white/80 ml-1">No credit card. Sent in 1–2 minutes.</p>
@@ -160,6 +160,16 @@ export default function VaultPage() {
   const [showFreeSamples, setShowFreeSamples] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 150);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Simulate async filtering
   const handleSearch = (query: string) => {
@@ -381,6 +391,99 @@ export default function VaultPage() {
             Trusted by parents, teachers, and occupational therapists, our library offers safe, ad-free downloads 
             perfect for quiet time, classroom activities, and therapeutic sessions. Join the club to unlock unlimited access.
           </p>
+        </div>
+        
+        {/* Bottom Spacer for Sticky CTA */}
+        <div className="h-24 md:h-0" />
+      </div>
+
+      {/* Sticky Collapsed Header */}
+      <div 
+        className={`fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md shadow-sm transform transition-transform duration-300 ${
+          isScrolled ? "translate-y-0" : "-translate-y-full"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center gap-3">
+            {/* Compact Search */}
+            <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input 
+                  type="text" 
+                  placeholder="Search..." 
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-gray-100 rounded-full text-sm outline-none focus:ring-1 focus:ring-primary"
+                />
+            </div>
+            
+            {/* Filter Trigger */}
+            <button 
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className={`p-2 rounded-full text-ink hover:bg-gray-200 relative transition-colors ${showMobileFilters ? "bg-secondary text-white hover:bg-secondary/90" : "bg-gray-100"}`}
+            >
+                {showMobileFilters ? <X className="w-5 h-5" /> : <Filter className="w-5 h-5" />}
+                {/* Dot if filters active */}
+                {!showMobileFilters && (selectedCategory || selectedSkill) && (
+                  <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-secondary border-2 border-white rounded-full" />
+                )}
+            </button>
+            
+            {/* Sort (Simplified) */}
+              <div className="flex items-center">
+                  <select 
+                    value={sortBy} 
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="text-sm font-medium text-ink bg-transparent border-none outline-none focus:ring-0 cursor-pointer max-w-[80px]"
+                  >
+                      <option value="newest">Newest</option>
+                      <option value="popular">Popular</option>
+                      <option value="calmest">Calmest</option>
+                  </select>
+              </div>
+          </div>
+
+          {/* Expanded Mobile Filters */}
+          {showMobileFilters && (
+            <div className="pt-4 pb-2 space-y-4 animate-in slide-in-from-top-2">
+              <div className="space-y-2">
+                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Theme</p>
+                 <div className="flex flex-wrap gap-2">
+                   {categories.map(cat => (
+                     <button
+                       key={cat.value}
+                       onClick={() => handleCategoryChange(selectedCategory === cat.value ? "" : cat.value)}
+                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                         selectedCategory === cat.value 
+                           ? "bg-ink text-white border-ink" 
+                           : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                       }`}
+                     >
+                       {cat.value}
+                     </button>
+                   ))}
+                 </div>
+              </div>
+              <div className="space-y-2">
+                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Skill</p>
+                 <div className="flex flex-wrap gap-2">
+                   {skills.map(skill => (
+                     <button
+                       key={skill.value}
+                       onClick={() => handleSkillChange(selectedSkill === skill.value ? "" : skill.value)}
+                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                         selectedSkill === skill.value 
+                           ? "bg-ink text-white border-ink" 
+                           : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                       }`}
+                     >
+                       {skill.value}
+                     </button>
+                   ))}
+                 </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <StickyCTA />

@@ -23,7 +23,7 @@ const plans = [
     priceId: "price_1Sh99kRzWblq3ch1ACXHv20y",
     popular: false,
     cta: "Join for $5/mo",
-    intent: "Best for trying it",
+    intent: "Cancel anytime",
   },
   {
     name: "Annual",
@@ -114,7 +114,7 @@ export default function PricingPage() {
       <section className="py-16 -mt-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-8 items-stretch">
-            {plans.map((plan) => (
+            {plans.slice().reverse().map((plan) => (
               <div 
                 key={plan.name} 
                 className={`relative rounded-2xl flex flex-col ${
@@ -180,39 +180,48 @@ export default function PricingPage() {
                   </Button>
                   
                   {/* FAQ Anchor Link - Rank 14 */}
-                  <div className="mt-4 text-center">
-                    <a href="#faq" className="text-xs text-gray-400 hover:text-primary underline decoration-dotted">
-                      Have questions?
-                    </a>
-                  </div>
+                  {/* Prefer monthly link for Annual card */}
+                  {plan.popular ? (
+                    <div className="mt-4 text-center">
+                       <p className="text-xs text-white/60">
+                         Prefer monthly? Scroll for $5/mo option
+                       </p>
+                    </div>
+                  ) : (
+                    <div className="mt-4 text-center">
+                      <a href="#faq" className="text-xs text-gray-400 hover:text-primary underline decoration-dotted">
+                        Have questions?
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
           
-           {/* Comparison Table - New for Sprint 3 */}
+           {/* Comparison Table - UPDATED: Annual first */}
            <div className="max-w-2xl mx-auto mt-12 mb-8">
              <h3 className="font-serif text-xl text-center mb-6 text-ink">Why switch to Annual?</h3>
              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
                <div className="grid grid-cols-3 text-sm border-b border-gray-200 bg-gray-50">
                  <div className="p-4 font-medium text-gray-500">Feature</div>
-                 <div className="p-4 font-bold text-ink text-center">Monthly</div>
                  <div className="p-4 font-bold text-primary text-center bg-primary/5">Annual</div>
+                 <div className="p-4 font-bold text-ink text-center">Monthly</div>
                </div>
                <div className="grid grid-cols-3 text-sm border-b border-gray-100">
                  <div className="p-4 font-medium text-ink">Price per Month</div>
-                 <div className="p-4 text-center text-gray-500">$5.00</div>
                  <div className="p-4 text-center font-bold text-primary bg-primary/5">$3.75</div>
+                 <div className="p-4 text-center text-gray-500">$5.00</div>
                </div>
                <div className="grid grid-cols-3 text-sm border-b border-gray-100">
                  <div className="p-4 font-medium text-ink">Total Yearly Cost</div>
-                 <div className="p-4 text-center text-gray-500">$60.00</div>
                  <div className="p-4 text-center font-bold text-primary bg-primary/5">$45.00</div>
+                 <div className="p-4 text-center text-gray-500">$60.00</div>
                </div>
                <div className="grid grid-cols-3 text-sm">
                  <div className="p-4 font-medium text-ink">Seasonal Packs</div>
-                 <div className="p-4 text-center text-gray-500">Wait for drop</div>
                  <div className="p-4 text-center font-bold text-primary bg-primary/5">Instant Access</div>
+                 <div className="p-4 text-center text-gray-500">Wait for drop</div>
                </div>
              </div>
              <p className="text-center text-xs text-gray-400 mt-4">Both plans include unlimited downloads and cancel-anytime access.</p>

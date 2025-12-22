@@ -50,7 +50,7 @@ export const StickyCTA = () => {
         </Button>
       </Link>
       <a href={freeSampleLink} className="flex-1">
-        <Button variant="secondary" className="w-full shadow-sm text-sm px-2 bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary/20">
+        <Button variant="outline" className="w-full shadow-sm text-sm px-2 bg-white text-ink border-2 border-ink hover:bg-gray-50 h-[48px] font-bold">
           Get 3 Free Pages
         </Button>
       </a>
