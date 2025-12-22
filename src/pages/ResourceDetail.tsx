@@ -119,7 +119,7 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
       {!showEmailCapture ? (
         <button
           onClick={() => setShowEmailCapture(true)}
-          className="w-full py-3 px-4 border-2 border-dashed border-gray-200 rounded-xl text-gray-500 hover:border-primary hover:text-primary transition-colors text-sm font-medium flex items-center justify-center gap-2"
+          className="w-full py-3 px-4 border-2 border-dashed border-gray-200 rounded-md text-gray-500 hover:border-primary hover:text-primary transition-colors text-sm font-medium flex items-center justify-center gap-2"
         >
           <Gift className="w-4 h-4" />
           Get a free sample pack
@@ -132,7 +132,7 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
             required
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none text-sm"
+            className="w-full px-4 py-3 border border-gray-200 rounded-md focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none text-sm"
           />
           <Button variant="outline" size="md" className="w-full" type="submit">
             Send me 3 free pages
@@ -193,7 +193,7 @@ export default function ResourceDetailPage() {
                     </div>
                   )}
                   {asset.isNew && (
-                    <div className="absolute top-4 left-4 bg-secondary text-white text-xs font-bold px-3 py-1 rounded-full">NEW</div>
+                    <div className="absolute top-4 left-4 bg-secondary text-white text-xs font-bold px-3 py-1 rounded-md">NEW</div>
                   )}
                 </div>
               </div>
@@ -201,7 +201,7 @@ export default function ResourceDetailPage() {
               {/* Trust badges below preview */}
               <div className="flex flex-wrap justify-center gap-3 mt-4">
                 {trustBadges.map((badge) => (
-                  <span key={badge.label} className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-white px-3 py-1.5 rounded-full shadow-sm">
+                  <span key={badge.label} className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-white px-3 py-1.5 rounded-md shadow-sm">
                     <badge.icon className="w-3.5 h-3.5" strokeWidth={1.5} />
                     {badge.label}
                   </span>
@@ -214,8 +214,8 @@ export default function ResourceDetailPage() {
           <div>
             <div className="bg-white rounded-2xl shadow-lg p-6 lg:p-8">
               <div className="flex gap-2 mb-4">
-                <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{asset.category}</span>
-                <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{asset.skill}</span>
+                <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-md">{asset.category}</span>
+                <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-md">{asset.skill}</span>
               </div>
 
               <h1 className="font-serif text-h1 text-ink mb-4">{asset.title}</h1>

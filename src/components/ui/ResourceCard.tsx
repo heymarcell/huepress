@@ -39,15 +39,20 @@ export function ResourceCard({
 
             {/* NEW Badge - positioned to not obscure art */}
             {isNew && (
-              <div className="absolute top-2 left-2 bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10">
+              <div className="absolute top-3 left-3 bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10">
                 NEW
               </div>
             )}
 
-            {/* Hover overlay - Preview CTA (not blocking, just encouraging) */}
+            {/* Lock overlay for premium content */}
+            {isLocked && (
+              <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-ink/15 to-transparent pointer-events-none" />
+            )}
+
+            {/* Hover overlay - Preview CTA */}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-              <span className="bg-white/95 backdrop-blur-sm text-ink text-sm font-medium px-4 py-2 rounded-full shadow-md transform translate-y-2 group-hover:translate-y-0 transition-transform duration-200">
-                See Details
+              <span className="bg-white/95 backdrop-blur-sm text-ink text-sm font-medium px-4 py-2 rounded-md shadow-md transform translate-y-2 group-hover:translate-y-0 transition-transform duration-200">
+                {isLocked ? "Unlock Full Page" : "See Details"}
               </span>
             </div>
           </div>
@@ -61,7 +66,7 @@ export function ResourceCard({
               {/* Small lock indicator - not blocking */}
               {/* Small lock indicator - not blocking */}
               {isLocked && (
-                <span className="flex-shrink-0 flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-full" title="Club members only">
+                <span className="flex-shrink-0 flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded" title="Club members only">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>

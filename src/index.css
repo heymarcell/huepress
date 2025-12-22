@@ -48,7 +48,7 @@
 @layer components {
   /* Button base styles */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 font-sans font-bold text-button px-6 py-3 rounded-button transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 font-sans font-bold text-button px-6 py-3 rounded-md transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2;
   }
 
   .btn-primary {
@@ -78,7 +78,7 @@
 
   /* Filter chip styles */
   .chip {
-    @apply inline-flex items-center px-4 py-2 rounded-full text-small font-medium transition-all duration-150 cursor-pointer;
+    @apply inline-flex items-center px-4 py-2 rounded-md text-small font-medium transition-all duration-150 cursor-pointer;
   }
 
   .chip-default {
@@ -123,12 +123,7 @@
 }
 
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    #f3f4f6 25%,
-    #e5e7eb 50%,
-    #f3f4f6 75%
-  );
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -146,4 +141,13 @@
 
 .animate-fade-in {
   animation: fade-in 0.3s ease-out forwards;
+}
+
+/* Hide scrollbar for filter chips on mobile */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

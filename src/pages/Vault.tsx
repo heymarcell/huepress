@@ -84,8 +84,8 @@ const skills = [
   { label: "Creative", value: "Creative" },
 ];
 
-// Free Sample Card component
-function FreeSampleCard() {
+// Free Sample Banner component - Horizontal layout for above-grid placement
+function FreeSampleBanner() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
@@ -96,40 +96,44 @@ function FreeSampleCard() {
 
   if (submitted) {
     return (
-      <div className="bg-accent border-2 border-dashed border-primary/30 rounded-xl p-6 flex flex-col items-center justify-center text-center h-full min-h-[280px]">
-        <Sparkles className="w-8 h-8 text-primary mb-3" strokeWidth={1.5} />
-        <p className="font-bold text-primary">Check your inbox!</p>
-        <p className="text-sm text-gray-500">3 free pages on the way.</p>
+      <div className="bg-accent border border-primary/20 rounded-xl p-4 mb-6 flex items-center justify-center gap-3">
+        <Sparkles className="w-5 h-5 text-primary flex-shrink-0" strokeWidth={1.5} />
+        <p className="text-primary font-medium">Check your inbox! 3 free pages on the way.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-to-br from-primary/5 to-secondary/5 border-2 border-dashed border-primary/30 rounded-xl p-4 flex flex-col items-center justify-center text-center h-full min-h-[280px]">
-      <Gift className="w-8 h-8 text-primary mb-3" strokeWidth={1.5} />
-      <h3 className="font-serif font-bold text-ink mb-1">Free Sample Pack</h3>
-      <div className="flex gap-2 my-2 justify-center opacity-80">
-         <div className="w-10 h-14 bg-white border border-gray-200 shadow-sm rounded-sm"></div>
-         <div className="w-10 h-14 bg-white border border-gray-200 shadow-sm rounded-sm -mt-2"></div>
-         <div className="w-10 h-14 bg-white border border-gray-200 shadow-sm rounded-sm"></div>
+    <div className="bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 border border-primary/20 rounded-xl p-4 sm:p-6 mb-6">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* Left: Text content */}
+        <div className="flex items-center gap-3 text-center sm:text-left">
+          <Gift className="w-8 h-8 text-primary flex-shrink-0 hidden sm:block" strokeWidth={1.5} />
+          <div>
+            <h3 className="font-serif font-bold text-ink">Try before you join?</h3>
+            <p className="text-sm text-gray-500">Get 3 free coloring pages sent to your inbox.</p>
+          </div>
+        </div>
+        
+        {/* Right: Form */}
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <label htmlFor="vault-email" className="sr-only">Email Address</label>
+          <input
+            id="vault-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            required
+            aria-label="Email address for free sample pack"
+            className="flex-1 sm:w-64 px-4 py-2.5 text-sm border border-gray-200 rounded-md focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white"
+          />
+          <Button variant="primary" size="sm" type="submit" className="whitespace-nowrap">
+            <Gift className="w-4 h-4" />
+            Send Free Pages
+          </Button>
+        </form>
       </div>
-      <p className="text-xs text-gray-500 mb-4 px-2">Includes: 1 Calm, 1 Focus, 1 Bold page. Instant link via email.</p>
-      <form onSubmit={handleSubmit} className="w-full space-y-2">
-        <label htmlFor="vault-email" className="sr-only">Email Address</label>
-        <input
-          id="vault-email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Your email"
-          required
-          aria-label="Email address for free sample pack"
-          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none"
-        />
-        <Button variant="primary" size="sm" className="w-full" type="submit">
-          Get 3 Free Pages
-        </Button>
-      </form>
     </div>
   );
 }
@@ -172,7 +176,7 @@ export default function VaultPage() {
     });
   }, [searchQuery, selectedCategory, selectedSkill]);
 
-  const showFreeSampleCard = !isSubscriber && !searchQuery && !selectedCategory && !selectedSkill;
+  const showFreeSampleBanner = !isSubscriber && !searchQuery && !selectedCategory && !selectedSkill;
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -210,17 +214,9 @@ export default function VaultPage() {
           </div>
         </div>
 
-        {/* Results Count */}
-        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-             <p className="text-sm font-medium text-ink">
-               {isLoading ? "Searching..." : isSubscriber ? `${filteredAssets.length} designs` : "6 free previews, unlock 500+"}
-             </p>
-             {!isSubscriber && (
-               <p className="text-xs text-secondary mt-1">Members get unlimited downloads, new drops every Sunday.</p>
-             )}
-          </div>
-          {(searchQuery || selectedCategory || selectedSkill) && (
+        {/* Clear filters button - only when filters are active */}
+        {(searchQuery || selectedCategory || selectedSkill) && (
+          <div className="mb-4">
             <button 
               onClick={() => {
                 setSearchQuery("");
@@ -231,8 +227,11 @@ export default function VaultPage() {
             >
               Clear filters
             </button>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Free Sample Banner - Above grid for non-subscribers */}
+        {showFreeSampleBanner && <FreeSampleBanner />}
 
         {/* Grid */}
         {isLoading ? (
@@ -243,9 +242,6 @@ export default function VaultPage() {
           </div>
         ) : filteredAssets.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {/* Pinned Free Sample Card */}
-            {showFreeSampleCard && <FreeSampleCard />}
-            
             {/* Resource Cards */}
             {filteredAssets.map((asset) => (
               <ResourceCard

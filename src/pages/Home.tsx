@@ -101,7 +101,7 @@ function FreeSampleCapture() {
         placeholder="you@example.com"
         required
         aria-label="Email address for free sample pack"
-        className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-secondary focus:ring-2 focus:ring-secondary/10 outline-none text-ink placeholder:text-gray-400"
+        className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-md focus:border-secondary focus:ring-2 focus:ring-secondary/10 outline-none text-ink placeholder:text-gray-400"
       />
       <Button variant="outline" type="submit" className="whitespace-nowrap">
         <Gift className="w-4 h-4" />
@@ -121,7 +121,7 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Content */}
             <div className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 bg-success/10 text-success-dark px-3 py-1 rounded-full text-sm font-bold mb-6">
+              <div className="inline-flex items-center gap-2 bg-success/10 text-success-dark px-3 py-1 rounded-md text-sm font-bold mb-6">
                 <span className="w-2 h-2 rounded-full bg-success"></span>
                 Designed for Fine Motor Skills
               </div>
@@ -386,7 +386,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 gap-8 items-center">
              {/* Bad Side */}
              <div className="bg-white p-6 rounded-2xl border border-gray-200 relative overflow-hidden group">
-                <div className="absolute top-4 right-4 bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-full">THEIR FREEBIES</div>
+                <div className="absolute top-4 right-4 bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-md z-10">THEIR FREEBIES</div>
                 <div className="h-48 bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
                    {/* Simulated pixelation */}
                    <div className="w-full h-full bg-[url('/thumbnails/thumb_whale_1766355003894.png')] bg-cover blur-[2px] opacity-60 scale-110 grayscale"></div>
@@ -397,7 +397,7 @@ export default function HomePage() {
 
              {/* Good Side */}
              <div className="bg-white p-6 rounded-2xl border-2 border-success/20 ring-4 ring-success/5 relative overflow-hidden shadow-lg">
-                <div className="absolute top-4 right-4 bg-success text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                <div className="absolute top-4 right-4 bg-success text-white text-xs font-bold px-3 py-1 rounded-md flex items-center gap-1">
                    <Sparkles className="w-3 h-3" /> HUEPRESS
                 </div>
                 <div className="h-48 bg-white rounded-lg mb-4 flex items-center justify-center overflow-hidden border border-gray-100">

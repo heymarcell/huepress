@@ -122,7 +122,7 @@ export default function PricingPage() {
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-secondary text-white text-xs font-bold px-6 py-2 rounded-full whitespace-nowrap shadow-lg">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-secondary text-white text-xs font-bold px-6 py-2 rounded-md whitespace-nowrap shadow-lg">
                     ⭐ MOST POPULAR — Save 25%
                   </div>
                 )}
@@ -144,7 +144,7 @@ export default function PricingPage() {
                 </ul>
                 <div className="mt-auto">
                   <Button
-                    variant={plan.popular ? "secondary" : "outline"}
+                    variant={plan.popular ? "secondary" : "primary"}
                     size="lg"
                     className="w-full"
                     onClick={() => handleSubscribe(plan.priceId)}
@@ -161,7 +161,7 @@ export default function PricingPage() {
               <Lock className="w-4 h-4" strokeWidth={1.5} />
               Secure checkout powered by Stripe · Cancel anytime · No hidden fees
             </div>
-             <p className="text-sm font-medium text-ink bg-primary/5 inline-block mx-auto px-4 py-2 rounded-full border border-primary/10">
+             <p className="text-sm font-medium text-ink bg-primary/5 inline-block mx-auto px-4 py-2 rounded-md border border-primary/10">
                Instant access to 500+ designs, unlimited downloads, high-res vector PDFs.
              </p>
           </div>
@@ -207,8 +207,8 @@ export default function PricingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="font-serif text-h1 mb-4">Ready to Start Coloring?</h2>
           <p className="text-white/80 mb-8">Join The Club today and unlock 500+ fridge-worthy designs.</p>
-          <Button variant="secondary" size="lg" onClick={() => handleSubscribe("price_monthly")}>
-            Join The Club — $5/mo
+          <Button variant="secondary" size="lg" onClick={() => handleSubscribe(plans[1].priceId)}>
+            Get Started Today
           </Button>
         </div>
       </section>
