@@ -1,27 +1,38 @@
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useUser } from "@clerk/clerk-react";
 import { Link } from "react-router-dom";
 
-// Simple mock auth for development without Clerk
 export function useSubscription() {
+  const { user, isLoaded, isSignedIn } = useUser();
+  // Check subscription status from public metadata (to be synced via webhooks)
+  const status = user?.publicMetadata?.subscriptionStatus as string;
+  const isSubscriber = status === "active" || status === "trialing";
+
   return { 
-    isLoaded: true, 
-    isSignedIn: false, 
-    isSubscriber: false, 
-    user: null 
+    isLoaded, 
+    isSignedIn, 
+    isSubscriber, 
+    user 
   };
 }
 
 export function AuthButtons() {
   return (
     <div className="flex items-center gap-4">
-      <Link 
-        to="/pricing" 
-        className="text-gray-500 hover:text-ink font-medium transition-colors"
-      >
-        Sign In
-      </Link>
-      <Link to="/pricing" className="btn-primary">
-        Join the Club
-      </Link>
+      <SignedOut>
+        <SignInButton mode="modal">
+          <button className="text-gray-500 hover:text-ink font-medium transition-colors">
+            Sign In
+          </button>
+        </SignInButton>
+        <SignUpButton mode="modal">
+          <button className="btn-primary">
+            Join the Club
+          </button>
+        </SignUpButton>
+      </SignedOut>
+      <SignedIn>
+        <UserButton afterSignOutUrl="/" />
+      </SignedIn>
     </div>
   );
 }

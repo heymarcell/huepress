@@ -1,5 +1,5 @@
-import { useUser } from "@clerk/clerk-react";
-import { Navigate, Outlet } from "react-router-dom";
+import { useUser, RedirectToSignIn } from "@clerk/clerk-react";
+import { Outlet } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Images, Plus, Settings } from "lucide-react";
 
@@ -22,12 +22,31 @@ export function AdminLayout() {
     );
   }
 
+  // Not signed in
+  if (!user) {
+    return <RedirectToSignIn />;
+  }
+
   // Check if user is admin
-  const userEmail = user?.primaryEmailAddress?.emailAddress;
+  const userEmail = user.primaryEmailAddress?.emailAddress;
   const isAdmin = userEmail && ADMIN_EMAILS.includes(userEmail);
 
-  if (!user || !isAdmin) {
-    return <Navigate to="/" replace />;
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 text-center max-w-md">
+          <h1 className="text-xl font-bold text-ink mb-2">Access Denied</h1>
+          <p className="text-gray-500 mb-6">
+            The account <strong>{userEmail}</strong> does not have permission to access the admin area.
+          </p>
+          <Link to="/">
+            <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+              Return Home
+            </button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const navItems = [

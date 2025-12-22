@@ -1,21 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui";
-
-// Mock assets - will be replaced with API call
-const mockAssets = [
-  { id: "1", title: "Capybara in Flower Garden", category: "Animals", skill: "Easy", status: "published", downloads: 45, createdAt: "2024-12-20" },
-  { id: "2", title: "Ocean Whale", category: "Animals", skill: "Easy", status: "published", downloads: 32, createdAt: "2024-12-19" },
-  { id: "3", title: "Friendly T-Rex", category: "Animals", skill: "Medium", status: "draft", downloads: 0, createdAt: "2024-12-18" },
-  { id: "4", title: "Astronaut Cat", category: "Fantasy", skill: "Medium", status: "published", downloads: 28, createdAt: "2024-12-17" },
-  { id: "5", title: "Magical Unicorn", category: "Fantasy", skill: "Hard", status: "published", downloads: 56, createdAt: "2024-12-16" },
-  { id: "6", title: "Beautiful Butterfly", category: "Nature", skill: "Easy", status: "draft", downloads: 0, createdAt: "2024-12-15" },
-];
+import { useUser } from "@clerk/clerk-react";
 
 export default function AdminAssets() {
-  const [assets, setAssets] = useState(mockAssets);
+  const { user } = useUser();
+  const [assets, setAssets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchAssets = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || "";
+        const response = await fetch(`${API_URL}/api/admin/assets`, {
+          headers: {
+            "X-Admin-Email": user.primaryEmailAddress?.emailAddress || "",
+          },
+        });
+        if (response.ok) {
+          const data = await response.json() as { assets: any[] };
+          setAssets(data.assets || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch assets:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssets();
+  }, [user]);
+
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500">Loading assets...</div>;
+  }
 
   const filteredAssets = assets.filter((asset) => {
     if (filter === "all") return true;

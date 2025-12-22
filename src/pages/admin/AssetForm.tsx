@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui";
 import { Upload, Save, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useUser } from "@clerk/clerk-react";
 
 const categories = ["Animals", "Fantasy", "Nature", "Vehicles", "Food", "Holidays", "Characters"];
 const skills = ["Easy", "Medium", "Hard"];
@@ -39,26 +40,49 @@ export default function AdminAssetForm() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // ... inside component
+  const { user } = useUser();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!thumbnailFile || !pdfFile) {
+      alert("Please upload both a thumbnail and a PDF file.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // TODO: Implement API call to save asset
-      // 1. Upload files to R2
-      // 2. Create/update asset in D1
+      const form = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        form.append(key, value as string);
+      });
+      form.append("thumbnail", thumbnailFile);
+      form.append("pdf", pdfFile);
 
-      console.log("Form data:", formData);
-      console.log("Thumbnail:", thumbnailFile);
-      console.log("PDF:", pdfFile);
+      // Use production API URL if in prod, else local
+      const API_URL = import.meta.env.VITE_API_URL || "";
+      
+      const response = await fetch(`${API_URL}/api/admin/assets`, {
+        method: "POST",
+        headers: {
+          "X-Admin-Email": user?.primaryEmailAddress?.emailAddress || "",
+        },
+        body: form,
+      });
 
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (!response.ok) {
+        const data = await response.json() as { error?: string };
+        throw new Error(data.error || "Failed to create asset");
+      }
+
+      const result = await response.json();
+      console.log("Asset created:", result);
 
       navigate("/admin/assets");
     } catch (error) {
       console.error("Error saving asset:", error);
-      alert("Failed to save asset. Please try again.");
+      alert(error instanceof Error ? error.message : "Failed to save asset");
     } finally {
       setIsSubmitting(false);
     }
