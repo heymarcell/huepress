@@ -32,6 +32,40 @@ export const StickyCTA = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [location.pathname]);
 
+  useEffect(() => {
+    // Visual Viewport logic for iOS "floating" toolbar fix
+    const updatePosition = () => {
+      const vv = window.visualViewport;
+      if (!vv) {
+        document.documentElement.style.setProperty("--vv-bottom", "0px");
+        return;
+      }
+
+      const layoutH = document.documentElement.clientHeight;
+      const bottomGap = Math.max(0, layoutH - (vv.height + vv.offsetTop));
+
+      document.documentElement.style.setProperty("--vv-bottom", `${bottomGap}px`);
+    };
+
+    updatePosition();
+    
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", updatePosition);
+      window.visualViewport.addEventListener("scroll", updatePosition);
+    }
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", updatePosition);
+        window.visualViewport.removeEventListener("scroll", updatePosition);
+      }
+    };
+  }, []);
+
   // Don't show on admin pages
   if (location.pathname.startsWith('/admin')) return null;
 
@@ -40,7 +74,11 @@ export const StickyCTA = () => {
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 p-4 pb-[env(safe-area-inset-bottom,16px)] bg-white/95 backdrop-blur-md border-t border-gray-200 z-[100] md:hidden flex gap-3 transition-transform duration-300 ease-in-out ${
+      style={{
+        bottom: "calc(var(--vv-bottom, 0px) + env(safe-area-inset-bottom, 0px))",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
+      className={`fixed left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-gray-200 z-[9999] md:hidden flex gap-3 transition-transform duration-300 ease-in-out ${
         isVisible ? "translate-y-0 shadow-[0_-4px_12px_-1px_rgba(0,0,0,0.1)]" : "translate-y-full shadow-none"
       }`}
     >
