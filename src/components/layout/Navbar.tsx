@@ -78,27 +78,30 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 transition-all duration-200">
+    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <Logo />
+        <div className="relative flex items-center justify-between h-20">
+          {/* Logo - Flex Start */}
+          <div className="flex-shrink-0 flex items-center">
+            <Logo />
+          </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-8">
+          {/* Desktop Navigation - Absolute Center */}
+          <div className="hidden lg:flex absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 items-center gap-8">
             {navLinks.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
                 className="text-ink/70 hover:text-primary font-medium transition-colors"
+                style={{ fontSize: '15px' }} 
               >
                 {link.label}
               </Link>
             ))}
           </div>
 
-          {/* Desktop Auth */}
-          <div className="hidden lg:block">
+          {/* Desktop Auth - Flex End */}
+          <div className="hidden lg:block flex-shrink-0">
             <AuthButtons />
           </div>
 
