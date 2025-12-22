@@ -20,7 +20,7 @@ const plans = [
     period: "/month",
     description: "Perfect for trying us out",
     features: ["Unlimited downloads", "500+ bold designs", "New drops every Sunday", "High-res vector PDFs", "No watermarks", "Cancel anytime"],
-    priceId: "price_1Sh99kRzWblq3ch1ACXHv2Oy", // Corrected: Monthly Price ID
+    priceId: "price_1Sh99kRzWblq3ch1ACXHv20y", // Corrected: Monthly Price ID
     popular: false,
   },
   {
