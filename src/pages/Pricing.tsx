@@ -64,12 +64,12 @@ import { useSubscription } from "@/lib/auth";
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const { getToken, isSignedIn } = useAuth();
-  const { openSignIn, user } = useClerk();
+  const { openSignUp, user } = useClerk();
   const { isSubscriber } = useSubscription();
 
   const handleSubscribe = async (priceId: string) => {
     if (!isSignedIn) {
-      openSignIn();
+      openSignUp();
       return;
     }
 
