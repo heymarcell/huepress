@@ -56,7 +56,7 @@ import { useAuth, useClerk } from "@clerk/clerk-react";
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const { getToken, isSignedIn } = useAuth();
-  const { openSignIn } = useClerk();
+  const { openSignIn, user } = useClerk();
 
   const handleSubscribe = async (priceId: string) => {
     if (!isSignedIn) {
@@ -69,7 +69,9 @@ export default function PricingPage() {
     try {
       const token = await getToken();
       if (!token) throw new Error("No authentication token available");
-      await createCheckoutSession(priceId, token);
+      
+      const email = user?.primaryEmailAddress?.emailAddress;
+      await createCheckoutSession(priceId, token, email);
     } catch (error) {
       console.error("Checkout error:", error);
       alert("Unable to start checkout. Please try again.");

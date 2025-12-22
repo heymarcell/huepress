@@ -4,14 +4,14 @@
 // API base URL - uses env var in production, relative URL in development
 const API_URL = import.meta.env.VITE_API_URL || "";
 
-export async function createCheckoutSession(priceId: string, authToken: string) {
+export async function createCheckoutSession(priceId: string, authToken: string, email?: string) {
   const response = await fetch(`${API_URL}/api/checkout`, {
     method: "POST",
     headers: { 
       "Content-Type": "application/json",
       "Authorization": `Bearer ${authToken}`
     },
-    body: JSON.stringify({ priceId }),
+    body: JSON.stringify({ priceId, email }),
   });
 
   if (!response.ok) {

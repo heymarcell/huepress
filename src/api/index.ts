@@ -241,7 +241,7 @@ app.get("/api/download/:id", async (c) => { // ... (rest of the file)
 
 // Create Stripe Checkout session
 app.post("/api/checkout", async (c) => {
-  const { priceId } = await c.req.json();
+  const { priceId, email } = await c.req.json();
   
   // Get Clerk user from auth header
   const authHeader = c.req.header("Authorization");
@@ -249,38 +249,40 @@ app.post("/api/checkout", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  // TODO: Get user email from Clerk token
-  const customerEmail = "user@example.com"; // Placeholder
-
   try {
     // Create Stripe Checkout Session using fetch (Workers compatible)
+    const payload: Record<string, string> = {
+      "mode": "subscription",
+      "success_url": "https://huepress.co/vault?success=true",
+      "cancel_url": "https://huepress.co/pricing?canceled=true",
+      "line_items[0][price]": priceId,
+      "line_items[0][quantity]": "1",
+    };
+
+    if (email) {
+      payload["customer_email"] = email;
+    } 
+
     const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${c.env.STRIPE_SECRET_KEY}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({
-        "mode": "subscription",
-        "success_url": "https://huepress.co/vault?success=true",
-        "cancel_url": "https://huepress.co/pricing?canceled=true",
-        "customer_email": customerEmail,
-        "line_items[0][price]": priceId,
-        "line_items[0][quantity]": "1",
-      }),
+      body: new URLSearchParams(payload),
     });
 
-    const session = await response.json() as { id: string; url: string };
+    const session = await response.json() as any;
 
     if (!response.ok) {
       console.error("Stripe error:", session);
-      return c.json({ error: "Failed to create checkout session" }, 500);
+      return c.json({ error: session.error?.message || "Failed to create checkout session", details: session }, 500);
     }
 
     return c.json({ url: session.url });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Checkout error:", error);
-    return c.json({ error: "Checkout failed" }, 500);
+    return c.json({ error: error.message || "Checkout failed" }, 500);
   }
 });
 
