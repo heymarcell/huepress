@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
 import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button } from "@/components/ui";
-import { Gift, Sparkles } from "lucide-react";
+import { Gift, Sparkles, Send } from "lucide-react";
 import SEO from "@/components/SEO";
 
 // Mock data with real thumbnails
@@ -132,9 +132,15 @@ function FreeSampleBanner() {
             placeholder="you@example.com"
             required
             aria-label="Email address for free sample pack"
-            className="flex-1 sm:w-64 px-4 py-3 text-sm bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/60 focus:bg-white focus:text-ink focus:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
+            className="flex-1 sm:w-64 px-4 py-3 text-sm bg-white border border-gray-200 rounded-xl text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-sm"
           />
-          <Button variant="primary" size="lg" type="submit" className="whitespace-nowrap shadow-lg !bg-white !text-secondary hover:!bg-gray-50 border-none">
+          <Button 
+            variant="primary" 
+            size="lg" 
+            type="submit" 
+            className="whitespace-nowrap shadow-lg !bg-white !text-secondary hover:!bg-gray-50 border-none !rounded-xl"
+            rightIcon={<Send className="w-4 h-4" />}
+          >
             Send Free Pages
           </Button>
         </form>
