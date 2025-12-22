@@ -134,7 +134,7 @@ function FreeSampleBanner() {
             aria-label="Email address for free sample pack"
             className="flex-1 sm:w-64 px-4 py-3 text-sm bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/60 focus:bg-white focus:text-ink focus:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
           />
-          <Button variant="primary" size="lg" type="submit" className="whitespace-nowrap shadow-lg bg-white text-secondary hover:bg-gray-50 border-none">
+          <Button variant="primary" size="lg" type="submit" className="whitespace-nowrap shadow-lg !bg-white !text-secondary hover:!bg-gray-50 border-none">
             Send Free Pages
           </Button>
         </form>
