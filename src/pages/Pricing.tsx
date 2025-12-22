@@ -182,7 +182,7 @@ export default function PricingPage() {
                   {/* FAQ Anchor Link - Rank 14 */}
                   {/* Prefer monthly link for Annual card */}
                   {plan.popular ? (
-                    <div className="mt-4 text-center">
+                    <div className="mt-4 text-center md:hidden">
                        <p className="text-xs text-white/60">
                          Prefer monthly? Scroll for $5/mo option
                        </p>
