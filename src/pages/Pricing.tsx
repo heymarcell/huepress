@@ -51,14 +51,25 @@ const userTypes = [
   { icon: Home, label: "Homeschoolers" },
 ];
 
+import { useAuth, useClerk } from "@clerk/clerk-react";
+
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null);
+  const { getToken, isSignedIn } = useAuth();
+  const { openSignIn } = useClerk();
 
   const handleSubscribe = async (priceId: string) => {
+    if (!isSignedIn) {
+      openSignIn();
+      return;
+    }
+
     setLoading(priceId);
     analytics.checkoutStarted(priceId);
     try {
-      await createCheckoutSession(priceId);
+      const token = await getToken();
+      if (!token) throw new Error("No authentication token available");
+      await createCheckoutSession(priceId, token);
     } catch (error) {
       console.error("Checkout error:", error);
       alert("Unable to start checkout. Please try again.");

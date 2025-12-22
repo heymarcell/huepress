@@ -22,7 +22,8 @@
     "lucide-react": "^0.562.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.1.1"
+    "react-router-dom": "^7.1.1",
+    "svix": "^1.82.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241218.0",

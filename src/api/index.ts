@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { Webhook } from "svix";
 
 // Define environment bindings type
 type Bindings = {
@@ -7,6 +8,7 @@ type Bindings = {
   ASSETS_PRIVATE: R2Bucket;
   ASSETS_PUBLIC: R2Bucket;
   CLERK_SECRET_KEY: string;
+  CLERK_WEBHOOK_SECRET: string;
   STRIPE_SECRET_KEY: string;
   STRIPE_WEBHOOK_SECRET: string;
   STRIPE_PRICE_MONTHLY: string;
@@ -397,12 +399,50 @@ app.post("/api/webhooks/stripe", async (c) => {
 
 // Clerk webhook handler (for user sync)
 app.post("/api/webhooks/clerk", async (c) => {
-  const body = await c.req.json();
+  const WEBHOOK_SECRET = c.env.CLERK_WEBHOOK_SECRET;
+
+  if (!WEBHOOK_SECRET) {
+    return c.json({ error: "Missing Clerk Webhook Secret" }, 500);
+  }
+
+  // Get headers
+  const svix_id = c.req.header("svix-id");
+  const svix_timestamp = c.req.header("svix-timestamp");
+  const svix_signature = c.req.header("svix-signature");
+
+  // If missing headers, error out
+  if (!svix_id || !svix_timestamp || !svix_signature) {
+    return c.json({ error: "Error occured -- no svix headers" }, 400);
+  }
+
+  // Get body
+  const body = await c.req.text();
+
+  // Create new Svix instance with secret
+  // @ts-ignore
+  const wh = new Webhook(WEBHOOK_SECRET);
+
+  let evt: any;
+
+  // Verify payload
+  try {
+    evt = wh.verify(body, {
+      "svix-id": svix_id,
+      "svix-timestamp": svix_timestamp,
+      "svix-signature": svix_signature,
+    });
+  } catch (err) {
+    console.error("Error verifying webhook:", err);
+    return c.json({ error: "Error occured" }, 400);
+  }
 
   try {
-    switch (body.type) {
+    const eventType = evt.type;
+    console.log(`Webhook received: ${eventType}`);
+
+    switch (eventType) {
       case "user.created": {
-        const user = body.data;
+        const user = evt.data;
         const email = user.email_addresses?.[0]?.email_address;
         
         if (email) {
@@ -419,7 +459,7 @@ app.post("/api/webhooks/clerk", async (c) => {
       }
 
       case "user.deleted": {
-        const userId = body.data.id;
+        const userId = evt.data.id;
         
         await c.env.DB.prepare("DELETE FROM users WHERE clerk_id = ?")
           .bind(userId)
