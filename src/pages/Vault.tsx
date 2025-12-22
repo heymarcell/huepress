@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
 import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button, StickyCTA } from "@/components/ui";
-import { Gift, Sparkles, Send, ArrowUpDown, Check, Filter, Search, X } from "lucide-react";
+import { Gift, Sparkles, Send, ArrowUpDown, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
 
 // Mock data with real thumbnails
