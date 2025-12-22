@@ -285,6 +285,18 @@ export default function VaultPage() {
             </Link>
           </div>
         )}
+        {/* SEO Content Block */}
+        <div className="mt-16 pt-16 border-t border-gray-200 text-center max-w-3xl mx-auto">
+          <h2 className="font-serif text-lg font-bold text-ink mb-4">Therapy-Grade Coloring Pages for Motor Skills & Calm</h2>
+          <p className="text-gray-600 text-sm leading-relaxed mb-4">
+            HuePress provides high-quality, bold and easy printable art designed specifically for children. 
+            Our collection focuses on fine motor skills coloring, anxiety relief, and creative expression without the frustration of complex patterns.
+          </p>
+          <p className="text-gray-600 text-sm leading-relaxed">
+            Trusted by parents, teachers, and occupational therapists, our library offers safe, ad-free downloads 
+            perfect for quiet time, classroom activities, and therapeutic sessions. Join the club to unlock unlimited access.
+          </p>
+        </div>
       </div>
     </div>
   );

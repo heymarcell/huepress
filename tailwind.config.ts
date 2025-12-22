@@ -35,7 +35,7 @@ const config: Config = {
           200: "#E5E7EB",
           300: "#D1D5DB",
           400: "#9CA3AF",
-          500: "#6B7280",
+          500: "#4B5563", // Darkened for accessibility (was #6B7280)
         },
         // States
         error: "#EF4444",

@@ -5,6 +5,7 @@ import HomePage from "./pages/Home";
 import VaultPage from "./pages/Vault";
 import ResourceDetailPage from "./pages/ResourceDetail";
 import PricingPage from "./pages/Pricing";
+import AboutPage from "./pages/About";
 import NotFoundPage from "./pages/NotFound";
 
 // Admin pages
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="vault" element={<VaultPage />} />
         <Route path="vault/:id" element={<ResourceDetailPage />} />
         <Route path="pricing" element={<PricingPage />} />
+        <Route path="about" element={<AboutPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 

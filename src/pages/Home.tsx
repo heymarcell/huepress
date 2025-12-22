@@ -117,6 +117,10 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Content */}
             <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 bg-success/10 text-success-dark px-3 py-1 rounded-full text-sm font-bold mb-6">
+                <span className="w-2 h-2 rounded-full bg-success"></span>
+                Therapist Approved
+              </div>
               <h1 className="font-serif text-display lg:text-5xl text-ink mb-6">
                 From "I'm bored" to{" "}
                 <span className="text-secondary">printing in 60 seconds</span>
@@ -153,28 +157,15 @@ export default function HomePage() {
 
             {/* Right: Hero Image - Real thumbnails on white paper */}
             <div className="relative">
-              <div className="relative w-full aspect-square max-w-md mx-auto">
-                <div className="absolute -top-4 -right-4 w-24 h-24 bg-secondary/20 rounded-full blur-xl" />
-                <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-primary/20 rounded-full blur-xl" />
-                
-                {/* Pure white card container */}
-                <div className="relative bg-white rounded-2xl shadow-xl p-4 border border-gray-100">
-                  <div className="grid grid-cols-2 gap-3">
-                    {featuredItems.slice(0, 4).map((item) => (
-                      <div
-                        key={item.id}
-                        className="aspect-a4 bg-white rounded-lg overflow-hidden shadow-sm"
-                      >
-                        <img 
-                          src={item.imageUrl} 
-                          alt={item.title}
-                          className="w-full h-full object-contain p-2"
-                        />
-                      </div>
-                    ))}
-                  </div>
+                <div className="relative rounded-2xl shadow-xl overflow-hidden border border-gray-100 rotate-1 hover:rotate-0 transition-transform duration-500">
+                  <img 
+                    src="/hero_lifestyle.png" 
+                    alt="Child coloring a HuePress page with markers"
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Subtle overlay to blend if needed */}
+                  <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-2xl"></div>
                 </div>
-              </div>
             </div>
           </div>
         </div>

@@ -31,6 +31,7 @@ const plans = [
     features: ["Everything in Monthly", "Save $15 per year", "Priority access to new themes", "Exclusive seasonal packs", "Early access to new features", "Cancel anytime"],
     priceId: "price_1Sh9A6RzWblq3ch1IddHrwdU", // Corrected: Annual Price ID
     popular: true,
+    popularLabel: "3 Months Free", // Corrected: 25% off = 3 months free ($15 off $60)
   },
 ];
 
@@ -108,7 +109,9 @@ export default function PricingPage() {
             {plans.map((plan) => (
               <div key={plan.name} className={`relative bg-white rounded-2xl shadow-lg p-8 ${plan.popular ? "border-2 border-primary ring-4 ring-primary/10" : "border border-gray-200"}`}>
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1 rounded-full">BEST VALUE</div>
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap">
+                    {plan.popularLabel || "BEST VALUE"}
+                  </div>
                 )}
                 <div className="text-center mb-6">
                   <h2 className="font-serif text-h2 text-ink mb-2">{plan.name}</h2>
@@ -132,10 +135,12 @@ export default function PricingPage() {
                   className="w-full"
                   onClick={() => handleSubscribe(plan.priceId)}
                   isLoading={loading === plan.priceId}
-                  disabled={isSubscriber}
                 >
                   {isSubscriber ? "Already a Member" : "Get Started"}
                 </Button>
+                {!isSubscriber && !plan.popular && (
+                   <p className="text-center text-xs text-gray-400 mt-2">Cancel anytime</p>
+                )}
               </div>
             ))}
           </div>
