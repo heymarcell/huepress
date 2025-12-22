@@ -13,9 +13,13 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminAssets from "./pages/admin/Assets";
 import AdminAssetForm from "./pages/admin/AssetForm";
 
+import ScrollToTop from "./components/ScrollToTop";
+
 export default function App() {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       {/* Public routes */}
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
@@ -34,5 +38,6 @@ export default function App() {
         <Route path="assets/:id/edit" element={<AdminAssetForm />} />
       </Route>
     </Routes>
+    </>
   );
 }
