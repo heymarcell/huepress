@@ -40,7 +40,7 @@ export const StickyCTA = () => {
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 p-4 pb-[calc(12px+env(safe-area-inset-bottom,20px))] bg-white/95 backdrop-blur-md border-t border-gray-200 z-[100] md:hidden flex gap-3 transition-transform duration-300 ease-in-out ${
+      className={`fixed bottom-0 left-0 right-0 p-4 pb-[env(safe-area-inset-bottom,16px)] bg-white/95 backdrop-blur-md border-t border-gray-200 z-[100] md:hidden flex gap-3 transition-transform duration-300 ease-in-out ${
         isVisible ? "translate-y-0 shadow-[0_-4px_12px_-1px_rgba(0,0,0,0.1)]" : "translate-y-full shadow-none"
       }`}
     >
