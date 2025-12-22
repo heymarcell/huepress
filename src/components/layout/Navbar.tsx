@@ -78,9 +78,9 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-50 glass border-b border-gray-200">
+    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 transition-all duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Logo />
 
@@ -90,7 +90,7 @@ export function Navbar() {
               <Link
                 key={link.to}
                 to={link.to}
-                className="text-gray-500 hover:text-ink font-medium transition-colors"
+                className="text-ink/70 hover:text-primary font-medium transition-colors"
               >
                 {link.label}
               </Link>

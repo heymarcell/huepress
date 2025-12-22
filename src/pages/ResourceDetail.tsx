@@ -259,7 +259,7 @@ export default function ResourceDetailPage() {
                           <FileText className="w-8 h-8 text-gray-200 mx-auto" />
                         )}
                       </div>
-                      <div className="px-3 pb-3">
+                      <div className="px-5 pb-5">
                         <h4 className="text-xs font-medium text-ink group-hover:text-primary transition-colors line-clamp-1">{item.title}</h4>
                       </div>
                     </div>

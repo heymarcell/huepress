@@ -53,7 +53,7 @@ export function ResourceCard({
           </div>
 
           {/* Card footer */}
-          <div className="p-3 border-t border-gray-50">
+          <div className="p-5 border-t border-gray-50">
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-serif font-semibold text-ink text-sm line-clamp-1 group-hover:text-primary transition-colors">
                 {title}
@@ -90,7 +90,7 @@ export function ResourceCardSkeleton() {
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
       <div className="aspect-a4 skeleton" />
-      <div className="p-3 space-y-2">
+      <div className="p-5 space-y-2">
         <div className="h-4 skeleton rounded w-3/4" />
         <div className="flex gap-1">
           <div className="h-3 skeleton rounded w-12" />

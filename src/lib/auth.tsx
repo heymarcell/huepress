@@ -37,12 +37,12 @@ export function AuthButtons() {
     <div className="flex items-center gap-4">
       <SignedOut>
         <SignInButton mode="modal">
-          <button className="text-gray-500 hover:text-ink font-medium transition-colors">
+          <button className="text-ink/70 hover:text-primary font-medium transition-colors px-4">
             Sign In
           </button>
         </SignInButton>
         <SignUpButton mode="modal">
-          <button className="btn-primary">
+          <button className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-full font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 text-sm">
             Join the Club
           </button>
         </SignUpButton>
@@ -51,7 +51,7 @@ export function AuthButtons() {
         {isSubscriber && (
           <button 
             onClick={handleManageSubscription}
-            className="text-sm font-medium text-gray-500 hover:text-ink mr-2"
+            className="text-sm font-medium text-ink/70 hover:text-primary mr-4 transition-colors"
           >
             Manage Subscription
           </button>
