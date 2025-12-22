@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button, ResourceCard } from "@/components/ui";
 import SEO from "@/components/SEO";
@@ -12,7 +12,8 @@ import {
   Puzzle,
   Gift,
   Printer,
-  Heart
+  Heart,
+  Star
 } from "lucide-react";
 
 // Featured items with real thumbnails
@@ -112,6 +113,22 @@ function FreeSampleCapture() {
 }
 
 export default function HomePage() {
+  const [showStickyCTA, setShowStickyCTA] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show sticky CTA after scrolling past hero (approx 500px)
+      if (window.scrollY > 500) {
+        setShowStickyCTA(true);
+      } else {
+        setShowStickyCTA(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <>
       <SEO />
@@ -130,15 +147,15 @@ export default function HomePage() {
                 <span className="text-secondary">Print Calm in 60 Seconds</span>
               </h1>
               <p className="text-lg text-gray-500 mb-8 max-w-lg mx-auto lg:mx-0">
-                Bold, beautiful coloring pages your kids can actually finish.
-                No ads, no pixelated prints, just clean lines that work.
+                Join 500+ families using our bold-line designs to reduce anxiety and build focus. 
+                New drops every Sunday.
               </p>
               
               {/* Primary CTA */}
               <div className="mb-8">
                 <a href="#free-sample">
                   <Button variant="primary" size="lg" className="shadow-xl shadow-primary/20 hover:scale-105 transition-all">
-                    Get 3 Free Pages
+                    Unlock 500+ Designs
                   </Button>
                 </a>
                 <p className="text-sm text-gray-500 mt-3">
@@ -184,6 +201,25 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Social Proof Bar */}
+      <section className="bg-white border-b border-gray-100 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-center gap-8 text-center">
+            <div className="flex items-center gap-2">
+               <div className="flex">
+                  {[1,2,3,4,5].map(i => (
+                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                  ))}
+               </div>
+               <span className="font-bold text-ink">4.9/5 Rating</span>
+            </div>
+            <p className="text-gray-500 text-sm">
+               "The only coloring pages my son actually finishes." — <span className="font-bold text-ink">Sarah, Mom of 2</span>
+            </p>
+            <div className="hidden md:block w-px h-8 bg-gray-200"></div>
+            <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">Trusted by Teachers & OTs</p>
+        </div>
+      </section>
+
       {/* Social Proof - Testimonials */}
       <section className="bg-accent py-12 lg:py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -195,7 +231,7 @@ export default function HomePage() {
                     <img src="/avatars/avatar_mom_1.png" alt="Sarah" className="w-12 h-12 rounded-full object-cover" />
                     <div>
                        <p className="font-bold text-ink text-sm">Sarah M.</p>
-                       <p className="text-xs text-gray-400">Mom of 2</p>
+                       <p className="text-xs text-gray-500">Mom of 2</p>
                     </div>
                  </div>
                  <p className="text-gray-600 italic">"This is the only way I get 20 minutes of peace. My kids ask for these pages every day!"</p>
@@ -207,7 +243,7 @@ export default function HomePage() {
                     <img src="/avatars/avatar_teacher_1.png" alt="Michelle" className="w-12 h-12 rounded-full object-cover" />
                     <div>
                        <p className="font-bold text-ink text-sm">Michelle R.</p>
-                       <p className="text-xs text-gray-400">Pediatric OT</p>
+                       <p className="text-xs text-gray-500">Pediatric OT</p>
                     </div>
                  </div>
                  <p className="text-gray-600 italic">"Perfect for my fine-motor groups. The bold lines are exactly what my patients need."</p>
@@ -219,12 +255,46 @@ export default function HomePage() {
                     <img src="/avatars/avatar_dad_1.png" alt="David" className="w-12 h-12 rounded-full object-cover" />
                     <div>
                        <p className="font-bold text-ink text-sm">David T.</p>
-                       <p className="text-xs text-gray-400">3rd Grade Teacher</p>
+                       <p className="text-xs text-gray-500">3rd Grade Teacher</p>
                     </div>
                  </div>
                  <p className="text-gray-600 italic">"Zero ads, completely safe for my classroom. I use these for quiet time every week."</p>
               </div>
            </div>
+        </div>
+      </section>
+
+      {/* Print Quality Proof - P1 Item 10 */}
+      <section className="py-16 bg-gray-50 border-y border-gray-200">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+             <h2 className="font-serif text-2xl text-ink">Why "Free" Sites Cost More</h2>
+             <p className="text-gray-500">Don't waste ink on pixelated junk.</p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+             {/* Bad Side */}
+             <div className="bg-white p-6 rounded-2xl border border-gray-200 relative overflow-hidden group">
+                <div className="absolute top-4 right-4 bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-md z-10">THEIR FREEBIES</div>
+                <div className="h-48 bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+                   {/* Simulated pixelation */}
+                   <div className="w-full h-full bg-[url('/thumbnails/thumb_whale_1766355003894.png')] bg-cover blur-[2px] opacity-60 scale-110 grayscale"></div>
+                </div>
+                <h3 className="font-bold text-gray-400 mb-2">Pixelated & Blurry</h3>
+                <p className="text-sm text-gray-400">Jagged edges that look awful when printed.</p>
+             </div>
+
+             {/* Good Side */}
+             <div className="bg-white p-6 rounded-2xl border-2 border-success/20 ring-4 ring-success/5 relative overflow-hidden shadow-lg">
+                <div className="absolute top-4 right-4 bg-success text-white text-xs font-bold px-3 py-1 rounded-md flex items-center gap-1">
+                   <Sparkles className="w-3 h-3" /> HUEPRESS
+                </div>
+                <div className="h-48 bg-white rounded-lg mb-4 flex items-center justify-center overflow-hidden border border-gray-100">
+                   <img src="/thumbnails/thumb_whale_1766355003894.png" className="w-full h-full object-cover" />
+                </div>
+                <h3 className="font-bold text-ink mb-2">Vector-Sharp Lines</h3>
+                <p className="text-sm text-gray-600">Crisp, professional outlines even at poster size.</p>
+             </div>
+          </div>
         </div>
       </section>
 
@@ -240,6 +310,45 @@ export default function HomePage() {
                  <FreeSampleCapture />
               </div>
            </div>
+        </div>
+      </section>
+
+      {/* Vault Preview - Real thumbnails */}
+      <section className="py-16 lg:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="font-serif text-h1 text-ink mb-4">Peek Inside The Vault</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto">Over 500 bold, curated designs across trending themes. New drops every Sunday.</p>
+          </div>
+           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+             {/* Showing more items to look impressive - duplicating the list for effect until we have real data */}
+             {[...featuredItems, ...featuredItems, ...featuredItems].slice(0, 12).map((item, idx) => (
+               <ResourceCard
+                 key={`${item.id}-${idx}`}
+                 id={item.id}
+                 title={item.title}
+                 imageUrl={item.imageUrl}
+                 tags={item.tags}
+                 isLocked={true}
+                 isNew={idx < 2} // Only first few are new
+               />
+             ))}
+           </div>
+           
+           {/* Fallback pattern for more items blurred out - Visual trick */}
+           <div className="relative h-24 overflow-hidden mt-4 opacity-50 blur-[2px] pointer-events-none select-none">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+                 {[...featuredItems].map((_, idx) => (
+                   <div key={idx} className="bg-gray-100 rounded-xl h-64"></div>
+                 ))}
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent"></div>
+           </div>
+          <div className="text-center mt-10">
+            <Link to="/vault">
+              <Button variant="primary" size="lg">Unlock 500+ Designs →</Button>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -337,78 +446,35 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Vault Preview - Real thumbnails */}
-      <section className="py-16 lg:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-serif text-h1 text-ink mb-4">Peek Inside The Vault</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto">Over 500 bold, curated designs across trending themes. New drops every Sunday.</p>
+      <section className="py-20 bg-gradient-to-br from-primary to-primary-hover text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="font-serif text-h1 mb-6">One plan. Endless creativity.</h2>
+          
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 max-w-2xl mx-auto mb-10 border border-white/20">
+             <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:divide-x md:divide-white/20">
+                <div className="flex-1 text-center md:text-right px-4">
+                   <p className="text-lg font-medium opacity-90">Instant Access</p>
+                   <p className="text-3xl font-bold">500+ Designs</p>
+                </div>
+                 <div className="flex-1 text-center md:text-left px-4">
+                   <p className="text-lg font-medium opacity-90">Fresh Drops</p>
+                   <p className="text-3xl font-bold">Every Sunday</p>
+                </div>
+             </div>
           </div>
-           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-             {/* Showing more items to look impressive - duplicating the list for effect until we have real data */}
-             {[...featuredItems, ...featuredItems, ...featuredItems].slice(0, 12).map((item, idx) => (
-               <ResourceCard
-                 key={`${item.id}-${idx}`}
-                 id={item.id}
-                 title={item.title}
-                 imageUrl={item.imageUrl}
-                 tags={item.tags}
-                 isLocked={true}
-                 isNew={idx < 2} // Only first few are new
-               />
-             ))}
-           </div>
-           
-           {/* Fallback pattern for more items blurred out - Visual trick */}
-           <div className="relative h-24 overflow-hidden mt-4 opacity-50 blur-[2px] pointer-events-none select-none">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-                 {[...featuredItems].map((_, idx) => (
-                   <div key={idx} className="bg-gray-100 rounded-xl h-64"></div>
-                 ))}
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent"></div>
-           </div>
-          <div className="text-center mt-10">
-            <Link to="/vault">
-              <Button variant="primary" size="lg">Unlock 500+ Designs →</Button>
-            </Link>
-          </div>
+
+          <Link to="/pricing">
+            <Button variant="secondary" size="lg" className="shadow-xl shadow-black/10">Join for $5/mo</Button>
+          </Link>
+          <p className="mt-6 text-sm text-white/70">
+             Less than a latte. Cancel anytime in one click.
+          </p>
         </div>
       </section>
 
-      {/* Print Quality Proof - P1 Item 10 */}
-      <section className="py-16 bg-gray-50 border-y border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-             <h2 className="font-serif text-2xl text-ink">Why "Free" Sites Cost More</h2>
-             <p className="text-gray-500">Don't waste ink on pixelated junk.</p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-             {/* Bad Side */}
-             <div className="bg-white p-6 rounded-2xl border border-gray-200 relative overflow-hidden group">
-                <div className="absolute top-4 right-4 bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-md z-10">THEIR FREEBIES</div>
-                <div className="h-48 bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
-                   {/* Simulated pixelation */}
-                   <div className="w-full h-full bg-[url('/thumbnails/thumb_whale_1766355003894.png')] bg-cover blur-[2px] opacity-60 scale-110 grayscale"></div>
-                </div>
-                <h3 className="font-bold text-gray-400 mb-2">Pixelated & Blurry</h3>
-                <p className="text-sm text-gray-400">Jagged edges that look awful when printed.</p>
-             </div>
 
-             {/* Good Side */}
-             <div className="bg-white p-6 rounded-2xl border-2 border-success/20 ring-4 ring-success/5 relative overflow-hidden shadow-lg">
-                <div className="absolute top-4 right-4 bg-success text-white text-xs font-bold px-3 py-1 rounded-md flex items-center gap-1">
-                   <Sparkles className="w-3 h-3" /> HUEPRESS
-                </div>
-                <div className="h-48 bg-white rounded-lg mb-4 flex items-center justify-center overflow-hidden border border-gray-100">
-                   <img src="/thumbnails/thumb_whale_1766355003894.png" className="w-full h-full object-cover" />
-                </div>
-                <h3 className="font-bold text-ink mb-2">Vector-Sharp Lines</h3>
-                <p className="text-sm text-gray-600">Crisp, professional outlines even at poster size.</p>
-             </div>
-          </div>
-        </div>
-      </section>
+
+
 
       {/* Printing & Use Rights (Scannable) - P1 Item 9 */}
       <section className="py-20 bg-white" id="rights">
@@ -457,32 +523,25 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Pricing CTA - Inline */}
-      <section className="py-20 bg-gradient-to-br from-primary to-primary-hover text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="font-serif text-h1 mb-6">Ready for Fridge-Worthy Art?</h2>
-          
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 max-w-2xl mx-auto mb-10 border border-white/20">
-             <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:divide-x md:divide-white/20">
-                <div className="flex-1 text-center md:text-right px-4">
-                   <p className="text-lg font-medium opacity-90">Instant Access</p>
-                   <p className="text-3xl font-bold">500+ Designs</p>
-                </div>
-                 <div className="flex-1 text-center md:text-left px-4">
-                   <p className="text-lg font-medium opacity-90">Fresh Drops</p>
-                   <p className="text-3xl font-bold">Every Sunday</p>
-                </div>
-             </div>
-          </div>
 
-          <Link to="/pricing">
-            <Button variant="secondary" size="lg" className="shadow-xl shadow-black/10">Join for $5/mo</Button>
-          </Link>
-          <p className="mt-6 text-sm text-white/70">
-             Less than a latte. Cancel anytime in one click.
-          </p>
+      {/* Mobile Sticky CTA */}
+      <div 
+        className={`fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-lg z-50 lg:hidden transition-transform duration-300 ${
+          showStickyCTA ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-4">
+           <div>
+             <p className="font-bold text-ink text-sm">Unlock 500+ Designs</p>
+             <p className="text-xs text-gray-500">$5/mo · Cancel anytime</p>
+           </div>
+           <Link to="/pricing">
+             <Button variant="primary" size="sm" className="shadow-lg">
+               Join Club
+             </Button>
+           </Link>
         </div>
-      </section>
+      </div>
     </>
   );
 }

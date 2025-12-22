@@ -70,7 +70,7 @@ function MenuButton({
 
 // Navigation Links
 const navLinks = [
-  { to: "/vault", label: "Browse" },
+  { to: "/vault", label: "The Vault" },
   { to: "/pricing", label: "Pricing" },
 ];
 

@@ -38,7 +38,7 @@ export function AuthButtons() {
       <SignedOut>
         <SignInButton mode="modal">
           <button className="text-ink/70 hover:text-primary font-medium transition-colors px-4">
-            Sign In
+            Member Login
           </button>
         </SignInButton>
         <SignUpButton mode="modal">

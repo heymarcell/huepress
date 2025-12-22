@@ -22,18 +22,18 @@ const plans = [
     features: ["Unlimited downloads", "500+ bold designs", "New drops every Sunday", "High-res vector PDFs", "No watermarks", "Cancel anytime"],
     priceId: "price_1Sh99kRzWblq3ch1ACXHv20y",
     popular: false,
-    cta: "Join for $5/mo",
+    cta: "Start Monthly Plan",
   },
   {
     name: "Annual",
     price: "$45",
     period: "/year",
-    description: "Best value — save 25%",
+    description: "",
     features: ["Everything in Monthly", "Save $15 per year (25% off)", "Seasonal packs included", "New drops every Sunday", "Cancel anytime"],
     priceId: "price_1Sh9A6RzWblq3ch1IddHrwdU",
     popular: true,
-    popularLabel: "3 Months Free",
-    cta: "Get Annual (Save 25%)",
+    popularLabel: "BEST VALUE",
+    cta: "Join the Club (Save 25%)",
   },
 ];
 
@@ -117,13 +117,13 @@ export default function PricingPage() {
                 key={plan.name} 
                 className={`relative rounded-2xl flex flex-col ${
                   plan.popular 
-                    ? "bg-primary text-white shadow-2xl shadow-primary/30 p-10 md:scale-105" 
-                    : "bg-white border border-gray-200 shadow-lg p-8"
+                    ? "bg-primary text-white shadow-2xl shadow-primary/30 p-10 md:scale-110 z-10" 
+                    : "bg-gray-50 border border-gray-200 shadow-lg p-8 opacity-90 hover:opacity-100 transition-opacity"
                 }`}
               >
                 {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-secondary text-white text-xs font-bold px-6 py-2 rounded-md whitespace-nowrap shadow-lg">
-                    ⭐ MOST POPULAR — Save 25%
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-secondary text-white text-sm font-bold px-6 py-2 rounded-md whitespace-nowrap shadow-lg ring-2 ring-white">
+                    ⭐ BEST VALUE — Save 25%
                   </div>
                 )}
                 <div className="text-center mb-6">
@@ -132,7 +132,12 @@ export default function PricingPage() {
                     <span className={`font-serif text-5xl font-bold ${plan.popular ? "text-white" : "text-ink"}`}>{plan.price}</span>
                     <span className={plan.popular ? "text-white/70" : "text-gray-500"}>{plan.period}</span>
                   </div>
-                  <p className={`text-sm mt-2 ${plan.popular ? "text-white/80" : "text-gray-500"}`}>{plan.description}</p>
+                  {plan.popular && (
+                      <p className="text-white font-medium bg-white/20 inline-block px-3 py-1 rounded-md text-sm mt-3">
+                        Just $3.75/mo
+                      </p>
+                  )}
+                  {plan.description && <p className={`text-sm mt-2 ${plan.popular ? "text-white/80" : "text-gray-500"}`}>{plan.description}</p>}
                 </div>
                 <ul className="space-y-3 mb-8 flex-grow">
                   {plan.features.map((feature) => (
@@ -146,7 +151,7 @@ export default function PricingPage() {
                   <Button
                     variant={plan.popular ? "secondary" : "primary"}
                     size="lg"
-                    className="w-full"
+                    className="w-full shadow-md"
                     onClick={() => handleSubscribe(plan.priceId)}
                     isLoading={loading === plan.priceId}
                   >
