@@ -148,11 +148,18 @@ export default function HomePage() {
               {/* Trust/Social Proof - replacing the cluttered form */}
               <div className="flex items-center justify-center lg:justify-start gap-4 text-sm text-gray-500">
                  <div className="flex -space-x-2">
-                    {[1,2,3,4].map(i => (
-                      <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center overflow-hidden`}>
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`} alt="User" />
-                      </div>
-                    ))}
+                    <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+                      <img src="/avatars/avatar_mom_1.png" alt="Happy Mom" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+                      <img src="/avatars/avatar_dad_1.png" alt="Happy Dad" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+                      <img src="/avatars/avatar_teacher_1.png" alt="Teacher" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+                      <img src="/avatars/avatar_mom_2.png" alt="Happy Mom" className="w-full h-full object-cover" />
+                    </div>
                  </div>
                  <p>Join <strong className="text-ink">500+ parents</strong> printing today.</p>
               </div>
@@ -177,20 +184,20 @@ export default function HomePage() {
       </section>
 
       {/* Free Sample - Minimal Strip (Lead Gen) */}
-      <section className="bg-white border-b border-gray-100 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                 <div className="p-2 bg-accent rounded-lg text-primary">
-                    <Gift size={20} />
+      <section className="bg-white border-b border-gray-100 py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="bg-accent/30 border border-primary/10 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 text-center md:text-left">
+              <div className="flex-1">
+                 <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
+                    <Gift className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-ink text-lg">Try before you buy</h3>
                  </div>
-                 <div>
-                    <h3 className="font-bold text-ink text-sm">Want to try before you buy?</h3>
-                    <p className="text-gray-500 text-xs text-left">Get 3 free pages sent to your inbox.</p>
-                 </div>
+                 <p className="text-gray-500">Get 3 free therapist-approved pages sent straight to your inbox.</p>
               </div>
               <div className="w-full md:w-auto">
-                 <FreeSampleCapture />
+                 <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-100">
+                    <FreeSampleCapture />
+                 </div>
               </div>
            </div>
         </div>
