@@ -20,20 +20,26 @@ const plans = [
     period: "/month",
     description: "Perfect for trying us out",
     features: ["Unlimited downloads", "500+ bold designs", "New drops every Sunday", "High-res vector PDFs", "No watermarks", "Cancel anytime"],
-    priceId: "price_1Sh99kRzWblq3ch1ACXHv20y", // Corrected: Monthly Price ID
+    priceId: "price_1Sh99kRzWblq3ch1ACXHv20y",
     popular: false,
+    cta: "Join for $5/mo",
   },
   {
     name: "Annual",
     price: "$45",
     period: "/year",
     description: "Best value — save 25%",
-    features: ["Everything in Monthly", "Save $15 per year", "Priority access to new themes", "Exclusive seasonal packs", "Early access to new features", "Cancel anytime"],
-    priceId: "price_1Sh9A6RzWblq3ch1IddHrwdU", // Corrected: Annual Price ID
+    features: ["Everything in Monthly", "Save $15 per year (25% off)", "Seasonal packs included", "New drops every Sunday", "Cancel anytime"],
+    priceId: "price_1Sh9A6RzWblq3ch1IddHrwdU",
     popular: true,
-    popularLabel: "3 Months Free", // Corrected: 25% off = 3 months free ($15 off $60)
+    popularLabel: "3 Months Free",
+    cta: "Get Annual (Save 25%)",
   },
 ];
+
+
+
+
 
 const faqs = [
   { question: "What makes HuePress different from free sites?", answer: "We focus on quality over quantity. Every design features therapy-grade bold lines, no ads, instant downloads, and a curated aesthetic you'd be proud to display on your fridge." },
@@ -136,7 +142,7 @@ export default function PricingPage() {
                   onClick={() => handleSubscribe(plan.priceId)}
                   isLoading={loading === plan.priceId}
                 >
-                  {isSubscriber ? "Already a Member" : "Get Started"}
+                  {isSubscriber ? "Already a Member" : plan.cta}
                 </Button>
                 {!isSubscriber && !plan.popular && (
                    <p className="text-center text-xs text-gray-400 mt-2">Cancel anytime</p>
@@ -144,9 +150,14 @@ export default function PricingPage() {
               </div>
             ))}
           </div>
-          <div className="text-center mt-12 flex items-center justify-center gap-2 text-gray-400 text-sm">
-            <Lock className="w-4 h-4" strokeWidth={1.5} />
-            Secure checkout powered by Stripe · Cancel anytime · No hidden fees
+          <div className="text-center mt-12 flex flex-col gap-4">
+            <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+              <Lock className="w-4 h-4" strokeWidth={1.5} />
+              Secure checkout powered by Stripe · Cancel anytime · No hidden fees
+            </div>
+             <p className="text-sm font-medium text-ink bg-primary/5 inline-block mx-auto px-4 py-2 rounded-full border border-primary/10">
+               Instant access to 500+ designs, unlimited downloads, high-res vector PDFs.
+             </p>
           </div>
         </div>
       </section>
@@ -156,7 +167,8 @@ export default function PricingPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <p className="text-gray-500 mb-2">Trusted by</p>
-            <p className="font-serif text-h1 text-ink">500+ Happy Families</p>
+            <p className="font-serif text-h1 text-ink mb-4">500+ Happy Families</p>
+            <p className="text-gray-500 max-w-lg mx-auto">Used at home, in classrooms, and in pediatric OT sessions.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {userTypes.map((type, index) => (

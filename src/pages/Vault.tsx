@@ -70,11 +70,11 @@ const mockAssets = [
 ];
 
 const categories = [
-  { label: "Animals", value: "Animals" },
-  { label: "Fantasy", value: "Fantasy" },
-  { label: "Nature", value: "Nature" },
-  { label: "Vehicles", value: "Vehicles" },
-  { label: "Holidays", value: "Holidays" },
+  { label: "Animals (120)", value: "Animals" },
+  { label: "Fantasy (90)", value: "Fantasy" },
+  { label: "Nature (85)", value: "Nature" },
+  { label: "Vehicles (40)", value: "Vehicles" },
+  { label: "Holidays (65)", value: "Holidays" },
 ];
 
 const skills = [
@@ -108,7 +108,12 @@ function FreeSampleCard() {
     <div className="bg-gradient-to-br from-primary/5 to-secondary/5 border-2 border-dashed border-primary/30 rounded-xl p-4 flex flex-col items-center justify-center text-center h-full min-h-[280px]">
       <Gift className="w-8 h-8 text-primary mb-3" strokeWidth={1.5} />
       <h3 className="font-serif font-bold text-ink mb-1">Free Sample Pack</h3>
-      <p className="text-xs text-gray-500 mb-4">Try 3 pages free, no credit card</p>
+      <div className="flex gap-2 my-2 justify-center opacity-80">
+         <div className="w-10 h-14 bg-white border border-gray-200 shadow-sm rounded-sm"></div>
+         <div className="w-10 h-14 bg-white border border-gray-200 shadow-sm rounded-sm -mt-2"></div>
+         <div className="w-10 h-14 bg-white border border-gray-200 shadow-sm rounded-sm"></div>
+      </div>
+      <p className="text-xs text-gray-500 mb-4 px-2">Includes: 1 Calm, 1 Focus, 1 Bold page. Instant link via email.</p>
       <form onSubmit={handleSubmit} className="w-full space-y-2">
         <input
           type="email"
@@ -119,7 +124,7 @@ function FreeSampleCard() {
           className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none"
         />
         <Button variant="primary" size="sm" className="w-full" type="submit">
-          Get Free Pages
+          Get 3 Free Pages
         </Button>
       </form>
     </div>
@@ -203,10 +208,15 @@ export default function VaultPage() {
         </div>
 
         {/* Results Count */}
-        <div className="mb-4 flex items-center justify-between">
-          <p className="text-sm text-gray-500">
-            {isLoading ? "Searching..." : `${filteredAssets.length} designs`}
-          </p>
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+             <p className="text-sm font-medium text-ink">
+               {isLoading ? "Searching..." : isSubscriber ? `${filteredAssets.length} designs` : "6 free previews, unlock 500+"}
+             </p>
+             {!isSubscriber && (
+               <p className="text-xs text-secondary mt-1">Members get unlimited downloads, new drops every Sunday.</p>
+             )}
+          </div>
           {(searchQuery || selectedCategory || selectedSkill) && (
             <button 
               onClick={() => {

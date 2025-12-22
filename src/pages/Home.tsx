@@ -11,7 +11,6 @@ import {
   Frown,
   Puzzle,
   Gift,
-  CreditCard,
   Printer,
   Heart
 } from "lucide-react";
@@ -134,17 +133,20 @@ export default function HomePage() {
               </p>
               
               {/* Primary CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
-                <a href="#free-sample">
-                  <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-xl shadow-primary/20 hover:scale-105 transition-all">
-                    Get 3 Free Pages
-                  </Button>
-                </a>
-                <Link to="/pricing">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto border-2 hover:bg-gray-50">
-                    Join for $5/mo
-                  </Button>
-                </Link>
+              <div className="flex flex-col gap-4 mb-8">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                  <a href="#free-sample">
+                    <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+                      Get 3 Free Pages
+                    </Button>
+                  </a>
+                  <Link to="/pricing">
+                    <Button variant="outline" size="lg" className="w-full sm:w-auto border-2 hover:bg-gray-50">
+                      Join for $5/mo
+                    </Button>
+                  </Link>
+                </div>
+                <p className="text-sm text-gray-400 font-medium">No credit card. We email an instant download link.</p>
               </div>
 
               {/* Trust/Social Proof - replacing the cluttered form */}
@@ -185,6 +187,26 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Trust Strip - P1 Item 7 */}
+      <section className="bg-white border-b border-gray-100 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="grid md:grid-cols-3 gap-6 text-center divide-y md:divide-y-0 md:divide-x divide-gray-100">
+              <div className="px-4 py-2">
+                 <p className="text-sm font-bold text-ink mb-1">"The only way I get 20 mins of peace."</p>
+                 <p className="text-xs text-gray-400 uppercase tracking-wide opacity-60">Sarah, Parent</p>
+              </div>
+              <div className="px-4 py-2">
+                 <p className="text-sm font-bold text-ink mb-1">"Perfect for my fine-motor groups."</p>
+                 <p className="text-xs text-gray-400 uppercase tracking-wide opacity-60">Michelle, O.T.</p>
+              </div>
+              <div className="px-4 py-2">
+                 <p className="text-sm font-bold text-ink mb-1">"Zero ads, safe for my classroom."</p>
+                 <p className="text-xs text-gray-400 uppercase tracking-wide opacity-60">Mr. D, Teacher</p>
+              </div>
+           </div>
+        </div>
+      </section>
+
       {/* Free Sample - Full Width Strip - Better Integrated */}
       <section id="free-sample" className="bg-secondary/5 border-b border-secondary/10 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -208,10 +230,12 @@ export default function HomePage() {
             {/* Step 1 */}
             <div className="bg-accent rounded-2xl p-6 text-center">
               <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center mx-auto mb-4">
-                <CreditCard className="w-7 h-7 text-white" strokeWidth={1.5} />
+                <Gift className="w-7 h-7 text-white" strokeWidth={1.5} />
               </div>
-              <h3 className="font-bold text-ink text-lg mb-2">1. Join the Club</h3>
-              <p className="text-gray-500 text-sm">$5/mo for unlimited access. Cancel anytime, no questions.</p>
+              <h3 className="font-bold text-ink text-lg mb-2">1. Get 3 Free Pages</h3>
+              <p className="text-gray-500 text-sm">
+                No credit card needed. Just enter your email and get an instant download link.
+              </p>
             </div>
             
             {/* Step 2 */}
@@ -220,7 +244,7 @@ export default function HomePage() {
                 <Printer className="w-7 h-7 text-white" strokeWidth={1.5} />
               </div>
               <h3 className="font-bold text-ink text-lg mb-2">2. Pick & Print</h3>
-              <p className="text-gray-500 text-sm">Download any PDF. Hit print. Done in 60 seconds.</p>
+              <p className="text-gray-500 text-sm">Download any PDF on your phone or computer. Hits the printer in 60 seconds.</p>
             </div>
             
             {/* Step 3 */}
@@ -229,7 +253,7 @@ export default function HomePage() {
                 <Heart className="w-7 h-7 text-white" strokeWidth={1.5} />
               </div>
               <h3 className="font-bold text-ink text-lg mb-2">3. Enjoy the Calm</h3>
-              <p className="text-gray-500 text-sm">Kids color happily. You get a peaceful moment.</p>
+              <p className="text-gray-500 text-sm">Bold lines and low clutter mean kids colour happily while you get a break.</p>
             </div>
           </div>
         </div>
@@ -279,6 +303,19 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Mid-Scroll CTA Bar - P1 Item 11 */}
+      <section className="bg-ink text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+           <div>
+              <h3 className="font-serif text-2xl mb-1">Ready for a calmer 10 minutes?</h3>
+              <p className="text-white/70 text-sm">Grab the free pack and see the difference.</p>
+           </div>
+           <a href="#free-sample">
+             <Button variant="primary" className="shadow-lg shadow-white/10 hover:scale-105 transition-transform">Get 3 Free Pages</Button>
+           </a>
+        </div>
+      </section>
+
       {/* Vault Preview - Real thumbnails */}
       <section className="py-16 lg:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -312,32 +349,89 @@ export default function HomePage() {
            </div>
           <div className="text-center mt-10">
             <Link to="/vault">
-              <Button variant="primary" size="lg">View All Designs →</Button>
+              <Button variant="primary" size="lg">Unlock 500+ Designs →</Button>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Printing & Use Rights + Values */}
+      {/* Print Quality Proof - P1 Item 10 */}
+      <section className="py-16 bg-gray-50 border-y border-gray-200">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+             <h2 className="font-serif text-2xl text-ink">Why "Free" Sites Cost More</h2>
+             <p className="text-gray-500">Don't waste ink on pixelated junk.</p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+             {/* Bad Side */}
+             <div className="bg-white p-6 rounded-2xl border border-gray-200 relative overflow-hidden group">
+                <div className="absolute top-4 right-4 bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-full">THEIR FREEBIES</div>
+                <div className="h-48 bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+                   {/* Simulated pixelation */}
+                   <div className="w-full h-full bg-[url('/thumbnails/thumb_whale_1766355003894.png')] bg-cover blur-[2px] opacity-60 scale-110 grayscale"></div>
+                </div>
+                <h3 className="font-bold text-gray-400 mb-2">Pixelated & Blurry</h3>
+                <p className="text-sm text-gray-400">Jagged edges that look awful when printed.</p>
+             </div>
+
+             {/* Good Side */}
+             <div className="bg-white p-6 rounded-2xl border-2 border-success/20 ring-4 ring-success/5 relative overflow-hidden shadow-lg">
+                <div className="absolute top-4 right-4 bg-success text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                   <Sparkles className="w-3 h-3" /> HUEPRESS
+                </div>
+                <div className="h-48 bg-white rounded-lg mb-4 flex items-center justify-center overflow-hidden border border-gray-100">
+                   <img src="/thumbnails/thumb_whale_1766355003894.png" className="w-full h-full object-cover" />
+                </div>
+                <h3 className="font-bold text-ink mb-2">Vector-Sharp Lines</h3>
+                <p className="text-sm text-gray-600">Crisp, professional outlines even at poster size.</p>
+             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Printing & Use Rights (Scannable) - P1 Item 9 */}
       <section className="py-20 bg-white" id="rights">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-           <div className="bg-ink/5 rounded-3xl p-8 md:p-12 text-center">
-              <h3 className="font-serif text-2xl text-ink mb-6">Yes, you can print these for your class.</h3>
-              <div className="grid md:grid-cols-3 gap-8">
-                 <div>
-                    <div className="text-secondary font-bold mb-2">Parents</div>
-                    <p className="text-sm text-gray-600">Print unlimited copies for your own kids. Fridge, wall, grandma's house—go for it.</p>
+           <div className="bg-ink/5 rounded-3xl p-8 md:p-12">
+              <div className="text-center mb-10">
+                <h3 className="font-serif text-2xl text-ink mb-2">Yes, you can print these.</h3>
+                <p className="text-gray-500">Simple rights for everyone.</p>
+              </div>
+              
+              <div className="grid md:grid-cols-3 gap-6">
+                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="text-secondary font-bold mb-4 flex items-center gap-2">
+                       <Heart className="w-4 h-4 fill-secondary" /> Parents
+                    </div>
+                    <ul className="space-y-3 text-sm text-gray-600 mb-4">
+                       <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-secondary mt-1.5"></div>Unlimited prints at home</li>
+                       <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-secondary mt-1.5"></div>Fridge, wall, gifts</li>
+                    </ul>
+                    <p className="text-xs text-gray-400 pt-4 border-t border-gray-100">Strictly no resale</p>
                  </div>
-                 <div>
-                    <div className="text-secondary font-bold mb-2">Teachers</div>
-                    <p className="text-sm text-gray-600">Use freely in your own classroom. Ideal for early finishers and quiet corners.</p>
+                 
+                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="text-primary font-bold mb-4 flex items-center gap-2">
+                       <Printer className="w-4 h-4 fill-primary" /> Teachers
+                    </div>
+                    <ul className="space-y-3 text-sm text-gray-600 mb-4">
+                       <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5"></div>Print for your full class</li>
+                       <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5"></div>Use for quiet time</li>
+                    </ul>
+                    <p className="text-xs text-gray-400 pt-4 border-t border-gray-100">Not for other teachers</p>
                  </div>
-                 <div>
-                    <div className="text-secondary font-bold mb-2">Therapists</div>
-                    <p className="text-sm text-gray-600">Print for sessions and homework. Give clients a high-quality takeaway.</p>
+
+                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="text-ink font-bold mb-4 flex items-center gap-2">
+                       <Sparkles className="w-4 h-4 fill-ink" /> Therapists
+                    </div>
+                    <ul className="space-y-3 text-sm text-gray-600 mb-4">
+                       <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-ink mt-1.5"></div>Use in client sessions</li>
+                       <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-ink mt-1.5"></div>Send home as homework</li>
+                    </ul>
+                    <p className="text-xs text-gray-400 pt-4 border-t border-gray-100">Single professional use</p>
                  </div>
               </div>
-              <p className="mt-8 text-xs text-gray-400 uppercase tracking-wide">Standard License • Commercial Resale Prohibited</p>
            </div>
         </div>
       </section>
