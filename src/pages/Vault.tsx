@@ -157,7 +157,7 @@ export default function VaultPage() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSkill, setSelectedSkill] = useState("");
   const [sortBy, setSortBy] = useState("newest");
-  const [showFreeOnly, setShowFreeOnly] = useState(false);
+  const [showFreeSamples, setShowFreeSamples] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -180,6 +180,10 @@ export default function VaultPage() {
     setTimeout(() => setIsLoading(false), 200);
   };
 
+  // Define which assets are free samples (Mock logic)
+  // In real app, this would be a property on the asset
+  const freeSampleIds = ["1", "3", "5"]; // Capybara, T-Rex, Butterfly
+
   // Filter assets based on search, category, and skill
   const filteredAssets = useMemo(() => {
     return mockAssets.filter((asset) => {
@@ -188,17 +192,21 @@ export default function VaultPage() {
         asset.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesCategory = selectedCategory === "" || asset.category === selectedCategory;
       const matchesSkill = selectedSkill === "" || asset.skill === selectedSkill;
-      // Mock "Free" check - in reality this would check asset.isLocked === false
-      // For demo, let's say "Capybara" (id 1) is free
-      const isFree = asset.id === "1" || !asset.isLocked; 
-      const matchesFree = !showFreeOnly || isFree;
-
-      return matchesSearch && matchesCategory && matchesSkill && matchesFree;
+      
+      return matchesSearch && matchesCategory && matchesSkill;
     }).sort((a, b) => {
+      // If "Free Sample" toggle is ON, pin free samples to top
+      if (showFreeSamples) {
+        const isAFree = freeSampleIds.includes(a.id);
+        const isBFree = freeSampleIds.includes(b.id);
+        if (isAFree && !isBFree) return -1;
+        if (!isAFree && isBFree) return 1;
+      }
+
       if (sortBy === "newest") return (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0);
-      return 0; // refined sort logic can be added later
+      return 0; 
     });
-  }, [searchQuery, selectedCategory, selectedSkill]);
+  }, [searchQuery, selectedCategory, selectedSkill, sortBy, showFreeSamples]);
 
   const showFreeSampleBanner = !isSubscriber;
 
@@ -241,14 +249,18 @@ export default function VaultPage() {
         {/* Sorting & Free Toggle */}
         <div className="flex items-center justify-between mb-6">
            <button
-             onClick={() => setShowFreeOnly(!showFreeOnly)}
+             onClick={() => setShowFreeSamples(!showFreeSamples)}
              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-               showFreeOnly
-                 ? "bg-primary text-white border border-primary"
-                 : "bg-white text-ink border border-gray-200 hover:border-primary"
+               showFreeSamples
+                 ? "bg-ink text-white shadow-md ring-1 ring-ink ring-offset-1"
+                 : "bg-white text-ink border border-gray-200 hover:border-ink/30"
              }`}
            >
-             {showFreeOnly && <Check className="w-3.5 h-3.5" />}
+             {showFreeSamples ? (
+               <Check className="w-3.5 h-3.5" strokeWidth={3} />
+             ) : (
+               <div className="w-3.5 h-3.5 rounded-full border border-current opacity-30"></div>
+             )}
              Free samples
            </button>
 
@@ -292,15 +304,19 @@ export default function VaultPage() {
         ) : filteredAssets.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-8">
             {/* Resource Cards with Banner Injection */}
-            {filteredAssets.map((asset, index) => (
+            {filteredAssets.map((asset, index) => {
+              // Determine if free sample
+              const isFreeSample = freeSampleIds.includes(asset.id);
+              return (
               <React.Fragment key={asset.id}>
                  <ResourceCard
                     id={asset.id}
                     title={asset.title}
                     imageUrl={asset.imageUrl}
                     tags={asset.tags}
-                    isLocked={!isSubscriber}
+                    isLocked={!isSubscriber && !isFreeSample}
                     isNew={asset.isNew}
+                    isFree={isFreeSample}
                   />
                   {/* Inject Banner after 4th item (approx row 1 on desktop, row 2 on mobile) */}
                   {showFreeSampleBanner && index === 3 && (
@@ -309,7 +325,7 @@ export default function VaultPage() {
                     </div>
                   )}
               </React.Fragment>
-            ))}
+            )})}
           </div>
         ) : (
           <div className="text-center py-16">

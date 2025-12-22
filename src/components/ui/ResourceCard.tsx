@@ -7,6 +7,7 @@ export interface ResourceCardProps {
   tags?: string[];
   isLocked?: boolean;
   isNew?: boolean;
+  isFree?: boolean;
 }
 
 export function ResourceCard({
@@ -16,6 +17,7 @@ export function ResourceCard({
   tags = [],
   isLocked = true,
   isNew = false,
+  isFree = false,
 }: ResourceCardProps) {
   return (
     <article className="group relative">
@@ -37,12 +39,20 @@ export function ResourceCard({
               </div>
             )}
 
-            {/* NEW Badge - positioned to not obscure art */}
-            {isNew && (
-              <div className="absolute top-3 left-3 bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10">
-                NEW
-              </div>
-            )}
+            {/* Badges container */}
+            <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
+              {isFree && (
+                <div className="bg-success text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                  FREE
+                </div>
+              )}
+              {isNew && (
+                <div className="bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
+                  NEW
+                </div>
+              )}
+            </div>
 
 
 

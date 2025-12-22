@@ -8,13 +8,16 @@ export const StickyCTA = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Logic: Show after 300px, Hide when near bottom (footer)
       const scrollY = window.scrollY;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       const footerOffset = 400; // Approximate footer height + buffer
 
-      const isScrolledPastHero = scrollY > 300;
+      // Show after 20% of the page or 800px, whichever is smaller (to ensure it shows on long pages)
+      // but definitely past the hero (usually ~600-800px)
+      const threshold = Math.min(documentHeight * 0.2, 1000); 
+      
+      const isScrolledPastHero = scrollY > threshold;
       const isNotNearFooter = (scrollY + windowHeight) < (documentHeight - footerOffset);
 
       if (isScrolledPastHero && isNotNearFooter) {
@@ -27,10 +30,13 @@ export const StickyCTA = () => {
     window.addEventListener("scroll", handleScroll);
     handleScroll(); // Check initial state
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [location.pathname]); // Re-check on route change
+  }, [location.pathname]);
 
   // Don't show on admin pages
   if (location.pathname.startsWith('/admin')) return null;
+
+  const isHomePage = location.pathname === "/";
+  const freeSampleLink = isHomePage ? "#free-sample" : "/#free-sample";
 
   return (
     <div
@@ -43,7 +49,7 @@ export const StickyCTA = () => {
           Join for $5/mo
         </Button>
       </Link>
-      <a href="#free-sample" className="flex-1">
+      <a href={freeSampleLink} className="flex-1">
         <Button variant="secondary" className="w-full shadow-sm text-sm px-2 bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary/20">
           Get 3 Free Pages
         </Button>
