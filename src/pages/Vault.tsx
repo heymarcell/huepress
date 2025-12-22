@@ -304,7 +304,7 @@ export default function VaultPage() {
                     tags={asset.tags}
                     isLocked={!isSubscriber && !isFreeSample}
                     isNew={asset.isNew}
-                    isFree={isFreeSample}
+
                   />
                   {/* Inject Banner after 4th item (approx row 1 on desktop, row 2 on mobile) */}
                   {showFreeSampleBanner && index === 3 && (
