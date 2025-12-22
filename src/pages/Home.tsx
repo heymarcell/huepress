@@ -131,28 +131,33 @@ export default function HomePage() {
               </p>
               
               {/* Primary CTAs */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-6">
+              {/* Primary CTAs */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
                 <Link to="/vault">
-                  <Button variant="primary" size="lg">
+                  <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-xl shadow-primary/20 hover:scale-105 transition-all">
                     Explore The Vault
                   </Button>
                 </Link>
                 <Link to="/pricing">
-                  <Button variant="outline" size="lg">
+                  <Button variant="outline" size="lg" className="w-full sm:w-auto border-2 hover:bg-gray-50">
                     Join the Club
                   </Button>
                 </Link>
               </div>
 
-              {/* Free Sample CTA */}
-              <div className="max-w-md mx-auto lg:mx-0">
-                <p className="text-sm text-gray-400 mb-2">Not ready to commit?</p>
-                <FreeSampleCapture />
+              {/* Trust/Social Proof - replacing the cluttered form */}
+              <div className="flex items-center justify-center lg:justify-start gap-4 text-sm text-gray-500">
+                 <div className="flex -space-x-2">
+                    {[1,2,3,4].map(i => (
+                      <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center overflow-hidden`}>
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`} alt="User" />
+                      </div>
+                    ))}
+                 </div>
+                 <p>Join <strong className="text-ink">500+ parents</strong> printing today.</p>
               </div>
 
-              <p className="mt-6 text-xs text-gray-400">
-                ✓ 500+ designs · ✓ Vector PDFs · ✓ $5/mo, cancel anytime
-              </p>
+
             </div>
 
             {/* Right: Hero Image - Real thumbnails on white paper */}
@@ -168,6 +173,26 @@ export default function HomePage() {
                 </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Free Sample - Minimal Strip (Lead Gen) */}
+      <section className="bg-white border-b border-gray-100 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                 <div className="p-2 bg-accent rounded-lg text-primary">
+                    <Gift size={20} />
+                 </div>
+                 <div>
+                    <h3 className="font-bold text-ink text-sm">Want to try before you buy?</h3>
+                    <p className="text-gray-500 text-xs text-left">Get 3 free pages sent to your inbox.</p>
+                 </div>
+              </div>
+              <div className="w-full md:w-auto">
+                 <FreeSampleCapture />
+              </div>
+           </div>
         </div>
       </section>
 
