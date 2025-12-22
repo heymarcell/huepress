@@ -157,7 +157,7 @@ export default function VaultPage() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSkill, setSelectedSkill] = useState("");
   const [sortBy, setSortBy] = useState("newest");
-  const [showFreeSamples, setShowFreeSamples] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -205,18 +205,10 @@ export default function VaultPage() {
       
       return matchesSearch && matchesCategory && matchesSkill;
     }).sort((a, b) => {
-      // If "Free Sample" toggle is ON, pin free samples to top
-      if (showFreeSamples) {
-        const isAFree = freeSampleIds.includes(a.id);
-        const isBFree = freeSampleIds.includes(b.id);
-        if (isAFree && !isBFree) return -1;
-        if (!isAFree && isBFree) return 1;
-      }
-
       if (sortBy === "newest") return (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0);
       return 0; 
     });
-  }, [searchQuery, selectedCategory, selectedSkill, sortBy, showFreeSamples]);
+  }, [searchQuery, selectedCategory, selectedSkill, sortBy]);
 
   const showFreeSampleBanner = !isSubscriber;
 
@@ -258,21 +250,7 @@ export default function VaultPage() {
 
         {/* Sorting & Free Toggle */}
         <div className="flex items-center justify-between mb-6">
-           <button
-             onClick={() => setShowFreeSamples(!showFreeSamples)}
-             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-               showFreeSamples
-                 ? "bg-ink text-white shadow-md ring-1 ring-ink ring-offset-1"
-                 : "bg-white text-ink border border-gray-200 hover:border-ink/30"
-             }`}
-           >
-             {showFreeSamples ? (
-               <Check className="w-3.5 h-3.5" strokeWidth={3} />
-             ) : (
-               <div className="w-3.5 h-3.5 rounded-full border border-current opacity-30"></div>
-             )}
-             Free samples
-           </button>
+
 
            <div className="flex items-center gap-2">
               <ArrowUpDown className="w-4 h-4 text-gray-400" />
