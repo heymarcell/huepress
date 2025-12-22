@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useSubscription } from "@/lib/auth";
 import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button } from "@/components/ui";
 import { Gift, Sparkles } from "lucide-react";
 import SEO from "@/components/SEO";
@@ -126,6 +127,7 @@ function FreeSampleCard() {
 }
 
 export default function VaultPage() {
+  const { isSubscriber } = useSubscription();
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSkill, setSelectedSkill] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -239,7 +241,7 @@ export default function VaultPage() {
                 title={asset.title}
                 imageUrl={asset.imageUrl}
                 tags={asset.tags}
-                isLocked={asset.isLocked}
+                isLocked={!isSubscriber}
                 isNew={asset.isNew}
               />
             ))}
@@ -274,13 +276,15 @@ export default function VaultPage() {
           </div>
         )}
 
-        {/* Bottom CTA */}
-        <div className="mt-12 text-center">
-          <p className="text-gray-500 mb-4">Ready to unlock the full vault?</p>
-          <Link to="/pricing">
-            <Button variant="primary" size="lg">Join the Club — $5/mo</Button>
-          </Link>
-        </div>
+        {/* Bottom CTA - Hide for subscribers */}
+        {!isSubscriber && (
+          <div className="mt-12 text-center">
+            <p className="text-gray-500 mb-4">Ready to unlock the full vault?</p>
+            <Link to="/pricing">
+              <Button variant="primary" size="lg">Join the Club — $5/mo</Button>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

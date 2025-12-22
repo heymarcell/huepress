@@ -24,10 +24,13 @@ export async function createCheckoutSession(priceId: string, authToken: string, 
   window.location.href = data.url;
 }
 
-export async function createPortalSession() {
+export async function createPortalSession(authToken: string) {
   const response = await fetch(`${API_URL}/api/portal`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${authToken}`
+    },
   });
 
   if (!response.ok) {

@@ -1,5 +1,6 @@
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useUser } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useUser, useAuth } from "@clerk/clerk-react";
 import { Link } from "react-router-dom";
+import { createPortalSession } from "./stripe";
 
 export function useSubscription() {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -15,7 +16,23 @@ export function useSubscription() {
   };
 }
 
+
+
 export function AuthButtons() {
+  const { isSubscriber } = useSubscription();
+  const { getToken } = useAuth();
+
+  const handleManageSubscription = async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      await createPortalSession(token);
+    } catch (error) {
+      console.error("Failed to open portal:", error);
+      alert("Something went wrong. Please try again.");
+    }
+  };
+
   return (
     <div className="flex items-center gap-4">
       <SignedOut>
@@ -31,6 +48,14 @@ export function AuthButtons() {
         </SignUpButton>
       </SignedOut>
       <SignedIn>
+        {isSubscriber && (
+          <button 
+            onClick={handleManageSubscription}
+            className="text-sm font-medium text-gray-500 hover:text-ink mr-2"
+          >
+            Manage Subscription
+          </button>
+        )}
         <UserButton afterSignOutUrl="/" />
       </SignedIn>
     </div>
