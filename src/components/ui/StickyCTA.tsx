@@ -45,7 +45,7 @@ export const StickyCTA = () => {
       }`}
     >
       <Link to="/pricing" className="flex-1">
-        <Button variant="primary" className="w-full shadow-lg font-bold">
+        <Button variant="primary" className="w-full shadow-sm h-[48px] font-bold">
           Join for $5/mo
         </Button>
       </Link>

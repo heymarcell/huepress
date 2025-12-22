@@ -171,12 +171,12 @@ export default function HomePage() {
               <div className="mb-8">
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                   <Link to="/pricing">
-                    <Button variant="primary" size="lg" className="shadow-xl shadow-primary/20 hover:scale-105 transition-all w-full sm:w-auto">
+                    <Button variant="primary" size="lg" className="shadow-xl shadow-primary/20 hover:scale-105 transition-all w-full sm:w-auto h-[56px]">
                       Join for $5/mo
                     </Button>
                   </Link>
                   <a href="#free-sample">
-                    <Button variant="outline" size="lg" className="shadow-md hover:scale-105 transition-all w-full sm:w-auto">
+                    <Button variant="outline" size="lg" className="shadow-md hover:scale-105 transition-all w-full sm:w-auto h-[56px]">
                       Get 3 Free Pages
                     </Button>
                   </a>
