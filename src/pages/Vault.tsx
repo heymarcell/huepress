@@ -132,13 +132,13 @@ function FreeSampleBanner() {
             placeholder="you@example.com"
             required
             aria-label="Email address for free sample pack"
-            className="flex-1 sm:w-64 px-4 py-3 text-sm bg-white border border-gray-200 rounded-xl text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-sm"
+            className="flex-1 sm:w-64 px-4 py-3 text-sm bg-white border border-gray-200 rounded-md text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-sm"
           />
           <Button 
             variant="primary" 
             size="lg" 
             type="submit" 
-            className="whitespace-nowrap shadow-lg !bg-white !text-secondary hover:!bg-gray-50 border-none !rounded-xl"
+            className="whitespace-nowrap shadow-lg !bg-white !text-secondary hover:!bg-gray-50 border-none !rounded-md"
             rightIcon={<Send className="w-4 h-4" />}
           >
             Send Free Pages
