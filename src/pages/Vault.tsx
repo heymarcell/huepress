@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
-import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button } from "@/components/ui";
-import { Gift, Sparkles, Send } from "lucide-react";
+import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button, StickyCTA } from "@/components/ui";
+import { Gift, Sparkles, Send, ArrowUpDown } from "lucide-react";
 import SEO from "@/components/SEO";
 
 // Mock data with real thumbnails
@@ -116,8 +116,8 @@ function FreeSampleBanner() {
              <Gift className="w-8 h-8 text-white" strokeWidth={1.5} />
           </div>
           <div>
-            <h3 className="font-serif text-2xl font-bold mb-1">Try before you join?</h3>
-            <p className="text-white/90 text-sm md:text-base">Get 3 free high-res pages sent to your email. No credit card required.</p>
+            <h3 className="font-serif text-2xl font-bold mb-1">Try 3 Free Pages</h3>
+            <p className="text-white/90 text-sm md:text-base">See the difference bold lines make. Sent to your inbox instantly.</p>
           </div>
         </div>
         
@@ -153,6 +153,8 @@ export default function VaultPage() {
   const { isSubscriber } = useSubscription();
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSkill, setSelectedSkill] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
+  const [showFreeOnly, setShowFreeOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -183,7 +185,15 @@ export default function VaultPage() {
         asset.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesCategory = selectedCategory === "" || asset.category === selectedCategory;
       const matchesSkill = selectedSkill === "" || asset.skill === selectedSkill;
-      return matchesSearch && matchesCategory && matchesSkill;
+      // Mock "Free" check - in reality this would check asset.isLocked === false
+      // For demo, let's say "Capybara" (id 1) is free
+      const isFree = asset.id === "1" || !asset.isLocked; 
+      const matchesFree = !showFreeOnly || isFree;
+
+      return matchesSearch && matchesCategory && matchesSkill && matchesFree;
+    }).sort((a, b) => {
+      if (sortBy === "newest") return (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0);
+      return 0; // refined sort logic can be added later
     });
   }, [searchQuery, selectedCategory, selectedSkill]);
 
@@ -223,6 +233,32 @@ export default function VaultPage() {
               onCategoryChange={handleSkillChange}
             />
           </div>
+        </div>
+
+        {/* Sorting & Free Toggle */}
+        <div className="flex items-center justify-between mb-6">
+           <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={showFreeOnly} 
+                onChange={(e) => setShowFreeOnly(e.target.checked)}
+                className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
+              />
+              <span className="text-sm font-medium text-ink">Show Free Samples</span>
+           </label>
+
+           <div className="flex items-center gap-2">
+              <ArrowUpDown className="w-4 h-4 text-gray-400" />
+              <select 
+                value={sortBy} 
+                onChange={(e) => setSortBy(e.target.value)}
+                className="text-sm font-medium text-ink bg-transparent border-none outline-none focus:ring-0 cursor-pointer"
+              >
+                 <option value="newest">Newest First</option>
+                 <option value="popular">Most Popular</option>
+                 <option value="calmest">Calmest</option>
+              </select>
+           </div>
         </div>
 
         {/* Clear filters button - only when filters are active */}
@@ -305,7 +341,7 @@ export default function VaultPage() {
           <div className="mt-12 text-center">
             <p className="text-gray-500 mb-4">Ready to unlock the full vault?</p>
             <Link to="/pricing">
-              <Button variant="primary" size="lg">Join the Club — $5/mo</Button>
+              <Button variant="primary" size="lg">Join for $5/mo</Button>
             </Link>
           </div>
         )}
@@ -323,6 +359,7 @@ export default function VaultPage() {
           </p>
         </div>
       </div>
+      <StickyCTA />
     </div>
   );
 }

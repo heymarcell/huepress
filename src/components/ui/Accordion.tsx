@@ -32,10 +32,11 @@ function AccordionItem({ question, answer, isOpen, onToggle }: AccordionItemProp
 
 interface AccordionProps {
   items: { question: string; answer: string }[];
+  defaultOpenIndex?: number;
 }
 
-export function Accordion({ items }: AccordionProps) {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+export function Accordion({ items, defaultOpenIndex }: AccordionProps) {
+  const [openIndex, setOpenIndex] = useState<number | null>(typeof defaultOpenIndex === 'number' ? defaultOpenIndex : null);
 
   return (
     <div className="space-y-4">
