@@ -299,7 +299,7 @@ export default function HomePage() {
       </section>
 
       {/* Free Sample - Full Width Strip - Better Integrated */}
-      <section id="free-sample" className="bg-secondary/5 border-b border-secondary/10 py-12">
+      <section id="free-sample" className="bg-secondary/5 border-b border-secondary/10 py-12 scroll-mt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
            <div className="flex flex-col lg:flex-row items-center justify-center gap-8 text-center lg:text-left">
               <div className="max-w-sm">
