@@ -70,7 +70,8 @@ function MenuButton({
 
 // Navigation Links
 const navLinks = [
-  { to: "/vault", label: "The Vault" },
+  { to: "/vault", label: "Browse Designs" },
+  { to: "/#rights", label: "For Therapists" },
   { to: "/pricing", label: "Pricing" },
 ];
 

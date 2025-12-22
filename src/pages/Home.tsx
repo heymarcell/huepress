@@ -119,28 +119,30 @@ export default function HomePage() {
             <div className="text-center lg:text-left">
               <div className="inline-flex items-center gap-2 bg-success/10 text-success-dark px-3 py-1 rounded-full text-sm font-bold mb-6">
                 <span className="w-2 h-2 rounded-full bg-success"></span>
-                Therapist Approved
+                Designed for Fine Motor Skills
               </div>
               <h1 className="font-serif text-display lg:text-5xl text-ink mb-6">
-                From "I'm bored" to{" "}
-                <span className="text-secondary">printing in 60 seconds</span>
+                Print calm in{" "}
+                <span className="text-secondary">60 seconds</span>
               </h1>
-              <p className="text-lg text-gray-500 mb-8 max-w-lg mx-auto lg:mx-0">
-                No ads, no pixels, just bold vector art. Therapy-grade coloring pages 
-                that spark joy and calm the chaos—ready for your printer right now.
+              <p className="text-lg text-gray-500 mb-2 max-w-lg mx-auto lg:mx-0">
+                Bold, beautiful coloring pages your kids can actually finish.
+                No ads, no pixelated prints, just clean lines that work.
+              </p>
+              <p className="text-base text-ink font-medium mb-8">
+                $5/mo, cancel anytime.
               </p>
               
               {/* Primary CTAs */}
-              {/* Primary CTAs */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
-                <Link to="/vault">
+                <a href="#free-sample">
                   <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-xl shadow-primary/20 hover:scale-105 transition-all">
-                    Explore The Vault
+                    Get 3 Free Pages
                   </Button>
-                </Link>
+                </a>
                 <Link to="/pricing">
                   <Button variant="outline" size="lg" className="w-full sm:w-auto border-2 hover:bg-gray-50">
-                    Join the Club
+                    Join for $5/mo
                   </Button>
                 </Link>
               </div>
@@ -184,7 +186,7 @@ export default function HomePage() {
       </section>
 
       {/* Free Sample - Full Width Strip - Better Integrated */}
-      <section className="bg-secondary/5 border-b border-secondary/10 py-12">
+      <section id="free-sample" className="bg-secondary/5 border-b border-secondary/10 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
            <div className="flex flex-col md:flex-row items-center justify-center gap-8 text-center md:text-left">
               <div className="max-w-md">
@@ -284,19 +286,30 @@ export default function HomePage() {
             <h2 className="font-serif text-h1 text-ink mb-4">Peek Inside The Vault</h2>
             <p className="text-gray-500 max-w-2xl mx-auto">Over 500 bold, curated designs across trending themes. New drops every Sunday.</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
-            {featuredItems.map((item) => (
-              <ResourceCard
-                key={item.id}
-                id={item.id}
-                title={item.title}
-                imageUrl={item.imageUrl}
-                tags={item.tags}
-                isLocked={true}
-                isNew={item.isNew}
-              />
-            ))}
-          </div>
+           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+             {/* Showing more items to look impressive - duplicating the list for effect until we have real data */}
+             {[...featuredItems, ...featuredItems, ...featuredItems].slice(0, 12).map((item, idx) => (
+               <ResourceCard
+                 key={`${item.id}-${idx}`}
+                 id={item.id}
+                 title={item.title}
+                 imageUrl={item.imageUrl}
+                 tags={item.tags}
+                 isLocked={true}
+                 isNew={idx < 2} // Only first few are new
+               />
+             ))}
+           </div>
+           
+           {/* Fallback pattern for more items blurred out - Visual trick */}
+           <div className="relative h-24 overflow-hidden mt-4 opacity-50 blur-[2px] pointer-events-none select-none">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+                 {[...featuredItems].map((_, idx) => (
+                   <div key={idx} className="bg-gray-100 rounded-xl h-64"></div>
+                 ))}
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent"></div>
+           </div>
           <div className="text-center mt-10">
             <Link to="/vault">
               <Button variant="primary" size="lg">View All Designs →</Button>
@@ -305,17 +318,54 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Pricing CTA */}
-      <section className="py-16 lg:py-20 bg-gradient-to-br from-primary to-primary-hover text-white">
+      {/* Printing & Use Rights + Values */}
+      <section className="py-20 bg-white" id="rights">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="bg-ink/5 rounded-3xl p-8 md:p-12 text-center">
+              <h3 className="font-serif text-2xl text-ink mb-6">Yes, you can print these for your class.</h3>
+              <div className="grid md:grid-cols-3 gap-8">
+                 <div>
+                    <div className="text-secondary font-bold mb-2">Parents</div>
+                    <p className="text-sm text-gray-600">Print unlimited copies for your own kids. Fridge, wall, grandma's house—go for it.</p>
+                 </div>
+                 <div>
+                    <div className="text-secondary font-bold mb-2">Teachers</div>
+                    <p className="text-sm text-gray-600">Use freely in your own classroom. Ideal for early finishers and quiet corners.</p>
+                 </div>
+                 <div>
+                    <div className="text-secondary font-bold mb-2">Therapists</div>
+                    <p className="text-sm text-gray-600">Print for sessions and homework. Give clients a high-quality takeaway.</p>
+                 </div>
+              </div>
+              <p className="mt-8 text-xs text-gray-400 uppercase tracking-wide">Standard License • Commercial Resale Prohibited</p>
+           </div>
+        </div>
+      </section>
+
+      {/* Pricing CTA - Inline */}
+      <section className="py-20 bg-gradient-to-br from-primary to-primary-hover text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="font-serif text-h1 mb-4">Ready for Fridge-Worthy Art?</h2>
-          <p className="text-white/80 text-lg mb-8 max-w-2xl mx-auto">
-            Join The Club for $5/month and unlock unlimited downloads. Less than a latte for endless quiet time activities.
-          </p>
+          <h2 className="font-serif text-h1 mb-6">Ready for Fridge-Worthy Art?</h2>
+          
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 max-w-2xl mx-auto mb-10 border border-white/20">
+             <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:divide-x md:divide-white/20">
+                <div className="flex-1 text-center md:text-right px-4">
+                   <p className="text-lg font-medium opacity-90">Instant Access</p>
+                   <p className="text-3xl font-bold">500+ Designs</p>
+                </div>
+                 <div className="flex-1 text-center md:text-left px-4">
+                   <p className="text-lg font-medium opacity-90">Fresh Drops</p>
+                   <p className="text-3xl font-bold">Every Sunday</p>
+                </div>
+             </div>
+          </div>
+
           <Link to="/pricing">
-            <Button variant="secondary" size="lg">Join the Club</Button>
+            <Button variant="secondary" size="lg" className="shadow-xl shadow-black/10">Join for $5/mo</Button>
           </Link>
-          <p className="mt-4 text-sm text-white/60">$5/mo, cancel anytime. No questions asked.</p>
+          <p className="mt-6 text-sm text-white/70">
+             Less than a latte. Cancel anytime in one click.
+          </p>
         </div>
       </section>
     </>
