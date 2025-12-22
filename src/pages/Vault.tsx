@@ -164,7 +164,7 @@ export default function VaultPage() {
     });
   }, [searchQuery, selectedCategory, selectedSkill]);
 
-  const showFreeSampleCard = !searchQuery && !selectedCategory && !selectedSkill;
+  const showFreeSampleCard = !isSubscriber && !searchQuery && !selectedCategory && !selectedSkill;
 
   return (
     <div className="bg-gray-50 min-h-screen">
