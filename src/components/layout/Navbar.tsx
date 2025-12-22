@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { AuthButtons } from "@/lib/auth";
 
 // Logo Component - uses SVG from public folder
@@ -76,6 +76,8 @@ const navLinks = [
 
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const isPricingPage = location.pathname === "/pricing";
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all duration-200">
@@ -98,6 +100,14 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+            {/* Contextual CTA for Pricing Page */}
+            {isPricingPage && (
+               <div className="hidden lg:block ml-4 animate-fade-in">
+                  <span className="text-secondary text-sm font-bold bg-secondary/10 px-3 py-1 rounded-full">
+                    Save 25% on Annual
+                  </span>
+               </div>
+            )}
           </div>
 
           {/* Desktop Auth - Flex End */}

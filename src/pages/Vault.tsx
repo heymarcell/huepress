@@ -122,23 +122,25 @@ function FreeSampleBanner() {
         </div>
         
         {/* Right: Form */}
-        <form onSubmit={handleSubmit} className="w-full lg:w-auto flex flex-col sm:flex-row gap-2">
-          <label htmlFor="vault-email" className="sr-only">Email Address</label>
-          <input
-            id="vault-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            required
-            aria-label="Email address for free sample pack"
-            className="flex-1 sm:w-64 px-4 py-3 text-sm bg-white border border-gray-200 rounded-md text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-sm"
-          />
+        <form onSubmit={handleSubmit} className="w-full lg:w-auto flex flex-col sm:flex-row gap-2 items-end">
+          <div className="flex-1 w-full sm:w-auto">
+             <label htmlFor="vault-email" className="block text-xs font-bold text-white/90 mb-1 ml-1">Email address</label>
+             <input
+              id="vault-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="mom@example.com"
+              required
+              aria-label="Email address for free sample pack"
+              className="w-full sm:w-64 px-4 py-3 text-sm bg-white border border-transparent rounded-md text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-sm"
+            />
+          </div>
           <Button 
             variant="primary" 
             size="lg" 
             type="submit" 
-            className="whitespace-nowrap shadow-lg !bg-white !text-secondary hover:!bg-gray-50 border-none !rounded-md"
+            className="w-full sm:w-auto whitespace-nowrap shadow-lg !bg-white !text-secondary hover:!bg-gray-50 border-none !rounded-md h-[46px]" // manual height alignment
             rightIcon={<Send className="w-4 h-4" />}
           >
             Send Free Pages
@@ -341,7 +343,7 @@ export default function VaultPage() {
           <div className="mt-12 text-center">
             <p className="text-gray-500 mb-4">Ready to unlock the full vault?</p>
             <Link to="/pricing">
-              <Button variant="primary" size="lg">Join for $5/mo</Button>
+              <Button variant="primary" size="lg">Join to download</Button>
             </Link>
           </div>
         )}

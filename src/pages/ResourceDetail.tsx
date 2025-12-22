@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useState } from "react";
-import { Button } from "@/components/ui";
+import { Button, StickyCTA } from "@/components/ui";
 import { useSubscription } from "@/lib/auth";
 import { 
   FileText, 
@@ -96,11 +96,20 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
     <div className="space-y-4">
       {/* Primary CTA - Unlock */}
       <Link to="/pricing" className="block">
-        <Button variant="primary" size="lg" className="w-full">
+        <Button variant="primary" size="lg" className="w-full shadow-md">
           <Unlock className="w-5 h-5" />
-          Unlock This PDF
+          Join to download
         </Button>
       </Link>
+      
+      {/* 3-Step Reassurance Micro-row - New for Sprint 3 */}
+      <div className="flex items-center justify-between px-2 text-[10px] text-gray-500 font-medium">
+         <span className="flex items-center gap-1">1. Join</span>
+         <span className="text-gray-300">→</span>
+         <span className="flex items-center gap-1">2. Download PDF</span>
+         <span className="text-gray-300">→</span>
+         <span className="flex items-center gap-1">3. Print & Color</span>
+      </div>
       <p className="text-center text-xs text-gray-400">
         $5/mo, cancel anytime
       </p>
@@ -270,6 +279,7 @@ export default function ResourceDetailPage() {
           </div>
         </div>
       </div>
+      <StickyCTA />
     </div>
   );
 }

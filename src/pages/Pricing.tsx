@@ -262,7 +262,7 @@ export default function PricingPage() {
       <section className="py-16 bg-primary text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="font-serif text-h1 mb-4">Ready to Start Coloring?</h2>
-          <p className="text-white/80 mb-8">Join The Club today and unlock 500+ fridge-worthy designs.</p>
+          <p className="text-white/80 mb-8">Join The Club today and access 500+ fridge-worthy designs.</p>
           <Button variant="secondary" size="lg" onClick={() => handleSubscribe(plans[1].priceId)}>
             Join for $5/mo
           </Button>

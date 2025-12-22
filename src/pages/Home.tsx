@@ -105,27 +105,33 @@ function FreeSampleCapture() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
       <div className="flex flex-col sm:flex-row gap-2">
-      <label htmlFor="email-capture" className="sr-only">
-        Email Address
-      </label>
-      <input
-        id="email-capture"
-        type="email"
-        value={email}
-        onChange={(e) => {
-          setEmail(e.target.value);
-          if (error) setError(null);
-        }}
-        placeholder="you@example.com"
-        aria-label="Email address for free sample pack"
-        className={`flex-1 px-4 py-3 bg-white border rounded-md focus:ring-2 outline-none text-ink placeholder:text-gray-400 ${
-          error ? "border-error focus:border-error focus:ring-error/10" : "border-gray-200 focus:border-secondary focus:ring-secondary/10"
-        }`}
-      />
-      <Button variant="outline" type="submit" className="whitespace-nowrap">
-        <Gift className="w-4 h-4" />
-        Send Me Free Pages
-      </Button>
+      <div className="flex-1">
+        <label htmlFor="email-capture" className="block text-xs font-bold text-gray-700 mb-1 ml-1">
+          Email address
+        </label>
+        <input
+          id="email-capture"
+          type="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (error) setError(null);
+          }}
+          placeholder="mom@example.com"
+          aria-label="Email address for free sample pack"
+          className={`w-full px-4 py-3 bg-white border rounded-md focus:ring-2 outline-none text-ink placeholder:text-gray-400 ${
+            error ? "border-error focus:border-error focus:ring-error/10" : "border-gray-200 focus:border-secondary focus:ring-secondary/10"
+          }`}
+        />
+        <p className="text-[10px] text-gray-500 mt-1 ml-1">No credit card, sent instantly.</p>
+      </div>
+      <div className="mt-6 sm:mt-[22px]"> 
+        {/* Align with input box, accounting for label height */}
+        <Button variant="outline" type="submit" className="whitespace-nowrap h-[50px]">
+          <Gift className="w-4 h-4" />
+          Send Me Free Pages
+        </Button>
+      </div>
       </div>
       {error && (
         <p className="text-xs text-error font-medium flex items-center gap-1">
@@ -135,9 +141,6 @@ function FreeSampleCapture() {
           {error}
         </p>
       )}
-      <p className="text-xs text-gray-400 pl-1">
-        We'll email you a PDF link in 1-2 minutes. No spam.
-      </p>
     </form>
   );
 }
@@ -199,7 +202,7 @@ export default function HomePage() {
                       <img src="/avatars/avatar_mom_2.png" alt="Happy Mom" className="w-full h-full object-cover" />
                     </div>
                  </div>
-                 <p>Join <strong className="text-ink">500+ parents</strong> printing today.</p>
+                 <p>Join <strong className="text-ink">500+ families</strong> printing today.</p>
               </div>
 
 
@@ -231,8 +234,8 @@ export default function HomePage() {
                   ))}
                </div>
                <div className="flex flex-col text-left leading-tight">
-                 <span className="font-bold text-ink">4.9/5 Rating</span>
-                 <span className="text-xs text-gray-500">from 120+ parents & OTs</span>
+                 <span className="font-bold text-ink">4.9/5 from 500+ families</span>
+                 <span className="text-xs text-gray-500">Rated by parents & OTs</span>
                </div>
             </div>
             <p className="text-gray-500 text-sm">
@@ -267,7 +270,7 @@ export default function HomePage() {
            
           <div className="text-center mt-10">
             <Link to="/vault">
-              <Button variant="primary" size="lg">Unlock 500+ Designs →</Button>
+              <Button variant="primary" size="lg">Browse the Vault →</Button>
             </Link>
           </div>
         </div>
