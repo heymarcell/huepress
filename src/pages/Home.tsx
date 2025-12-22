@@ -97,7 +97,7 @@ function FreeSampleCapture() {
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Enter your email"
         required
-        className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
+        className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-secondary focus:ring-2 focus:ring-secondary/10 outline-none text-ink placeholder:text-gray-400"
       />
       <Button variant="outline" type="submit" className="whitespace-nowrap">
         <Gift className="w-4 h-4" />
@@ -183,21 +183,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Free Sample - Minimal Strip (Lead Gen) */}
-      <section className="bg-white border-b border-gray-100 py-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-           <div className="bg-accent/30 border border-primary/10 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 text-center md:text-left">
-              <div className="flex-1">
-                 <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                    <Gift className="w-5 h-5 text-primary" />
-                    <h3 className="font-bold text-ink text-lg">Try before you buy</h3>
-                 </div>
-                 <p className="text-gray-500">Get 3 free therapist-approved pages sent straight to your inbox.</p>
+      {/* Free Sample - Full Width Strip - Better Integrated */}
+      <section className="bg-secondary/5 border-b border-secondary/10 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="flex flex-col md:flex-row items-center justify-center gap-8 text-center md:text-left">
+              <div className="max-w-md">
+                 <h3 className="font-serif text-2xl text-ink mb-2">Not ready to subscribe?</h3>
+                 <p className="text-gray-600">Get a <strong>free sample pack</strong> (3 full-resolution PDFs) sent to your inbox. No credit card required.</p>
               </div>
-              <div className="w-full md:w-auto">
-                 <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-100">
-                    <FreeSampleCapture />
-                 </div>
+              <div className="w-full md:w-auto min-w-[320px]">
+                 <FreeSampleCapture />
               </div>
            </div>
         </div>
