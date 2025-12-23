@@ -17,6 +17,7 @@ import {
 import SEO from "@/components/SEO";
 import { apiClient } from "@/lib/api-client";
 import { StructuredData } from "@/components/StructuredData";
+import { analytics } from "@/lib/analytics";
 
 const mockAsset = {
   id: "1",
@@ -87,6 +88,9 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
       a.click();
       window.URL.revokeObjectURL(url);
       a.remove();
+      
+      // Track successful download
+      analytics.fileDownload(assetId, title);
     } catch (error) {
       console.error("Download error:", error);
       setAlertState({
@@ -101,6 +105,10 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
   const handleFreeSample = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Integrate with email service
+    
+    // Track lead generation from PDP
+    analytics.generateLead('free_sample_pdp');
+    
     setAlertState({
       isOpen: true,
       title: "Sample Sent!",

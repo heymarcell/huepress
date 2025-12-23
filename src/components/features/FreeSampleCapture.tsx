@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button, Input } from "@/components/ui";
 import { Sparkles, Gift } from "lucide-react";
+import { analytics } from "@/lib/analytics";
 
 export function FreeSampleCapture() {
   const [email, setEmail] = useState("");
@@ -20,6 +21,10 @@ export function FreeSampleCapture() {
       return;
     }
     // TODO: Integrate with email service
+    
+    // Track lead generation
+    analytics.generateLead('free_sample_homepage');
+    
     setSubmitted(true);
     setError(null);
   };
