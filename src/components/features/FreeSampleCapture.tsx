@@ -3,7 +3,15 @@ import { Button, Input } from "@/components/ui";
 import { Sparkles, Gift } from "lucide-react";
 import { analytics } from "@/lib/analytics";
 
-export function FreeSampleCapture({ source = "free_sample_homepage" }: { source?: string }) {
+export interface FreeSampleCaptureProps {
+  source?: string;
+  variant?: "default" | "vault";
+}
+
+export function FreeSampleCapture({ 
+  source = "free_sample_homepage",
+  variant = "default" 
+}: FreeSampleCaptureProps) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -49,6 +57,15 @@ export function FreeSampleCapture({ source = "free_sample_homepage" }: { source?
   };
 
   if (submitted) {
+    if (variant === "vault") {
+      return (
+        <div className="bg-white/10 rounded-xl p-4 text-center animate-fade-in border border-white/20">
+          <Sparkles className="w-6 h-6 text-white mx-auto mb-2" />
+          <p className="text-white font-bold">Check your inbox!</p>
+          <p className="text-white/80 text-sm">Sent. Check your inbox (and Promotions).</p>
+        </div>
+      );
+    }
     return (
       <div className="bg-success/10 border border-success/20 rounded-xl p-4 text-center animate-fade-in">
         <Sparkles className="w-6 h-6 text-success mx-auto mb-2" />
@@ -57,6 +74,8 @@ export function FreeSampleCapture({ source = "free_sample_homepage" }: { source?
       </div>
     );
   }
+
+  const isVault = variant === "vault";
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-1">
@@ -68,8 +87,8 @@ export function FreeSampleCapture({ source = "free_sample_homepage" }: { source?
           Row 2: Input + Button (aligned items-start)
       */}
       <label 
-        htmlFor="email-capture" 
-        className="block text-xs font-bold text-gray-700 ml-1"
+        htmlFor={`email-capture-${variant}`}
+        className={`block text-xs font-bold ml-1 ${isVault ? "text-white/90" : "text-gray-700"}`}
       >
         Email address
       </label>
@@ -77,7 +96,7 @@ export function FreeSampleCapture({ source = "free_sample_homepage" }: { source?
       <div className="flex flex-col sm:flex-row gap-2 items-start">
         <div className="flex-1 w-full">
           <Input
-            id="email-capture"
+            id={`email-capture-${variant}`}
             type="email"
             // Label is handled externally for layout control
             value={email}
@@ -89,12 +108,30 @@ export function FreeSampleCapture({ source = "free_sample_homepage" }: { source?
             aria-label="Email address for free sample pack"
             error={error || undefined}
             helperText="No credit card. Sent in 1–2 minutes."
+            // Override styles for vault variant
+            className={isVault ? "!border-transparent focus:!ring-white/50" : ""}
           />
+          {/* Helper text override for vault since Input handles it internally with gray text */}
+          {isVault && !error && (
+             <style>{`
+               #email-capture-${variant} + p { color: rgba(255, 255, 255, 0.8) !important; }
+             `}</style>
+          )}
         </div>
         <div className="">
-          <Button variant="outline" type="submit" isLoading={isLoading} disabled={isLoading} className="whitespace-nowrap w-full sm:w-auto">
-            <Gift className="w-4 h-4" />
-            Send Me Free Pages
+          <Button 
+            variant={isVault ? undefined : "outline"} /* Remove variant for vault locally overridden */
+            type="submit" 
+            isLoading={isLoading} 
+            disabled={isLoading} 
+            className={`whitespace-nowrap w-full sm:w-auto ${
+              isVault 
+                ? "bg-white text-secondary hover:bg-gray-50 border-none shadow-lg" 
+                : ""
+            }`}
+          >
+            <Gift className={`w-4 h-4 ${isVault ? "text-secondary" : ""}`} />
+            {isVault ? "Get 3 Free Pages" : "Send Me Free Pages"}
           </Button>
         </div>
       </div>

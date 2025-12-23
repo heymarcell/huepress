@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
-import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button, Input } from "@/components/ui";
-import { Gift, Sparkles, Send, ArrowUpDown, Filter, Search, X } from "lucide-react";
+import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button } from "@/components/ui";
+import { Gift, ArrowUpDown, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
-import { analytics } from "@/lib/analytics";
+
+import { FreeSampleCapture } from "@/components/features/FreeSampleCapture";
 
 // Mock data with real thumbnails
 const mockAssets = [
@@ -87,50 +88,6 @@ const skills = [
 
 // Free Sample Banner component - High contrast interstitial
 function FreeSampleBanner() {
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-    
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source: "free_sample_vault_banner" }),
-      });
-      
-      if (!response.ok) {
-        throw new Error("Subscription failed");
-      }
-      
-      // Track lead generation
-      analytics.generateLead('free_sample_vault_banner');
-      setSubmitted(true);
-    } catch (err) {
-      console.error("Subscribe error:", err);
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (submitted) {
-    return (
-      <div className="bg-secondary text-white rounded-2xl p-6 text-center shadow-lg transform transition-all animate-fade-in">
-        <Sparkles className="w-8 h-8 text-yellow-300 mx-auto mb-3" strokeWidth={2} />
-        <h3 className="font-serif text-xl font-bold mb-1">Check your inbox!</h3>
-        <p className="text-white/80">Sent. Check your inbox (and Promotions).</p>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-secondary text-white rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden group">
       {/* Background decoration */}
@@ -148,42 +105,10 @@ function FreeSampleBanner() {
           </div>
         </div>
         
-        {/* Right: Form */}
-        <form onSubmit={handleSubmit} className="w-full lg:w-auto flex flex-col gap-1 items-start">
-          <label htmlFor="vault-email" className="block text-xs font-bold text-white/90 ml-1 mb-1">Email address</label>
-          <div className="flex flex-col sm:flex-row gap-2 w-full items-start">
-             <div className="w-full sm:w-64">
-               <Input
-                id="vault-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="mom@example.com"
-                required
-                disabled={isLoading}
-                aria-label="Email address for free sample pack"
-                // Override standard Input border colors for this high-contrast banner
-                className="!border-transparent focus:!ring-white/50"
-              />
-             </div>
-            <Button 
-              type="submit" 
-              isLoading={isLoading}
-              disabled={isLoading}
-              className="w-full sm:w-auto whitespace-nowrap shadow-lg bg-white text-secondary hover:bg-gray-50 border-none"
-              rightIcon={<Send className="w-4 h-4" />}
-            >
-              Get 3 Free Pages
-            </Button>
-          </div>
-          {error ? (
-            <p className="text-[10px] text-red-200 ml-1 mt-1 font-medium bg-red-900/20 px-2 py-0.5 rounded inline-flex items-center gap-1">
-              <span className="w-1 h-1 rounded-full bg-red-300"></span> {error}
-            </p>
-          ) : (
-            <p className="text-[10px] text-white/80 ml-1 mt-1">No credit card. Sent in 1–2 minutes.</p>
-          )}
-        </form>
+        {/* Right: Standardized Form module */}
+        <div className="w-full lg:w-auto">
+          <FreeSampleCapture source="free_sample_vault_banner" variant="vault" />
+        </div>
       </div>
     </div>
   );
