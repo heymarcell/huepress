@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 
 interface SEOProps {
   title?: string;
@@ -23,42 +23,33 @@ export function SEO({
   url = defaults.url,
   type = defaults.type,
 }: SEOProps) {
-  useEffect(() => {
-    // Update document title
-    document.title = title;
+  const fullTitle = title === defaults.title ? title : `${title} | HuePress`;
+  // Ensure absolute URL for image if it starts with /
+  const fullImage = image.startsWith('http') ? image : `https://huepress.co${image}`;
 
-    // Helper to update or create meta tag
-    const setMeta = (name: string, content: string, isProperty = false) => {
-      const attr = isProperty ? "property" : "name";
-      let meta = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement;
-      if (!meta) {
-        meta = document.createElement("meta");
-        meta.setAttribute(attr, name);
-        document.head.appendChild(meta);
-      }
-      meta.content = content;
-    };
+  return (
+    <Helmet>
+      {/* Standard Metadata */}
+      <title>{fullTitle}</title>
+      <meta name="description" content={description} />
+      <link rel="canonical" href={url} />
 
-    // Basic meta tags
-    setMeta("description", description);
-    
-    // Open Graph
-    setMeta("og:title", title, true);
-    setMeta("og:description", description, true);
-    setMeta("og:image", image, true);
-    setMeta("og:url", url, true);
-    setMeta("og:type", type, true);
-    setMeta("og:site_name", "HuePress", true);
-    
-    // Twitter Card
-    setMeta("twitter:card", "summary_large_image");
-    setMeta("twitter:title", title);
-    setMeta("twitter:description", description);
-    setMeta("twitter:image", image);
+      {/* Open Graph / Facebook */}
+      <meta property="og:type" content={type} />
+      <meta property="og:url" content={url} />
+      <meta property="og:title" content={fullTitle} />
+      <meta property="og:description" content={description} />
+      <meta property="og:image" content={fullImage} />
+      <meta property="og:site_name" content="HuePress" />
 
-  }, [title, description, image, url, type]);
-
-  return null;
+      {/* Twitter */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:creator" content="@huepress" />
+      <meta name="twitter:title" content={fullTitle} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={fullImage} />
+    </Helmet>
+  );
 }
 
 export default SEO;

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import SEO from "@/components/SEO";
 import { apiClient } from "@/lib/api-client";
+import { StructuredData } from "@/components/StructuredData";
 
 const mockAsset = {
   id: "1",
@@ -57,15 +58,6 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
     try {
       const downloadUrl = apiClient.assets.getDownloadUrl(assetId);
       
-      // Use standard navigation to trigger download (backend sets Content-Disposition attachment)
-      // verify access first via head request?
-      // Or just navigate.
-      
-      // If we want to catch errors (403), we need to fetch first.
-      // But we can't fetch blob easily with current apiClient.
-      // To preserve error handling UI (AlertModal), we need to fetch.
-      
-      // Let's stick to fetch but use the URL from apiClient helper to be consistent with base URL.
       const token = await getToken();
       const response = await fetch(downloadUrl, {
           headers: {
@@ -150,8 +142,7 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
         <span className="text-sm font-medium text-ink">4.9/5 from 500+ families</span>
       </div>
       
-      {/* 3-Step Reassurance Micro-row - New for Sprint 3 */}
-      {/* 3-Step Reassurance Micro-row - Improved readability */}
+      {/* 3-Step Reassurance Micro-row */}
       <div className="flex items-center justify-center gap-2 mt-3 text-xs text-gray-500 font-medium text-center">
          <span className="flex items-center">Join</span>
          <span className="text-gray-300">→</span>
@@ -220,14 +211,36 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
 
 export default function ResourceDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const asset = mockAsset;
+  // In a real app, use SWR/React Query or loader data
+  const asset = mockAsset; 
+  const canonicalUrl = `https://huepress.co/vault/${id}`;
 
   return (
     <div className="bg-gray-50 min-h-screen">
       <SEO 
-        title={`${asset.title} | Free Coloring Page | HuePress`}
+        title={asset.title} 
         description={asset.description}
         image={asset.imageUrl}
+        url={canonicalUrl}
+        type="article"
+      />
+      <StructuredData 
+        type="Product"
+        data={{
+          name: asset.title,
+          description: asset.description,
+          image: asset.imageUrl.startsWith("http") ? asset.imageUrl : `https://huepress.co${asset.imageUrl}`,
+          brand: {
+             "@type": "Brand",
+             "name": "HuePress"
+          },
+          offers: {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD",
+            "availability": "https://schema.org/InStock"
+          }
+        }}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}

@@ -1,0 +1,22 @@
+# HuePress
+
+HuePress offers therapy-grade, bold coloring pages curated for design-conscious parents and pediatric therapists.
+
+## Main Links
+- [Home](https://huepress.co/)
+- [The Vault (All Pages)](https://huepress.co/vault)
+- [Pricing](https://huepress.co/pricing)
+
+## Content Structure
+Our content is organized into "Assets" (coloring pages). Each asset has:
+- Title
+- Description (therapy benefits)
+- Category (Animals, Nature, Fantasy)
+- Skill Category (Calm, Focus, Bold)
+
+## Technical
+- Single Page Application (React/Vite)
+- Dynamic routes at /vault/:id
+
+## Contact
+- Support: support@huepress.co
