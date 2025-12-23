@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useConsent } from "../../context/ConsentContext";
 
 const footerLinks = {
   product: [
@@ -10,6 +11,7 @@ const footerLinks = {
   legal: [
     { to: "/privacy", label: "Privacy Policy" },
     { to: "/terms", label: "Terms of Service" },
+    // { to: "/privacy#choices", label: "Your Privacy Choices" }, // Replaced by dynamic button in component
   ],
   social: [
     { href: "https://pinterest.com/huepress", label: "Pinterest" },
@@ -18,6 +20,7 @@ const footerLinks = {
 };
 
 export function Footer() {
+  const { setPreferencesOpen } = useConsent();
   return (
     <footer className="bg-ink text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -84,6 +87,14 @@ export function Footer() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <button
+                  onClick={() => setPreferencesOpen(true)}
+                  className="text-gray-300 hover:text-white transition-colors text-left"
+                >
+                  Your Privacy Choices
+                </button>
+              </li>
             </ul>
           </div>
         </div>

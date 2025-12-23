@@ -37,6 +37,14 @@ app.get("/api/health", (c) => {
   return c.json({ status: "ok", env: c.env.ENVIRONMENT });
 });
 
+// GeoIP Endpoint
+app.get("/api/geo", (c) => {
+  // Cloudflare Workers exposes country in cf object
+  // @ts-ignore
+  const country = c.req.raw.cf?.country || "US"; // Default to US if unknown
+  return c.json({ country });
+});
+
 // Get all published assets
 app.get("/api/assets", async (c) => {
   const category = c.req.query("category");
