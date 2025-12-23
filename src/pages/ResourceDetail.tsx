@@ -102,7 +102,57 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
     }
   };
 
+  const handlePrint = async () => {
+    try {
+      const downloadUrl = apiClient.assets.getDownloadUrl(assetId);
+      
+      const token = await getToken();
+      const response = await fetch(downloadUrl, {
+          headers: {
+             "Authorization": `Bearer ${token}`
+          }
+      });
+      
+      if (!response.ok) {
+        if (response.status === 403 || response.status === 401) {
+          setAlertState({
+            isOpen: true,
+            title: "Access Denied",
+            message: "Subscription required to print. Join The Club to unlock!",
+            variant: "info"
+          });
+          return;
+        }
+        throw new Error("Print failed");
+      }
 
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = url;
+      document.body.appendChild(iframe);
+      
+      iframe.onload = () => {
+        iframe.contentWindow?.print();
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          window.URL.revokeObjectURL(url);
+        }, 60000);
+      };
+      
+      analytics.fileDownload(assetId, title);
+    } catch (error) {
+      console.error("Print error:", error);
+      setAlertState({
+        isOpen: true,
+        title: "Print Failed",
+        message: "We encountered an issue printing your file. Please try again.",
+        variant: "error"
+      });
+    }
+  };
 
   if (!isLoaded) {
     return <div className="h-14 skeleton rounded-xl w-full" />;
@@ -111,10 +161,16 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
   // Subscriber: Show download button
   if (isSubscriber) {
     return (
-      <Button variant="primary" size="lg" className="w-full" onClick={handleDownload}>
-        <Download className="w-5 h-5" />
-        Download PDF
-      </Button>
+      <div className="flex gap-3">
+        <Button variant="primary" size="lg" className="flex-1" onClick={handleDownload}>
+          <Download className="w-5 h-5" />
+          Download
+        </Button>
+        <Button variant="outline" size="lg" className="flex-1" onClick={handlePrint}>
+          <Printer className="w-5 h-5" />
+          Print
+        </Button>
+      </div>
     );
   }
 

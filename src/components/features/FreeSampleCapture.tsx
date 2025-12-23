@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button, Input } from "@/components/ui";
 import { Sparkles, Gift } from "lucide-react";
 import { analytics } from "@/lib/analytics";
@@ -60,45 +61,55 @@ export function FreeSampleCapture({ source = "free_sample_homepage" }: { source?
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-1">
-      {/* 
-          Layout Fix: 
-          To perfectly align the Button with the Input FIELD (ignoring helper text height), 
-          we separate the Label.
-          Row 1: Label
-          Row 2: Input + Button (aligned items-start)
-      */}
-      <label 
-        htmlFor="email-capture" 
-        className="block text-xs font-bold text-gray-700 ml-1"
-      >
-        Email address
-      </label>
+    <div className="w-full">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-1">
+        {/* 
+            Layout Fix: 
+            To perfectly align the Button with the Input FIELD (ignoring helper text height), 
+            we separate the Label.
+            Row 1: Label
+            Row 2: Input + Button (aligned items-start)
+        */}
+        <label 
+          htmlFor="email-capture" 
+          className="block text-xs font-bold text-gray-700 ml-1"
+        >
+          Email address
+        </label>
+        
+        <div className="flex flex-col sm:flex-row gap-2 items-start">
+          <div className="flex-1 w-full">
+            <Input
+              id="email-capture"
+              type="email"
+              // Label is handled externally for layout control
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="mom@example.com"
+              aria-label="Email address for free sample pack"
+              error={error || undefined}
+            />
+          </div>
+          <div className="">
+            <Button variant="outline" type="submit" isLoading={isLoading} disabled={isLoading} className="whitespace-nowrap w-full sm:w-auto h-10">
+              <Gift className="w-4 h-4 mr-2" />
+              Send Me Free Pages
+            </Button>
+          </div>
+        </div>
+      </form>
       
-      <div className="flex flex-col sm:flex-row gap-2 items-start">
-        <div className="flex-1 w-full">
-          <Input
-            id="email-capture"
-            type="email"
-            // Label is handled externally for layout control
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (error) setError(null);
-            }}
-            placeholder="mom@example.com"
-            aria-label="Email address for free sample pack"
-            error={error || undefined}
-            helperText="No credit card. Sent in 1–2 minutes."
-          />
-        </div>
-        <div className="">
-          <Button variant="outline" type="submit" isLoading={isLoading} disabled={isLoading} className="whitespace-nowrap w-full sm:w-auto">
-            <Gift className="w-4 h-4" />
-            Send Me Free Pages
-          </Button>
-        </div>
+      <div className="mt-3 ml-1 text-center sm:text-left">
+        <p className="text-xs font-medium text-gray-600 mb-1">
+          No credit card. Sent in 1–2 minutes.
+        </p>
+        <p className="text-[11px] text-gray-400 leading-tight">
+          By signing up, you agree to our <Link to="/privacy" className="underline hover:text-gray-600 transition-colors">Privacy Policy</Link> and to receive occasional updates. Unsubscribe anytime.
+        </p>
       </div>
-    </form>
+    </div>
   );
 }
