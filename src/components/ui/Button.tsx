@@ -51,9 +51,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       `,
       outline: `
         bg-white text-ink 
-        border border-gray-200
-        hover:bg-gray-50 hover:text-ink hover:border-gray-300
-        focus:ring-gray-200
+        border-2 border-gray-900
+        hover:bg-gray-900 hover:text-white
+        focus:ring-gray-900
       `,
       ghost: `
         bg-transparent text-ink 
