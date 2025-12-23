@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Accordion } from "@/components/ui";
+import { Button, Accordion, Card, Heading, Text, Section } from "@/components/ui";
 import { createCheckoutSession } from "@/lib/stripe";
 import { 
   Check, 
@@ -127,23 +127,20 @@ export default function PricingPage() {
         description="Join The Club for $5/month. Unlimited access to 500+ therapy-grade coloring pages. Cancel anytime, no questions asked."
       />
       {/* Hero */}
-      <section className="bg-accent py-16 lg:py-24">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="font-serif text-display text-ink mb-4">Simple, Joyful Pricing</h1>
-          <p className="text-gray-500 text-lg max-w-2xl mx-auto">One plan, unlimited creativity. Less than a latte for endless quiet time activities.</p>
-        </div>
-      </section>
+      <Section background="accent" className="text-center" size="md">
+        <Heading as="h1" variant="display" className="mb-4">Simple, Joyful Pricing</Heading>
+        <Text variant="large" className="max-w-2xl mx-auto">One plan, unlimited creativity. Less than a latte for endless quiet time activities.</Text>
+      </Section>
 
       {/* Pricing Cards */}
-      <section className="py-16 -mt-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Section className="-mt-8 pt-0" size="md">
           <div className="grid md:grid-cols-2 gap-8 items-stretch">
             {plans.slice().reverse().map((plan) => (
-              <div 
+              <Card 
                 key={plan.name} 
-                className={`relative rounded-2xl flex flex-col ${
+                className={`relative flex flex-col ${
                   plan.popular 
-                    ? "bg-primary text-white shadow-2xl shadow-primary/30 p-10 md:scale-110 z-10" 
+                    ? "bg-primary text-white shadow-2xl shadow-primary/30 border-transparent p-10 md:scale-110 z-10" 
                     : "bg-gray-50 border border-gray-200 shadow-lg p-8 opacity-90 hover:opacity-100 transition-opacity"
                 }`}
               >
@@ -153,7 +150,7 @@ export default function PricingPage() {
                   </div>
                 )}
                 <div className="text-center mb-6">
-                  <h2 className={`font-serif text-h2 mb-2 ${plan.popular ? "text-white" : "text-ink"}`}>{plan.name}</h2>
+                  <Heading as="h2" className={`font-serif text-h2 mb-2 ${plan.popular ? "text-white" : "text-ink"}`}>{plan.name}</Heading>
                   <div className="flex items-baseline justify-center gap-1">
                     <span className={`font-serif text-5xl font-bold ${plan.popular ? "text-white" : "text-ink"}`}>{plan.price}</span>
                     <span className={plan.popular ? "text-white/70" : "text-gray-500"}>{plan.period}</span>
@@ -219,13 +216,13 @@ export default function PricingPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
           
            {/* Comparison Table - UPDATED: Annual first */}
            <div className="max-w-2xl mx-auto mt-12 mb-8">
-             <h3 className="font-serif text-xl text-center mb-6 text-ink">Why switch to Annual?</h3>
+             <Heading as="h3" className="text-center mb-6">Why switch to Annual?</Heading>
              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
                <div className="grid grid-cols-3 text-sm border-b border-gray-200 bg-gray-50">
                  <div className="p-4 font-medium text-gray-500">Feature</div>
@@ -260,16 +257,14 @@ export default function PricingPage() {
                Instant access to 500+ designs, unlimited downloads, high-res vector PDFs.
              </p>
           </div>
-        </div>
-      </section>
+      </Section>
 
       {/* Social Proof - Light Version */}
-      <section className="py-16 bg-accent">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Section background="accent" size="md">
           <div className="text-center mb-10">
             <p className="text-gray-500 mb-2">Trusted by</p>
-            <p className="font-serif text-h1 text-ink mb-4">500+ Happy Families</p>
-            <p className="text-gray-500 max-w-lg mx-auto">Used at home, in classrooms, and in pediatric OT sessions.</p>
+            <Heading as="h2" variant="h1" className="mb-4">500+ Happy Families</Heading>
+            <Text>Used at home, in classrooms, and in pediatric OT sessions.</Text>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {userTypes.map((type, index) => (
@@ -286,27 +281,24 @@ export default function PricingPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
+      </Section>
 
       {/* FAQ */}
-      <section id="faq" className="py-16 lg:py-24 scroll-mt-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="font-serif text-h1 text-ink text-center mb-12">Frequently Asked Questions</h2>
+      <Section id="faq" size="sm" className="scroll-mt-20">
+          <Heading as="h2" variant="h1" className="text-center mb-12">Frequently Asked Questions</Heading>
           <Accordion items={faqs} defaultOpenIndex={0} />
-        </div>
-      </section>
+      </Section>
 
       {/* Final CTA */}
-      <section className="py-16 bg-primary text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="font-serif text-h1 mb-4">Ready to Start Coloring?</h2>
-          <p className="text-white/80 mb-8">Join The Club today and access 500+ fridge-worthy designs.</p>
+      <Section background="brand" className="bg-primary text-white" size="md">
+        <div className="text-center">
+          <Heading as="h2" variant="h1" className="text-white mb-4">Ready to Start Coloring?</Heading>
+          <Text className="text-white/80 mb-8">Join The Club today and access 500+ fridge-worthy designs.</Text>
           <Button variant="secondary" size="lg" onClick={() => handleSubscribeClick(plans[1].priceId)}>
             Join for $5/mo
           </Button>
         </div>
-      </section>
+      </Section>
 
       <EUWaiverModal 
         isOpen={modalOpen} 

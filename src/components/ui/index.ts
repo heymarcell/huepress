@@ -1,7 +1,14 @@
-export { Button } from "./Button";
-export { ResourceCard, ResourceCardSkeleton } from "./ResourceCard";
-export { FilterChip, FilterBar } from "./FilterChip";
-export { SearchBar } from "./SearchBar";
-export { Accordion } from "./Accordion";
-export * from './StickyCTA';
-export * from './AlertModal';
+export * from "./Button";
+export * from "./Accordion";
+export * from "./SearchBar";
+export * from "./FilterChip";
+export * from "./ResourceCard";
+export * from "./StickyCTA";
+export * from "./AlertModal";
+
+// New Design System Components
+export * from "./Typography";
+export * from "./Card";
+export * from "./Badge";
+export * from "./Section";
+export * from "./Input";

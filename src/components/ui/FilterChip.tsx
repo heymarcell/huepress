@@ -6,10 +6,14 @@ export interface FilterChipProps {
 }
 
 export function FilterChip({ label, value, isSelected = false, onClick }: FilterChipProps) {
+  const baseStyles = "inline-flex items-center px-4 py-2 rounded-md text-small font-medium transition-all duration-150 cursor-pointer";
+  const defaultStyles = "bg-gray-100 text-gray-500 hover:bg-gray-200";
+  const selectedStyles = "bg-primary text-white";
+
   return (
     <button
       onClick={() => onClick?.(value)}
-      className={isSelected ? "chip-selected" : "chip-default"}
+      className={`${baseStyles} ${isSelected ? selectedStyles : defaultStyles}`}
       aria-pressed={isSelected}
     >
       {label}

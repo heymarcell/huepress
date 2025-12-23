@@ -1,6 +1,15 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Button, ResourceCard, StickyCTA } from "@/components/ui";
+import { 
+  Button, 
+  ResourceCard, 
+  StickyCTA, 
+  Section, 
+  Heading, 
+  Text,
+  Badge,
+  Card
+} from "@/components/ui";
+import { FreeSampleCapture } from "@/components/features/FreeSampleCapture";
 import SEO from "@/components/SEO";
 import { 
   Sparkles, 
@@ -70,81 +79,6 @@ const painPoints = [
   },
 ];
 
-function FreeSampleCapture() {
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-
-  // Validation state
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) {
-      setError("Please enter your email address.");
-      return;
-    }
-    if (!email.includes("@")) {
-      setError("That email doesn't look valid. Try again.");
-      return;
-    }
-    // TODO: Integrate with email service
-    setSubmitted(true);
-    setError(null);
-  };
-
-  if (submitted) {
-    return (
-      <div className="bg-success/10 border border-success/20 rounded-xl p-4 text-center animate-fade-in">
-        <Sparkles className="w-6 h-6 text-success mx-auto mb-2" />
-        <p className="text-success-dark font-bold">Check your inbox!</p>
-        <p className="text-gray-600 text-sm">Sent. Check your inbox (and Promotions).</p>
-      </div>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <div className="flex flex-col sm:flex-row gap-2">
-      <div className="flex-1">
-        <label htmlFor="email-capture" className="block text-xs font-bold text-gray-700 mb-1 ml-1">
-          Email address
-        </label>
-        <input
-          id="email-capture"
-          type="email"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            if (error) setError(null);
-          }}
-          placeholder="mom@example.com"
-          aria-label="Email address for free sample pack"
-          className={`w-full px-4 py-3 bg-white border rounded-md focus:ring-2 outline-none text-ink placeholder:text-gray-400 ${
-            error ? "border-error focus:border-error focus:ring-error/10" : "border-gray-200 focus:border-secondary focus:ring-secondary/10"
-          }`}
-        />
-        <p className="text-[10px] text-gray-500 mt-1 ml-1">No credit card. Sent in 1–2 minutes.</p>
-      </div>
-      <div className="mt-6 sm:mt-[22px]"> 
-        {/* Align with input box, accounting for label height */}
-        <Button variant="outline" type="submit" className="whitespace-nowrap h-[50px]">
-          <Gift className="w-4 h-4" />
-          Send Me Free Pages
-        </Button>
-      </div>
-      </div>
-      {error && (
-        <p className="text-xs text-error font-medium flex items-center gap-1">
-          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {error}
-        </p>
-      )}
-    </form>
-  );
-}
-
 export default function HomePage() {
   return (
     <>
@@ -155,18 +89,20 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Content */}
             <div className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 bg-success/10 text-success-dark px-3 py-1 rounded-md text-sm font-bold mb-6">
-                <span className="w-2 h-2 rounded-full bg-success"></span>
-                Designed for Fine Motor Skills
-              </div>
-              <h1 className="font-serif text-display lg:text-5xl text-ink mb-4">
+              <Badge variant="success" className="mb-6 bg-success/10 text-success-dark border-transparent pl-1 pr-3 py-1">
+                 <span className="w-2 h-2 rounded-full bg-success mr-2"></span>
+                 Designed for Fine Motor Skills
+              </Badge>
+              
+              <Heading as="h1" variant="display" className="mb-4">
                 Therapy-Grade Coloring Pages.{" "}
                 <span className="text-secondary">Print Calm in 60 Seconds</span>
-              </h1>
-              <p className="text-lg text-gray-500 mb-8 max-w-lg mx-auto lg:mx-0">
+              </Heading>
+              
+              <Text variant="large" className="mb-8 max-w-lg mx-auto lg:mx-0">
                 Join 500+ families using our bold-line designs to reduce anxiety and build focus. 
                 New drops every Sunday.
-              </p>
+              </Text>
               
               <div className="mb-8">
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -247,11 +183,10 @@ export default function HomePage() {
       </section>
 
       {/* Vault Preview - Moved Higher for Rank 12 */}
-      <section className="py-16 lg:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Section>
           <div className="text-center mb-12">
-            <h2 className="font-serif text-h1 text-ink mb-4">Peek Inside The Vault</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto">Over 500 bold, curated designs across trending themes. New drops every Sunday.</p>
+            <Heading as="h2" variant="h1" className="mb-4">Peek Inside The Vault</Heading>
+            <Text variant="large" className="max-w-2xl mx-auto">Over 500 bold, curated designs across trending themes. New drops every Sunday.</Text>
           </div>
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
              {/* Showing more items to look impressive - duplicating the list for effect until we have real data */}
@@ -278,19 +213,17 @@ export default function HomePage() {
                    <Button variant="outline" size="lg">Browse the Vault</Button>
                  </Link>
                </div>
-               <p className="text-sm text-gray-500">Instant access to 500+ designs</p>
+               <Text variant="muted">Instant access to 500+ designs</Text>
             </div>
           </div>
-        </div>
-      </section>
+      </Section>
 
       {/* Social Proof - Testimonials */}
-      <section className="bg-accent py-12 lg:py-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Section background="accent" size="lg">
            <p className="text-center text-sm text-gray-500 mb-8">Loved by parents, teachers, and therapists</p>
            <div className="grid md:grid-cols-3 gap-6">
               {/* Testimonial 1 */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <Card className="p-6">
                  <div className="flex items-center gap-3 mb-4">
                     <img src="/avatars/avatar_mom_1.png" alt="Sarah" className="w-12 h-12 rounded-full object-cover" />
                     <div>
@@ -299,10 +232,10 @@ export default function HomePage() {
                     </div>
                  </div>
                  <p className="text-gray-600 italic">"This is the only way I get 20 minutes of peace. My kids ask for these pages every day!"</p>
-              </div>
+              </Card>
               
               {/* Testimonial 2 */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <Card className="p-6">
                  <div className="flex items-center gap-3 mb-4">
                     <img src="/avatars/avatar_teacher_1.png" alt="Michelle" className="w-12 h-12 rounded-full object-cover" />
                     <div>
@@ -311,10 +244,10 @@ export default function HomePage() {
                     </div>
                  </div>
                  <p className="text-gray-600 italic">"Perfect for my fine-motor groups. The bold lines are exactly what my patients need."</p>
-              </div>
+              </Card>
               
               {/* Testimonial 3 */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <Card className="p-6">
                  <div className="flex items-center gap-3 mb-4">
                     <img src="/avatars/avatar_dad_1.png" alt="David" className="w-12 h-12 rounded-full object-cover" />
                     <div>
@@ -323,17 +256,15 @@ export default function HomePage() {
                     </div>
                  </div>
                  <p className="text-gray-600 italic">"Zero ads, completely safe for my classroom. I use these for quiet time every week."</p>
-              </div>
+              </Card>
            </div>
-        </div>
-      </section>
+      </Section>
 
       {/* Print Quality Proof - P1 Item 10 */}
-      <section className="py-16 bg-gray-50 border-y border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Section background="muted" className="border-y border-gray-200" size="md">
           <div className="text-center mb-10">
-             <h2 className="font-serif text-2xl text-ink">Why "Free" Sites Cost More</h2>
-             <p className="text-gray-500">Don't waste ink on pixelated junk.</p>
+             <Heading className="mb-2">Why "Free" Sites Cost More</Heading>
+             <Text>Don't waste ink on pixelated junk.</Text>
           </div>
           <div className="grid md:grid-cols-2 gap-8 items-center">
              {/* Bad Side */}
@@ -370,16 +301,15 @@ export default function HomePage() {
                 </ul>
              </div>
           </div>
-        </div>
-      </section>
+      </Section>
 
       {/* Free Sample - Full Width Strip - Better Integrated */}
       <section id="free-sample" className="bg-secondary/5 border-b border-secondary/10 py-12 scroll-mt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
            <div className="flex flex-col lg:flex-row items-center justify-center gap-8 text-center lg:text-left">
               <div className="max-w-sm">
-                 <h3 className="font-serif text-2xl text-ink mb-2">Try 3 free pages?</h3>
-                 <p className="text-gray-600">See the difference bold lines make. We’ll send them to your inbox.</p>
+                 <Heading className="mb-2">Try 3 free pages?</Heading>
+                 <Text>See the difference bold lines make. We’ll send them to your inbox.</Text>
               </div>
               <div className="w-full lg:w-auto lg:min-w-[520px]">
                  <FreeSampleCapture />
@@ -391,9 +321,8 @@ export default function HomePage() {
 
 
       {/* How It Works - Bold Cards */}
-      <section className="py-16 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="font-serif text-h2 text-ink text-center mb-10">How It Works</h2>
+      <Section size="md">
+          <Heading className="text-center mb-10">How It Works</Heading>
           <div className="grid md:grid-cols-3 gap-6">
             {/* Step 1 */}
             <div className="bg-accent rounded-2xl p-6 text-center">
@@ -424,52 +353,47 @@ export default function HomePage() {
               <p className="text-gray-500 text-sm">Bold lines and low clutter mean kids colour happily while you get a break.</p>
             </div>
           </div>
-        </div>
-      </section>
+      </Section>
 
       {/* Problem/Agitation Section */}
-      <section className="py-16 lg:py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="font-serif text-h1 text-ink mb-6">
+      <Section background="muted" size="md">
+          <Heading as="h2" variant="h1" className="text-center mb-6">
             Tired of Chaotic Clip Art?
-          </h2>
-          <p className="text-gray-500 text-lg mb-8">
+          </Heading>
+          <Text variant="large" className="text-center mb-8">
             We get it. You search "free coloring pages" and get bombarded with ads, 
             broken links, and designs so cluttered they give you a headache. 
             Your kids deserve better. <span className="font-bold text-ink">So do you.</span>
-          </p>
+          </Text>
           <div className="grid md:grid-cols-3 gap-6 mt-12">
             {painPoints.map((point) => (
-              <div key={point.title} className="p-6 bg-white rounded-xl border-2 border-secondary/20 shadow-sm">
+              <Card key={point.title} className="p-6 border-2 border-secondary/20 shadow-sm">
                 <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                   <point.icon className="w-6 h-6 text-secondary" strokeWidth={1.5} />
                 </div>
                 <h3 className="font-bold text-ink mb-2">{point.title}</h3>
                 <p className="text-sm text-gray-500">{point.description}</p>
-              </div>
+              </Card>
             ))}
           </div>
-        </div>
-      </section>
+      </Section>
 
       {/* Features */}
-      <section className="py-16 lg:py-20 bg-accent">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Section background="accent">
           <div className="text-center mb-12">
-            <h2 className="font-serif text-h1 text-ink mb-4">Why Parents Love HuePress</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto">We obsess over quality so you can focus on quality time.</p>
+            <Heading as="h2" variant="h1" className="mb-4">Why Parents Love HuePress</Heading>
+            <Text variant="large" className="max-w-2xl mx-auto">We obsess over quality so you can focus on quality time.</Text>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature) => (
-              <div key={feature.title} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+              <Card key={feature.title} variant="hover" className="p-6">
                 <feature.icon className="w-10 h-10 text-primary mb-4" strokeWidth={1.5} />
                 <h3 className="font-bold text-ink mb-2">{feature.title}</h3>
                 <p className="text-sm text-gray-500">{feature.description}</p>
-              </div>
+              </Card>
             ))}
           </div>
-        </div>
-      </section>
+      </Section>
 
       {/* Mid-Scroll CTA Bar - P1 Item 11 */}
       <section className="bg-ink text-white py-12">
@@ -486,7 +410,7 @@ export default function HomePage() {
 
       <section className="py-20 bg-gradient-to-br from-primary to-primary-hover text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="font-serif text-h1 mb-6">One plan. Endless creativity.</h2>
+          <Heading as="h2" variant="h1" className="mb-6 text-white font-serif">One plan. Endless creativity.</Heading>
           
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 max-w-2xl mx-auto mb-10 border border-white/20">
              <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:divide-x md:divide-white/20">
@@ -511,20 +435,16 @@ export default function HomePage() {
       </section>
 
 
-
-
-
       {/* Printing & Use Rights (Scannable) - P1 Item 9 */}
-      <section className="py-20 bg-white" id="rights">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Section id="rights" size="md"> 
            <div className="bg-ink/5 rounded-3xl p-8 md:p-12">
               <div className="text-center mb-10">
-                <h3 className="font-serif text-2xl text-ink mb-2">Yes, you can print these.</h3>
-                <p className="text-gray-500">Simple rights for everyone.</p>
+                <Heading className="mb-2">Yes, you can print these.</Heading>
+                <Text>Simple rights for everyone.</Text>
               </div>
               
               <div className="grid md:grid-cols-3 gap-6">
-                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                 <Card className="p-6">
                     <div className="text-secondary font-bold mb-4 flex items-center gap-2">
                        <Heart className="w-4 h-4 fill-secondary" /> Parents
                     </div>
@@ -533,9 +453,9 @@ export default function HomePage() {
                        <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-secondary mt-1.5"></div>Fridge, wall, gifts</li>
                     </ul>
                     <p className="text-xs text-gray-400 pt-4 border-t border-gray-100">Strictly no resale</p>
-                 </div>
+                 </Card>
                  
-                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                 <Card className="p-6">
                     <div className="text-primary font-bold mb-4 flex items-center gap-2">
                        <Printer className="w-4 h-4 fill-primary" /> Teachers
                     </div>
@@ -544,9 +464,9 @@ export default function HomePage() {
                        <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5"></div>Use for quiet time</li>
                     </ul>
                     <p className="text-xs text-gray-400 pt-4 border-t border-gray-100">Not for other teachers</p>
-                 </div>
+                 </Card>
 
-                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                 <Card className="p-6">
                     <div className="text-ink font-bold mb-4 flex items-center gap-2">
                        <Sparkles className="w-4 h-4 fill-ink" /> Therapists
                     </div>
@@ -555,11 +475,10 @@ export default function HomePage() {
                        <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-ink mt-1.5"></div>Send home as homework</li>
                     </ul>
                     <p className="text-xs text-gray-400 pt-4 border-t border-gray-100">Single professional use</p>
-                 </div>
+                 </Card>
               </div>
            </div>
-        </div>
-      </section>
+      </Section>
 
 
       {/* Mobile Sticky CTA */}
