@@ -8,6 +8,7 @@ import PricingPage from "./pages/Pricing";
 import AboutPage from "./pages/About";
 import NotFoundPage from "./pages/NotFound";
 import PrivacyPolicyPage from "./pages/PrivacyPolicy";
+import TermsOfServicePage from "./pages/TermsOfService";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="pricing" element={<PricingPage />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="privacy" element={<PrivacyPolicyPage />} />
+        <Route path="terms" element={<TermsOfServicePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 
