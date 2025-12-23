@@ -93,7 +93,7 @@ export function FreeSampleCapture({ source = "free_sample_homepage" }: { source?
               error={error || undefined}
             />
           </div>
-          <div className="">
+          <div className="w-full sm:w-auto">
             <Button variant="outline" type="submit" isLoading={isLoading} disabled={isLoading} className="whitespace-nowrap w-full sm:w-auto h-10">
               <Gift className="w-4 h-4 mr-2" />
               Send Me Free Pages
