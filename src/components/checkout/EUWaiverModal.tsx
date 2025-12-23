@@ -22,7 +22,7 @@ export const EUWaiverModal: React.FC<EUWaiverModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative animate-in zoom-in-95 duration-200 border-2 border-ink">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative animate-in zoom-in-95 duration-200 border border-gray-200">
         
         {/* Close Button */}
         <button 
