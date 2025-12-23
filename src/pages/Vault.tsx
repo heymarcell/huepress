@@ -4,6 +4,7 @@ import { useSubscription } from "@/lib/auth";
 import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button } from "@/components/ui";
 import { Gift, Sparkles, Send, ArrowUpDown, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
+import { analytics } from "@/lib/analytics";
 
 // Mock data with real thumbnails
 const mockAssets = [
@@ -88,10 +89,36 @@ const skills = [
 function FreeSampleBanner() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    if (!email) return;
+    
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, source: "free_sample_vault_banner" }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Subscription failed");
+      }
+      
+      // Track lead generation
+      analytics.generateLead('free_sample_vault_banner');
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Subscribe error:", err);
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (submitted) {
@@ -122,9 +149,9 @@ function FreeSampleBanner() {
         </div>
         
         {/* Right: Form */}
-        <form onSubmit={handleSubmit} className="w-full lg:w-auto flex flex-col gap-1">
+        <form onSubmit={handleSubmit} className="w-full lg:w-auto flex flex-col gap-1 items-start">
           <label htmlFor="vault-email" className="block text-xs font-bold text-white/90 ml-1">Email address</label>
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full">
              <input
               id="vault-email"
               type="email"
@@ -132,19 +159,28 @@ function FreeSampleBanner() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="mom@example.com"
               required
+              disabled={isLoading}
               aria-label="Email address for free sample pack"
-              className="w-full sm:w-64 h-12 px-4 text-sm bg-white border border-transparent rounded-md text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-sm"
+              className="w-full sm:w-64 h-12 px-4 text-sm bg-white border border-transparent rounded-md text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-sm disabled:opacity-70"
             />
             <Button 
               variant="ghost" 
               type="submit" 
-              className="w-full sm:w-auto whitespace-nowrap shadow-lg bg-white text-secondary hover:bg-gray-50"
+              isLoading={isLoading}
+              disabled={isLoading}
+              className="w-full sm:w-auto whitespace-nowrap shadow-lg bg-white text-secondary hover:bg-gray-50 disabled:opacity-70"
               rightIcon={<Send className="w-4 h-4" />}
             >
               Get 3 Free Pages
             </Button>
           </div>
-          <p className="text-[10px] text-white/80 ml-1">No credit card. Sent in 1–2 minutes.</p>
+          {error ? (
+            <p className="text-[10px] text-red-200 ml-1 font-medium bg-red-900/20 px-2 py-0.5 rounded inline-flex items-center gap-1">
+              <span className="w-1 h-1 rounded-full bg-red-300"></span> {error}
+            </p>
+          ) : (
+            <p className="text-[10px] text-white/80 ml-1">No credit card. Sent in 1–2 minutes.</p>
+          )}
         </form>
       </div>
     </div>
