@@ -126,16 +126,16 @@ export default function HomePage() {
               <div className="flex items-center justify-center lg:justify-start gap-4 text-sm text-gray-500">
                  <div className="flex -space-x-2">
                     <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                      <img src="/avatars/avatar_mom_1.png" alt="Happy Mom" className="w-full h-full object-cover" />
+                      <img src="/avatars/avatar_mom_1.png" alt="Happy Mom" className="w-full h-full object-cover" loading="lazy" />
                     </div>
                     <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                      <img src="/avatars/avatar_dad_1.png" alt="Happy Dad" className="w-full h-full object-cover" />
+                      <img src="/avatars/avatar_dad_1.png" alt="Happy Dad" className="w-full h-full object-cover" loading="lazy" />
                     </div>
                     <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                      <img src="/avatars/avatar_teacher_1.png" alt="Teacher" className="w-full h-full object-cover" />
+                      <img src="/avatars/avatar_teacher_1.png" alt="Teacher" className="w-full h-full object-cover" loading="lazy" />
                     </div>
                     <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                      <img src="/avatars/avatar_mom_2.png" alt="Happy Mom" className="w-full h-full object-cover" />
+                      <img src="/avatars/avatar_mom_2.png" alt="Happy Mom" className="w-full h-full object-cover" loading="lazy" />
                     </div>
                  </div>
                  <p>Join <strong className="text-ink">500+ families</strong> printing today.</p>
@@ -151,6 +151,8 @@ export default function HomePage() {
                     src="/hero_lifestyle.png" 
                     alt="Child coloring a HuePress page with markers"
                     className="w-full h-full object-cover"
+                    loading="eager"
+                    fetchPriority="high"
                   />
                   {/* Subtle overlay to blend if needed */}
                   <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-2xl"></div>
@@ -225,7 +227,7 @@ export default function HomePage() {
               {/* Testimonial 1 */}
               <Card className="p-6">
                  <div className="flex items-center gap-3 mb-4">
-                    <img src="/avatars/avatar_mom_1.png" alt="Sarah" className="w-12 h-12 rounded-full object-cover" />
+                    <img src="/avatars/avatar_mom_1.png" alt="Sarah" className="w-12 h-12 rounded-full object-cover" loading="lazy" />
                     <div>
                        <p className="font-bold text-ink text-sm">Sarah M.</p>
                        <p className="text-xs text-gray-500">Mom of 2</p>
@@ -237,7 +239,7 @@ export default function HomePage() {
               {/* Testimonial 2 */}
               <Card className="p-6">
                  <div className="flex items-center gap-3 mb-4">
-                    <img src="/avatars/avatar_teacher_1.png" alt="Michelle" className="w-12 h-12 rounded-full object-cover" />
+                    <img src="/avatars/avatar_teacher_1.png" alt="Michelle" className="w-12 h-12 rounded-full object-cover" loading="lazy" />
                     <div>
                        <p className="font-bold text-ink text-sm">Michelle R.</p>
                        <p className="text-xs text-gray-500">Pediatric OT</p>
@@ -249,7 +251,7 @@ export default function HomePage() {
               {/* Testimonial 3 */}
               <Card className="p-6">
                  <div className="flex items-center gap-3 mb-4">
-                    <img src="/avatars/avatar_dad_1.png" alt="David" className="w-12 h-12 rounded-full object-cover" />
+                    <img src="/avatars/avatar_dad_1.png" alt="David" className="w-12 h-12 rounded-full object-cover" loading="lazy" />
                     <div>
                        <p className="font-bold text-ink text-sm">David T.</p>
                        <p className="text-xs text-gray-500">3rd Grade Teacher</p>
@@ -284,7 +286,7 @@ export default function HomePage() {
                    <Sparkles className="w-3 h-3" /> HUEPRESS
                 </div>
                 <div className="h-48 bg-white rounded-lg mb-4 flex items-center justify-center overflow-hidden border border-gray-100">
-                   <img src="/thumbnails/thumb_whale_1766355003894.png" className="w-full h-full object-cover" />
+                   <img src="/thumbnails/thumb_whale_1766355003894.png" className="w-full h-full object-cover" loading="lazy" alt="HuePress quality comparison" />
                 </div>
                 <h3 className="font-bold text-ink mb-2">Vector-Sharp Lines</h3>
                 <p className="text-sm text-gray-600 mb-3">Crisp, professional outlines even at poster size.</p>

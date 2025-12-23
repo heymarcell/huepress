@@ -1,24 +1,38 @@
 import { Routes, Route } from "react-router-dom";
+import { Suspense, lazy } from "react";
 import { Layout } from "./components/layout/Layout";
 import { AdminLayout } from "./components/layout/AdminLayout";
-import HomePage from "./pages/Home";
-import VaultPage from "./pages/Vault";
-import ResourceDetailPage from "./pages/ResourceDetail";
-import PricingPage from "./pages/Pricing";
-import AboutPage from "./pages/About";
-import NotFoundPage from "./pages/NotFound";
-import PrivacyPolicyPage from "./pages/PrivacyPolicy";
-import TermsOfServicePage from "./pages/TermsOfService";
 
-// Admin pages
-import AdminDashboard from "./pages/admin/Dashboard";
-import AdminAssets from "./pages/admin/Assets";
-import AdminAssetForm from "./pages/admin/AssetForm";
+// Eager load HomePage for fast FCP
+import HomePage from "./pages/Home";
+
+// Lazy load all other pages for code splitting
+const VaultPage = lazy(() => import("./pages/Vault"));
+const ResourceDetailPage = lazy(() => import("./pages/ResourceDetail"));
+const PricingPage = lazy(() => import("./pages/Pricing"));
+const AboutPage = lazy(() => import("./pages/About"));
+const NotFoundPage = lazy(() => import("./pages/NotFound"));
+const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfServicePage = lazy(() => import("./pages/TermsOfService"));
+
+// Admin pages - lazy loaded
+const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
+const AdminAssets = lazy(() => import("./pages/admin/Assets"));
+const AdminAssetForm = lazy(() => import("./pages/admin/AssetForm"));
 
 import ScrollToTop from "./components/ScrollToTop";
 import { ConsentProvider } from "./context/ConsentContext";
 import { ConsentBanner } from "./components/privacy/ConsentBanner";
 import { ConsentPreferences } from "./components/privacy/ConsentPreferences";
+
+// Loading fallback component
+function PageLoader() {
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center">
+      <div className="animate-pulse text-gray-400">Loading...</div>
+    </div>
+  );
+}
 
 export default function App() {
   return (
@@ -26,6 +40,7 @@ export default function App() {
       <ScrollToTop />
       <ConsentBanner />
       <ConsentPreferences />
+      <Suspense fallback={<PageLoader />}>
       <Routes>
       {/* Public routes */}
       <Route element={<Layout />}>
@@ -47,6 +62,7 @@ export default function App() {
         <Route path="assets/:id/edit" element={<AdminAssetForm />} />
       </Route>
       </Routes>
+      </Suspense>
     </ConsentProvider>
   );
 }

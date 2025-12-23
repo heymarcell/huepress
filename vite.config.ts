@@ -20,5 +20,16 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split vendor chunks for better caching
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-clerk': ['@clerk/clerk-react'],
+          'vendor-stripe': ['@stripe/stripe-js'],
+          'vendor-icons': ['lucide-react'],
+        },
+      },
+    },
   },
 });
