@@ -98,7 +98,6 @@ export function FreeSampleCapture({
           <Input
             id={`email-capture-${variant}`}
             type="email"
-            // Label is handled externally for layout control
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
@@ -108,8 +107,8 @@ export function FreeSampleCapture({
             aria-label="Email address for free sample pack"
             error={error || undefined}
             helperText="No credit card. Sent in 1–2 minutes."
-            // Override styles for vault variant
-            className={isVault ? "!border-transparent focus:!ring-white/50" : ""}
+            // For vault: Remove default border color and ring, make it clean white box
+            className={isVault ? "border-transparent focus:ring-white/50" : ""}
           />
           {/* Helper text override for vault since Input handles it internally with gray text */}
           {isVault && !error && (
@@ -120,13 +119,13 @@ export function FreeSampleCapture({
         </div>
         <div className="">
           <Button 
-            variant={isVault ? undefined : "outline"} /* Remove variant for vault locally overridden */
+            variant={isVault ? "ghost" : "outline"} 
             type="submit" 
             isLoading={isLoading} 
             disabled={isLoading} 
             className={`whitespace-nowrap w-full sm:w-auto ${
               isVault 
-                ? "bg-white text-secondary hover:bg-gray-50 border-none shadow-lg" 
+                ? "!bg-white !text-secondary hover:!bg-gray-50 shadow-lg" 
                 : ""
             }`}
           >
