@@ -183,13 +183,13 @@ export default function PricingPage() {
                     </div>
                   )}
                 </div>
-                <ul className="space-y-3 mb-8 flex-grow">
+                <ul className="space-y-2 mb-8 flex-grow">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-3">
+                    <li key={feature} className="flex items-center gap-2">
                       {/* Check icon color */}
-                      <Check className={`w-5 h-5 flex-shrink-0 ${plan.popular ? "text-secondary" : "text-success"}`} strokeWidth={2} />
+                      <Check className={`w-4 h-4 flex-shrink-0 ${plan.popular ? "text-secondary" : "text-success"}`} strokeWidth={2.5} />
                       {/* Feature text color */}
-                      <span className={plan.popular ? "text-white/90" : "text-gray-600"}>{feature}</span>
+                      <span className={`text-sm ${plan.popular ? "text-white/90" : "text-gray-600"}`}>{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -252,14 +252,11 @@ export default function PricingPage() {
              <p className="text-center text-xs text-gray-400 mt-4">Both plans include unlimited downloads and cancel-anytime access.</p>
           </div>
 
-          <div className="text-center mt-12 flex flex-col gap-4">
+          <div className="text-center mt-8">
             <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
               <Lock className="w-4 h-4" strokeWidth={1.5} />
-              Secure checkout powered by Stripe · Cancel anytime · No hidden fees
+              Secure checkout powered by Stripe · Cancel anytime
             </div>
-             <p className="text-sm font-medium text-ink bg-primary/5 inline-block mx-auto px-4 py-2 rounded-md border border-primary/10">
-               Instant access to 500+ designs, unlimited downloads, high-res vector PDFs.
-             </p>
           </div>
       </Section>
 

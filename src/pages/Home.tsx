@@ -267,39 +267,49 @@ export default function HomePage() {
              <Heading className="mb-2">Why "Free" Sites Cost More</Heading>
              <Text>Don't waste ink on pixelated junk.</Text>
           </div>
-          <div className="grid md:grid-cols-2 gap-8 items-center">
+          <div className="grid md:grid-cols-2 gap-8 items-stretch">
              {/* Bad Side */}
-             <div className="bg-white p-6 rounded-2xl border border-gray-200 relative overflow-hidden group">
+             <div className="bg-white p-6 rounded-2xl border border-gray-200 relative overflow-hidden group flex flex-col">
                 <div className="absolute top-4 right-4 bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-md z-10">THEIR FREEBIES</div>
                 <div className="h-48 bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
                    {/* Simulated pixelation */}
                    <div className="w-full h-full bg-[url('/thumbnails/thumb_whale_1766355003894.png')] bg-cover blur-[2px] opacity-60 scale-110 grayscale"></div>
                 </div>
-                <h3 className="font-bold text-gray-400 mb-2">Pixelated & Blurry</h3>
-                <p className="text-sm text-gray-400">Jagged edges that look awful when printed.</p>
+                <div className="mt-auto">
+                   <h3 className="font-bold text-gray-400 mb-2">Pixelated & Blurry</h3>
+                   <p className="text-sm text-gray-400">Jagged edges that look awful when printed.</p>
+                   {/* Spacer to match the checklist height on the right */}
+                   <ul className="space-y-1 mt-3 opacity-0 pointer-events-none" aria-hidden="true">
+                      <li className="text-xs">&nbsp;</li>
+                      <li className="text-xs">&nbsp;</li>
+                      <li className="text-xs">&nbsp;</li>
+                   </ul>
+                </div>
              </div>
 
              {/* Good Side */}
-             <div className="bg-white p-6 rounded-2xl border-2 border-success/20 ring-4 ring-success/5 relative overflow-hidden shadow-lg">
+             <div className="bg-white p-6 rounded-2xl border-2 border-success/20 ring-4 ring-success/5 relative overflow-hidden shadow-lg flex flex-col">
                 <div className="absolute top-4 right-4 bg-success text-white text-xs font-bold px-3 py-1 rounded-md flex items-center gap-1">
                    <Sparkles className="w-3 h-3" /> HUEPRESS
                 </div>
                 <div className="h-48 bg-white rounded-lg mb-4 flex items-center justify-center overflow-hidden border border-gray-100">
                    <img src="/thumbnails/thumb_whale_1766355003894.png" className="w-full h-full object-cover" loading="lazy" alt="HuePress quality comparison" />
                 </div>
-                <h3 className="font-bold text-ink mb-2">Vector-Sharp Lines</h3>
-                <p className="text-sm text-gray-600 mb-3">Crisp, professional outlines even at poster size.</p>
-                <ul className="space-y-1">
-                   <li className="text-xs text-gray-500 flex items-center gap-2">
-                     <Check className="w-3 h-3 text-success" /> No watermarks
-                   </li>
-                   <li className="text-xs text-gray-500 flex items-center gap-2">
-                     <Check className="w-3 h-3 text-success" /> Vector PDFs
-                   </li>
-                   <li className="text-xs text-gray-500 flex items-center gap-2">
-                     <Check className="w-3 h-3 text-success" /> Bold lines for calmer coloring
-                   </li>
-                </ul>
+                <div className="mt-auto">
+                   <h3 className="font-bold text-ink mb-2">Vector-Sharp Lines</h3>
+                   <p className="text-sm text-gray-600 mb-3">Crisp, professional outlines even at poster size.</p>
+                   <ul className="space-y-1">
+                      <li className="text-xs text-gray-500 flex items-center gap-2">
+                        <Check className="w-3 h-3 text-success" /> No watermarks
+                      </li>
+                      <li className="text-xs text-gray-500 flex items-center gap-2">
+                        <Check className="w-3 h-3 text-success" /> Vector PDFs
+                      </li>
+                      <li className="text-xs text-gray-500 flex items-center gap-2">
+                        <Check className="w-3 h-3 text-success" /> Bold lines for calmer coloring
+                      </li>
+                   </ul>
+                </div>
              </div>
           </div>
       </Section>
