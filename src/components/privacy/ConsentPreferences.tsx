@@ -1,6 +1,7 @@
 import React from 'react';
 import { useConsent } from '../../context/ConsentContext';
 import { X, Check } from 'lucide-react';
+import { Button } from '@/components/ui';
 
 export const ConsentPreferences: React.FC = () => {
   const { 
@@ -23,7 +24,7 @@ export const ConsentPreferences: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-ink/20 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-paper rounded-card shadow-pop border-2 border-ink overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-lg bg-paper rounded-xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between p-6 md:p-8 border-b border-gray-100">
           <h2 className="font-serif font-bold text-h2 text-ink">
@@ -106,26 +107,32 @@ export const ConsentPreferences: React.FC = () => {
         {/* Footer Actions */}
         <div className="p-6 md:p-8 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
             <div className="flex gap-4 w-full sm:w-auto justify-center sm:justify-start">
-                 <button
+                 <Button
+                    variant="ghost"
                     onClick={rejectAll}
-                    className="text-small font-bold text-gray-400 hover:text-ink transition-colors"
+                    size="sm"
+                    className="text-gray-400 hover:text-ink font-bold"
                 >
                     Reject All
-                </button>
-                 <button
+                </Button>
+                 <Button
+                    variant="ghost"
                     onClick={acceptAll}
-                    className="text-small font-bold text-gray-400 hover:text-primary transition-colors"
+                    size="sm"
+                    className="text-gray-400 hover:text-primary font-bold"
                 >
                     Accept All
-                </button>
+                </Button>
             </div>
           
-          <button
+          <Button
+            variant="primary"
             onClick={handleSave}
-            className="w-full sm:w-auto px-8 py-3 bg-primary text-white rounded-md font-bold text-button hover:bg-primary-hover transition-all duration-200 shadow-[2px_2px_0px_0px_#111827] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] active:scale-95 text-center"
+            size="md"
+            className="w-full sm:w-auto shadow-md"
           >
             Save Preferences
-          </button>
+          </Button>
         </div>
       </div>
     </div>
