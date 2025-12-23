@@ -1,6 +1,8 @@
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useUser, useAuth } from "@clerk/clerk-react";
 import { Link } from "react-router-dom";
 import { createPortalSession } from "./stripe";
+import { useState } from "react";
+import { AlertModal } from "@/components/ui/AlertModal";
 
 export function useSubscription() {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -21,6 +23,12 @@ export function useSubscription() {
 export function AuthButtons() {
   const { isSubscriber } = useSubscription();
   const { getToken } = useAuth();
+  const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    variant: "info",
+  });
 
   const handleManageSubscription = async () => {
     try {
@@ -29,7 +37,12 @@ export function AuthButtons() {
       await createPortalSession(token);
     } catch (error) {
       console.error("Failed to open portal:", error);
-      alert("Something went wrong. Please try again.");
+      setAlertState({
+        isOpen: true,
+        title: "Portal Error",
+        message: "Something went wrong loading the customer portal. Please try again.",
+        variant: "error"
+      });
     }
   };
 
@@ -58,6 +71,14 @@ export function AuthButtons() {
         )}
         <UserButton afterSignOutUrl="/" />
       </SignedIn>
+
+      <AlertModal 
+        isOpen={alertState.isOpen}
+        onClose={() => setAlertState(prev => ({ ...prev, isOpen: false }))}
+        title={alertState.title}
+        message={alertState.message}
+        variant={alertState.variant}
+      />
     </div>
   );
 }

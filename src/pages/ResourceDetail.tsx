@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useState } from "react";
 import { Button, StickyCTA } from "@/components/ui";
+import { AlertModal } from "@/components/ui/AlertModal";
 import { useSubscription } from "@/lib/auth";
 import { 
   FileText, 
@@ -42,13 +43,24 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
   const { isSubscriber, isLoaded, isSignedIn } = useSubscription();
   const [showEmailCapture, setShowEmailCapture] = useState(false);
   const [email, setEmail] = useState("");
+  const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    variant: "info",
+  });
 
   const handleDownload = async () => {
     try {
       const response = await fetch(`/api/download/${assetId}`);
       if (!response.ok) {
         if (response.status === 403) {
-          alert("Subscription required to download");
+          setAlertState({
+            isOpen: true,
+            title: "Access Denied",
+            message: "Subscription required to download. Join The Club to unlock!",
+            variant: "info"
+          });
           return;
         }
         throw new Error("Download failed");
@@ -65,14 +77,24 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
       a.remove();
     } catch (error) {
       console.error("Download error:", error);
-      alert("Download failed. Please try again.");
+      setAlertState({
+        isOpen: true,
+        title: "Download Failed",
+        message: "We encountered an issue downloading your file. Please try again.",
+        variant: "error"
+      });
     }
   };
 
   const handleFreeSample = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Integrate with email service
-    alert(`Sample will be sent to ${email}! (Demo mode)`);
+    setAlertState({
+      isOpen: true,
+      title: "Sample Sent!",
+      message: `Your free sample will be sent to ${email} (Demo mode).`,
+      variant: "success"
+    });
     setShowEmailCapture(false);
     setEmail("");
   };
@@ -164,6 +186,14 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
           Already a member? <Link to="/pricing" className="text-primary font-medium hover:underline">Log in</Link>
         </p>
       )}
+
+      <AlertModal 
+        isOpen={alertState.isOpen}
+        onClose={() => setAlertState(prev => ({ ...prev, isOpen: false }))}
+        title={alertState.title}
+        message={alertState.message}
+        variant={alertState.variant}
+      />
     </div>
   );
 }

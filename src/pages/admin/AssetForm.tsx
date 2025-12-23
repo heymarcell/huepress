@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui";
+import { AlertModal } from "@/components/ui/AlertModal";
 import { Upload, Save, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
@@ -34,19 +35,29 @@ export default function AdminAssetForm() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    variant: "info",
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ... inside component
   const { user } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!thumbnailFile || !pdfFile) {
-      alert("Please upload both a thumbnail and a PDF file.");
+      setAlertState({
+        isOpen: true,
+        title: "Missing Files",
+        message: "Please upload both a thumbnail image and a PDF file.",
+        variant: "error"
+      });
       return;
     }
 
@@ -82,7 +93,12 @@ export default function AdminAssetForm() {
       navigate("/admin/assets");
     } catch (error) {
       console.error("Error saving asset:", error);
-      alert(error instanceof Error ? error.message : "Failed to save asset");
+      setAlertState({
+        isOpen: true,
+        title: "Save Failed",
+        message: error instanceof Error ? error.message : "Failed to save asset. Please try again.",
+        variant: "error"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -261,6 +277,14 @@ export default function AdminAssetForm() {
           </Link>
         </div>
       </form>
+
+      <AlertModal 
+        isOpen={alertState.isOpen}
+        onClose={() => setAlertState(prev => ({ ...prev, isOpen: false }))}
+        title={alertState.title}
+        message={alertState.message}
+        variant={alertState.variant}
+      />
     </div>
   );
 }

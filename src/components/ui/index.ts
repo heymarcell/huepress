@@ -4,3 +4,4 @@ export { FilterChip, FilterBar } from "./FilterChip";
 export { SearchBar } from "./SearchBar";
 export { Accordion } from "./Accordion";
 export * from './StickyCTA';
+export * from './AlertModal';

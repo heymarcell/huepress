@@ -60,12 +60,19 @@ const userTypes = [
 import { useAuth, useClerk } from "@clerk/clerk-react";
 import { useSubscription } from "@/lib/auth";
 import { EUWaiverModal } from "@/components/checkout/EUWaiverModal";
+import { AlertModal } from "@/components/ui/AlertModal";
 
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPriceId, setSelectedPriceId] = useState<string | null>(null);
-
+  const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    variant: "info",
+  });
+  
   const { getToken, isSignedIn } = useAuth();
   const { openSignUp, user } = useClerk();
   const { isSubscriber } = useSubscription();
@@ -77,7 +84,12 @@ export default function PricingPage() {
     }
 
     if (isSubscriber) {
-      alert("You are already a member! Go to the Vault to download.");
+      setAlertState({
+        isOpen: true,
+        title: "Already a Member",
+        message: "You are already a member! Go to the Vault to download your coloring pages.",
+        variant: "info"
+      });
       return;
     }
 
@@ -98,9 +110,14 @@ export default function PricingPage() {
       await createCheckoutSession(selectedPriceId, token, email);
     } catch (error) {
       console.error("Checkout error:", error);
-      alert("Unable to start checkout. Please try again.");
+      setAlertState({
+        isOpen: true,
+        title: "Checkout Error",
+        message: "Unable to start checkout. Please try again.",
+        variant: "error"
+      });
       setLoading(null);
-    }
+    } 
   };
 
   return (
@@ -296,6 +313,14 @@ export default function PricingPage() {
         onClose={() => setModalOpen(false)}
         onConfirm={handleConfirmSubscribe}
         isLoading={loading === selectedPriceId}
+      />
+
+      <AlertModal 
+        isOpen={alertState.isOpen}
+        onClose={() => setAlertState(prev => ({ ...prev, isOpen: false }))}
+        title={alertState.title}
+        message={alertState.message}
+        variant={alertState.variant}
       />
     </>
   );
