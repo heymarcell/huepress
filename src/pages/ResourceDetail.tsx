@@ -11,8 +11,7 @@ import {
   Sparkles,
   Star,
   Download,
-  Unlock,
-  Check
+  Unlock
 } from "lucide-react";
 import SEO from "@/components/SEO";
 import { apiClient } from "@/lib/api-client";
@@ -341,25 +340,7 @@ export default function ResourceDetailPage() {
               {/* Download/Unlock Section */}
               <DownloadSection assetId={id || "1"} title={asset.title} />
 
-              <hr className="my-8 border-gray-100" />
 
-              {/* What you get */}
-              <div className="space-y-4">
-                <h3 className="font-bold text-ink">What you get:</h3>
-                <ul className="space-y-2">
-                  {[
-                    "Crystal-clear vector PDF — prints at any size",
-                    "Bold, therapy-grade lines — easy for little hands",
-                    "A4 & US Letter ready — just open and print",
-                    "No watermark on Club downloads",
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-gray-600 text-sm">
-                      <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" strokeWidth={2} />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
 
             {/* Related */}
