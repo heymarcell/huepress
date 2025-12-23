@@ -265,15 +265,9 @@ app.post("/api/checkout", async (c) => {
       "mode": "subscription",
       "success_url": "https://huepress.co/vault?success=true",
       "cancel_url": "https://huepress.co/pricing?canceled=true",
-      "allow_promotion_codes": "true",
       "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
-      // EU Compliance: Mandatory checkbox for immediate access & waiver of withdrawal right
-      "custom_fields[0][key]": "withdrawal_waiver",
-      "custom_fields[0][type]": "boolean",
-      "custom_fields[0][label][type]": "custom",
-      "custom_fields[0][label][custom]": "I consent to immediate access and acknowledge that I lose my right of withdrawal.",
-      "custom_fields[0][optional]": "false",
+      "metadata[waiver_accepted]": "true", // Record that they accepted the modal on frontend
     };
 
     if (email) {

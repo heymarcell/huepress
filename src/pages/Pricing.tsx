@@ -40,9 +40,6 @@ const plans = [
 ];
 
 
-
-
-
 const faqs = [
   { question: "What makes HuePress different from free sites?", answer: "We focus on quality over quantity. Every design features therapy-grade bold lines, no ads, instant downloads, and a curated aesthetic you'd be proud to display on your fridge." },
   { question: "Can I cancel anytime?", answer: "Absolutely! Cancel with one click, no questions asked. You'll keep access until your billing period ends." },
@@ -62,14 +59,18 @@ const userTypes = [
 
 import { useAuth, useClerk } from "@clerk/clerk-react";
 import { useSubscription } from "@/lib/auth";
+import { EUWaiverModal } from "@/components/checkout/EUWaiverModal";
 
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedPriceId, setSelectedPriceId] = useState<string | null>(null);
+
   const { getToken, isSignedIn } = useAuth();
   const { openSignUp, user } = useClerk();
   const { isSubscriber } = useSubscription();
 
-  const handleSubscribe = async (priceId: string) => {
+  const handleSubscribeClick = (priceId: string) => {
     if (!isSignedIn) {
       openSignUp();
       return;
@@ -80,18 +81,24 @@ export default function PricingPage() {
       return;
     }
 
-    setLoading(priceId);
-    analytics.checkoutStarted(priceId);
+    setSelectedPriceId(priceId);
+    setModalOpen(true);
+  };
+
+  const handleConfirmSubscribe = async () => {
+    if (!selectedPriceId) return;
+
+    setLoading(selectedPriceId);
+    analytics.checkoutStarted(selectedPriceId);
     try {
       const token = await getToken();
       if (!token) throw new Error("No authentication token available");
       
       const email = user?.primaryEmailAddress?.emailAddress;
-      await createCheckoutSession(priceId, token, email);
+      await createCheckoutSession(selectedPriceId, token, email);
     } catch (error) {
       console.error("Checkout error:", error);
       alert("Unable to start checkout. Please try again.");
-    } finally {
       setLoading(null);
     }
   };
@@ -173,7 +180,7 @@ export default function PricingPage() {
                     variant={plan.popular ? "secondary" : "primary"}
                     size="lg"
                     className="w-full shadow-md"
-                    onClick={() => handleSubscribe(plan.priceId)}
+                    onClick={() => handleSubscribeClick(plan.priceId)}
                     isLoading={loading === plan.priceId}
                   >
                     {isSubscriber ? "Already a Member" : plan.cta}
@@ -278,11 +285,18 @@ export default function PricingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="font-serif text-h1 mb-4">Ready to Start Coloring?</h2>
           <p className="text-white/80 mb-8">Join The Club today and access 500+ fridge-worthy designs.</p>
-          <Button variant="secondary" size="lg" onClick={() => handleSubscribe(plans[1].priceId)}>
+          <Button variant="secondary" size="lg" onClick={() => handleSubscribeClick(plans[1].priceId)}>
             Join for $5/mo
           </Button>
         </div>
       </section>
+
+      <EUWaiverModal 
+        isOpen={modalOpen} 
+        onClose={() => setModalOpen(false)}
+        onConfirm={handleConfirmSubscribe}
+        isLoading={loading === selectedPriceId}
+      />
     </>
   );
 }
