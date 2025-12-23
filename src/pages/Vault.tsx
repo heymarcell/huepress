@@ -2,10 +2,10 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
 import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button } from "@/components/ui";
-import { Gift, ArrowUpDown, Filter, Search, X } from "lucide-react";
+import { ArrowUpDown, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
 
-import { FreeSampleCapture } from "@/components/features/FreeSampleCapture";
+import { FreeSampleBanner } from "@/components/features/FreeSampleBanner";
 
 // Mock data with real thumbnails
 const mockAssets = [
@@ -86,33 +86,7 @@ const skills = [
   { label: "Creative", value: "Creative" },
 ];
 
-// Free Sample Banner component - High contrast interstitial
-function FreeSampleBanner() {
-  return (
-    <div className="bg-secondary text-white rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden group">
-      {/* Background decoration */}
-      <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-      
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
-        {/* Left: Text content */}
-        <div className="flex items-center gap-4 text-center lg:text-left">
-          <div className="bg-white/20 p-3 rounded-xl hidden lg:block backdrop-blur-sm">
-             <Gift className="w-8 h-8 text-white" strokeWidth={1.5} />
-          </div>
-          <div>
-            <h3 className="font-serif text-2xl font-bold mb-1">Try 3 Free Pages</h3>
-            <p className="text-white/90 text-sm md:text-base">See the difference bold lines make. Sent in 1–2 minutes.</p>
-          </div>
-        </div>
-        
-        {/* Right: Standardized Form module */}
-        <div className="w-full lg:w-auto">
-          <FreeSampleCapture source="free_sample_vault_banner" variant="vault" />
-        </div>
-      </div>
-    </div>
-  );
-}
+
 
 export default function VaultPage() {
   const { isSubscriber } = useSubscription();
