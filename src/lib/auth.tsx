@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { createPortalSession } from "./stripe";
 import { useState } from "react";
 import { AlertModal } from "@/components/ui/AlertModal";
+import { Button } from "@/components/ui";
 
 export function useSubscription() {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -55,9 +56,9 @@ export function AuthButtons() {
           </button>
         </SignInButton>
         <SignUpButton mode="modal">
-          <button className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-md font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 text-sm">
+          <Button variant="primary" size="sm" className="font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 text-sm">
             Join for $5/mo
-          </button>
+          </Button>
         </SignUpButton>
       </SignedOut>
       <SignedIn>
