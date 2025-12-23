@@ -5,6 +5,7 @@ import { AlertModal } from "@/components/ui/AlertModal";
 import { Upload, Save, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
+import { apiClient } from "@/lib/api-client";
 
 const categories = ["Animals", "Fantasy", "Nature", "Vehicles", "Food", "Holidays", "Characters"];
 const skills = ["Easy", "Medium", "Hard"];
@@ -72,22 +73,11 @@ export default function AdminAssetForm() {
       form.append("pdf", pdfFile);
 
       // Use production API URL if in prod, else local
-      const API_URL = import.meta.env.VITE_API_URL || "";
+      // apiClient handles API_URL internally, but createAsset needs manualFormData
       
-      const response = await fetch(`${API_URL}/api/admin/assets`, {
-        method: "POST",
-        headers: {
-          "X-Admin-Email": user?.primaryEmailAddress?.emailAddress || "",
-        },
-        body: form,
-      });
+      const result = await apiClient.admin.createAsset(form, user?.primaryEmailAddress?.emailAddress || "");
 
-      if (!response.ok) {
-        const data = await response.json() as { error?: string };
-        throw new Error(data.error || "Failed to create asset");
-      }
 
-      const result = await response.json();
       console.log("Asset created:", result);
 
       navigate("/admin/assets");

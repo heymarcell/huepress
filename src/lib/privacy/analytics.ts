@@ -18,7 +18,6 @@ declare global {
 export const initAnalytics = () => {
   window.dataLayer = window.dataLayer || [];
   function gtag(...args: any[]) {
-    // @ts-ignore
     window.dataLayer.push(args);
   }
   window.gtag = window.gtag || gtag;

@@ -1,0 +1,86 @@
+import { Hono } from "hono";
+import { Webhook } from "svix";
+import { Bindings } from "../types";
+
+const app = new Hono<{ Bindings: Bindings }>();
+
+// Clerk webhook handler (for user sync)
+app.post("/clerk", async (c) => {
+  const WEBHOOK_SECRET = c.env.CLERK_WEBHOOK_SECRET;
+
+  if (!WEBHOOK_SECRET) {
+    return c.json({ error: "Missing Clerk Webhook Secret" }, 500);
+  }
+
+  // Get headers
+  const svix_id = c.req.header("svix-id");
+  const svix_timestamp = c.req.header("svix-timestamp");
+  const svix_signature = c.req.header("svix-signature");
+
+  // If missing headers, error out
+  if (!svix_id || !svix_timestamp || !svix_signature) {
+    return c.json({ error: "Error occured -- no svix headers" }, 400);
+  }
+
+  // Get body
+  const body = await c.req.text();
+
+  // Create new Svix instance with secret
+  const wh = new Webhook(WEBHOOK_SECRET);
+
+  let evt: any;
+
+  // Verify payload
+  try {
+    evt = wh.verify(body, {
+      "svix-id": svix_id,
+      "svix-timestamp": svix_timestamp,
+      "svix-signature": svix_signature,
+    });
+  } catch (err) {
+    console.error("Error verifying webhook:", err);
+    return c.json({ error: "Error occured" }, 400);
+  }
+
+  try {
+    const eventType = evt.type;
+    console.log(`Webhook received: ${eventType}`);
+
+    switch (eventType) {
+      case "user.created": {
+        const user = evt.data;
+        const email = user.email_addresses?.[0]?.email_address;
+        
+        if (email) {
+          await c.env.DB.prepare(`
+            INSERT OR IGNORE INTO users (id, email, clerk_id, subscription_status)
+            VALUES (?, ?, ?, 'free')
+          `)
+            .bind(crypto.randomUUID(), email, user.id)
+            .run();
+
+          console.log("User created:", email);
+        }
+        break;
+      }
+
+      case "user.deleted": {
+        const userId = evt.data.id;
+        
+        await c.env.DB.prepare("DELETE FROM users WHERE clerk_id = ?")
+          .bind(userId)
+          .run();
+
+        console.log("User deleted:", userId);
+        break;
+      }
+    }
+
+    return c.json({ received: true });
+  } catch (error) {
+    console.error("Clerk webhook error:", error);
+    return c.json({ error: "Webhook failed" }, 400);
+  }
+});
+
+export default app;

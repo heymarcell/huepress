@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Plus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useUser } from "@clerk/clerk-react";
+import { apiClient } from "@/lib/api-client";
 
 export default function AdminAssets() {
   const { user } = useUser();
@@ -13,19 +14,11 @@ export default function AdminAssets() {
   useEffect(() => {
     if (!user) return;
 
-    const fetchAssets = async () => {
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || "";
-        const response = await fetch(`${API_URL}/api/admin/assets`, {
-          headers: {
-            "X-Admin-Email": user.primaryEmailAddress?.emailAddress || "",
-          },
-        });
-        if (response.ok) {
-          const data = await response.json() as { assets: any[] };
+      const fetchAssets = async () => {
+        try {
+          const data = await apiClient.admin.listAssets(user.primaryEmailAddress?.emailAddress || "");
           setAssets(data.assets || []);
-        }
-      } catch (error) {
+        } catch (error) {
         console.error("Failed to fetch assets:", error);
       } finally {
         setLoading(false);

@@ -1,0 +1,116 @@
+import { Hono } from "hono";
+import { Bindings } from "../types";
+
+const app = new Hono<{ Bindings: Bindings }>();
+
+// Get all published assets
+app.get("/assets", async (c) => {
+  const category = c.req.query("category");
+  const skill = c.req.query("skill");
+  const limit = parseInt(c.req.query("limit") || "50");
+  const offset = parseInt(c.req.query("offset") || "0");
+
+  let query = "SELECT * FROM assets WHERE status = 'published'";
+  const params: string[] = [];
+
+  if (category) {
+    query += " AND category = ?";
+    params.push(category);
+  }
+
+  if (skill) {
+    query += " AND skill = ?";
+    params.push(skill);
+  }
+
+  query += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+  params.push(limit.toString(), offset.toString());
+
+  try {
+    const { results } = await c.env.DB.prepare(query).bind(...params).all();
+    
+    const assets = results?.map((asset: any) => ({
+      ...asset,
+      tags: asset.tags ? JSON.parse(asset.tags) : [],
+    }));
+
+    return c.json({ assets, count: assets?.length || 0 });
+  } catch (error) {
+    console.error("Database error:", error);
+    return c.json({ error: "Failed to fetch assets" }, 500);
+  }
+});
+
+// Get single asset by ID
+app.get("/assets/:id", async (c) => {
+  const id = c.req.param("id");
+
+  try {
+    const asset = await c.env.DB.prepare(
+      "SELECT * FROM assets WHERE id = ? AND status = 'published'"
+    )
+      .bind(id)
+      .first();
+
+    if (!asset) {
+      return c.json({ error: "Asset not found" }, 404);
+    }
+
+    return c.json({
+      ...asset,
+      tags: asset.tags ? JSON.parse(asset.tags as string) : [],
+    });
+  } catch (error) {
+    console.error("Database error:", error);
+    return c.json({ error: "Failed to fetch asset" }, 500);
+  }
+});
+
+// Download endpoint
+app.get("/download/:id", async (c) => {
+  const id = c.req.param("id");
+  
+  // Get Clerk session from header (MVP check)
+  const authHeader = c.req.header("Authorization");
+  if (!authHeader) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  // TODO: Verify Clerk JWT token properly with key
+  // For MVP refactor, we are keeping behavior same as original
+
+  try {
+    const asset = await c.env.DB.prepare("SELECT * FROM assets WHERE id = ?")
+      .bind(id)
+      .first();
+
+    if (!asset) {
+      return c.json({ error: "Asset not found" }, 404);
+    }
+
+    // Checking private R2 bucket
+    const file = await c.env.ASSETS_PRIVATE.get(asset.r2_key_private as string);
+
+    if (!file) {
+      return c.json({ error: "File not found" }, 404);
+    }
+
+    await c.env.DB.prepare(
+      "UPDATE assets SET download_count = download_count + 1 WHERE id = ?"
+    )
+      .bind(id)
+      .run();
+
+    return new Response(file.body, {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${asset.title}.pdf"`,
+      },
+    });
+  } catch (error) {
+    console.error("Download error:", error);
+    return c.json({ error: "Download failed" }, 500);
+  }
+});
+
+export default app;

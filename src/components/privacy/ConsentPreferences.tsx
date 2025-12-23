@@ -14,7 +14,7 @@ export const ConsentPreferences: React.FC = () => {
 
   if (!isPreferencesOpen) return null;
 
-  // @ts-ignore
+  // @ts-expect-error: Navigator properties implementation varies by browser
   const isGpcEnabled = navigator.globalPrivacyControl === true || navigator.globalPrivacyControl === 1;
 
   const handleSave = () => {

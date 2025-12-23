@@ -35,7 +35,7 @@ export const ConsentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const stored = localStorage.getItem(STORAGE_KEY);
     
     // Check Global Privacy Control
-    // @ts-ignore
+    // @ts-expect-error: Navigator properties implementation varies by browser
     const gpcSignal = navigator.globalPrivacyControl;
     const isGpcEnabled = gpcSignal === true || gpcSignal === 1;
 

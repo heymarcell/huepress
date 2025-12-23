@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button, StickyCTA } from "@/components/ui";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { useSubscription } from "@/lib/auth";
+import { useAuth } from "@clerk/clerk-react";
 import { 
   FileText, 
   Printer, 
@@ -14,6 +15,7 @@ import {
   Check
 } from "lucide-react";
 import SEO from "@/components/SEO";
+import { apiClient } from "@/lib/api-client";
 
 const mockAsset = {
   id: "1",
@@ -41,6 +43,7 @@ const trustBadges = [
 
 function DownloadSection({ assetId, title }: { assetId: string; title: string }) {
   const { isSubscriber, isLoaded, isSignedIn } = useSubscription();
+  const { getToken } = useAuth();
   const [showEmailCapture, setShowEmailCapture] = useState(false);
   const [email, setEmail] = useState("");
   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
@@ -52,9 +55,26 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
 
   const handleDownload = async () => {
     try {
-      const response = await fetch(`/api/download/${assetId}`);
+      const downloadUrl = apiClient.assets.getDownloadUrl(assetId);
+      
+      // Use standard navigation to trigger download (backend sets Content-Disposition attachment)
+      // verify access first via head request?
+      // Or just navigate.
+      
+      // If we want to catch errors (403), we need to fetch first.
+      // But we can't fetch blob easily with current apiClient.
+      // To preserve error handling UI (AlertModal), we need to fetch.
+      
+      // Let's stick to fetch but use the URL from apiClient helper to be consistent with base URL.
+      const token = await getToken();
+      const response = await fetch(downloadUrl, {
+          headers: {
+             "Authorization": `Bearer ${token}`
+          }
+      });
+      
       if (!response.ok) {
-        if (response.status === 403) {
+        if (response.status === 403 || response.status === 401) {
           setAlertState({
             isOpen: true,
             title: "Access Denied",
