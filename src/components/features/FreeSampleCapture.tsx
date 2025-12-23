@@ -6,11 +6,12 @@ import { analytics } from "@/lib/analytics";
 export function FreeSampleCapture() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Validation state
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
       setError("Please enter your email address.");
@@ -20,13 +21,31 @@ export function FreeSampleCapture() {
       setError("That email doesn't look valid. Try again.");
       return;
     }
-    // TODO: Integrate with email service
     
-    // Track lead generation
-    analytics.generateLead('free_sample_homepage');
-    
-    setSubmitted(true);
+    setIsLoading(true);
     setError(null);
+    
+    try {
+      const response = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, source: "free_sample_homepage" }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Subscription failed");
+      }
+      
+      // Track lead generation
+      analytics.generateLead('free_sample_homepage');
+      
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Subscribe error:", err);
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (submitted) {
@@ -73,7 +92,7 @@ export function FreeSampleCapture() {
           />
         </div>
         <div className="">
-          <Button variant="outline" type="submit" className="whitespace-nowrap w-full sm:w-auto">
+          <Button variant="outline" type="submit" isLoading={isLoading} disabled={isLoading} className="whitespace-nowrap w-full sm:w-auto">
             <Gift className="w-4 h-4" />
             Send Me Free Pages
           </Button>
