@@ -1,7 +1,7 @@
 import { HTMLAttributes, forwardRef } from "react";
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "hover" | "flat";
+  variant?: "default" | "hover" | "flat" | "primary";
 }
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
@@ -10,6 +10,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       default: "bg-white border border-gray-100 shadow-sm",
       hover: "bg-white border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200",
       flat: "bg-gray-50 border border-gray-100",
+      primary: "bg-primary text-white border-transparent shadow-2xl shadow-primary/30",
     };
 
     return (
@@ -28,11 +29,11 @@ export function CardHeader({ className = "", ...props }: HTMLAttributes<HTMLDivE
 }
 
 export function CardTitle({ className = "", ...props }: HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={`font-serif text-xl font-semibold text-ink ${className}`} {...props} />;
+  return <h3 className={`font-serif text-xl font-semibold ${className}`} {...props} />;
 }
 
 export function CardDescription({ className = "", ...props }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={`text-sm text-gray-500 mt-1 ${className}`} {...props} />;
+  return <p className={`text-sm mt-1 opacity-80 ${className}`} {...props} />;
 }
 
 export function CardContent({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {

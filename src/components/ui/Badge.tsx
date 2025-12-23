@@ -1,7 +1,7 @@
 import { HTMLAttributes } from "react";
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  variant?: "default" | "secondary" | "outline" | "destructive" | "success" | "warning";
+  variant?: "default" | "secondary" | "outline" | "destructive" | "success" | "warning" | "soft" | "soft-success";
   size?: "sm" | "md";
 }
 
@@ -19,6 +19,9 @@ export function Badge({
     destructive: "bg-red-500 text-white border-transparent",
     success: "bg-success text-white border-transparent",
     warning: "bg-yellow-400 text-ink border-transparent",
+    soft: "bg-gray-100 text-gray-800 border-transparent",
+    "soft-success": "bg-success/10 text-success-dark border-transparent", 
+    // Added specific soft-success for the home page badge
   };
 
   const sizes = {

@@ -35,31 +35,45 @@ export function FreeSampleCapture() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <div className="flex flex-col sm:flex-row gap-2">
-      <div className="flex-1">
-        <Input
-          id="email-capture"
-          type="email"
-          label="Email address"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            if (error) setError(null);
-          }}
-          placeholder="mom@example.com"
-          aria-label="Email address for free sample pack"
-          error={error || undefined}
-          helperText="No credit card. Sent in 1–2 minutes."
-        />
-      </div>
-      <div className="mt-6 sm:mt-[23px]"> 
-        {/* Align with input box, accounting for label height */}
-        <Button variant="outline" type="submit" className="whitespace-nowrap h-[50px]">
-          <Gift className="w-4 h-4" />
-          Send Me Free Pages
-        </Button>
-      </div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-1">
+      {/* 
+          Layout Fix: 
+          To perfectly align the Button with the Input FIELD (ignoring helper text height), 
+          we separate the Label.
+          Row 1: Label
+          Row 2: Input + Button (aligned items-start)
+      */}
+      <label 
+        htmlFor="email-capture" 
+        className="block text-xs font-bold text-gray-700 ml-1"
+      >
+        Email address
+      </label>
+      
+      <div className="flex flex-col sm:flex-row gap-2 items-start">
+        <div className="flex-1 w-full">
+          <Input
+            id="email-capture"
+            type="email"
+            // Label is handled externally for layout control
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (error) setError(null);
+            }}
+            placeholder="mom@example.com"
+            aria-label="Email address for free sample pack"
+            error={error || undefined}
+            helperText="No credit card. Sent in 1–2 minutes."
+            className="h-[50px]" /* Match button height if needed, standard is usually auto, but let's be safe. Button size=md is py-3 px-6. Input py-3. Should match. */
+          />
+        </div>
+        <div className="">
+          <Button variant="outline" type="submit" className="whitespace-nowrap w-full sm:w-auto">
+            <Gift className="w-4 h-4" />
+            Send Me Free Pages
+          </Button>
+        </div>
       </div>
     </form>
   );

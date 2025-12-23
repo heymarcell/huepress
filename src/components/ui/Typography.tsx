@@ -36,7 +36,7 @@ export function Heading({
 
   return (
     <Component 
-      className={`${variants[selectedVariant]} text-ink ${className}`} 
+      className={`${variants[selectedVariant]} ${className}`} 
       {...props}
     >
       {children}
@@ -58,15 +58,34 @@ export function Text({
   ...props 
 }: TextProps) {
   const variants = {
-    body: "text-body text-gray-600",
-    large: "text-lg text-gray-500",
-    small: "text-small text-gray-500",
+    body: "text-body", // Removed text-gray-600 to allow inheritance, relying on body default or custom classes
+    large: "text-lg",
+    small: "text-small",
     muted: "text-sm text-gray-400",
   };
 
+  const defaultColors = {
+    body: "text-gray-600",
+    large: "text-gray-500",
+    small: "text-gray-500",
+    muted: "",
+  };
+
+  // If className contains a text- color, we might want to skip the default color.
+  // But strictly, Tailwind classes later in the string override earlier ones.
+  // The issue is if text-gray-600 has higher specificity or order issues.
+  // Let's just append the default color IF the user hasn't provided one? 
+  // No, that's complex. Let's trust Tailwind's cascade.
+  // But wait, in the previous file I saw `text-ink` hardcoded.
+  // Ideally, I should put the default color IN the variant string, but if I want to override it, 
+  // passing `text-white` should work if it appears LATER.
+  
+  const baseClass = variants[variant];
+  const colorClass = defaultColors[variant as keyof typeof defaultColors];
+  
   return (
     <Component 
-      className={`${variants[variant]} ${className}`} 
+      className={`${baseClass} ${colorClass} ${className}`} 
       {...props}
     >
       {children}

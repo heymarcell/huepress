@@ -138,10 +138,11 @@ export default function PricingPage() {
             {plans.slice().reverse().map((plan) => (
               <Card 
                 key={plan.name} 
-                className={`relative flex flex-col ${
+                variant={plan.popular ? "primary" : "default"}
+                className={`relative flex flex-col overflow-visible ${
                   plan.popular 
-                    ? "bg-primary text-white shadow-2xl shadow-primary/30 border-transparent p-10 md:scale-110 z-10" 
-                    : "bg-gray-50 border border-gray-200 shadow-lg p-8 opacity-90 hover:opacity-100 transition-opacity"
+                    ? "p-10 md:scale-110 z-10" 
+                    : "p-8 opacity-90 hover:opacity-100 transition-opacity"
                 }`}
               >
                 {plan.popular && (
@@ -150,6 +151,7 @@ export default function PricingPage() {
                   </div>
                 )}
                 <div className="text-center mb-6">
+                  {/* Explicitly passing text-white for popular card heading */}
                   <Heading as="h2" className={`font-serif text-h2 mb-2 ${plan.popular ? "text-white" : "text-ink"}`}>{plan.name}</Heading>
                   <div className="flex items-baseline justify-center gap-1">
                     <span className={`font-serif text-5xl font-bold ${plan.popular ? "text-white" : "text-ink"}`}>{plan.price}</span>
@@ -184,7 +186,9 @@ export default function PricingPage() {
                 <ul className="space-y-3 mb-8 flex-grow">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-3">
+                      {/* Check icon color */}
                       <Check className={`w-5 h-5 flex-shrink-0 ${plan.popular ? "text-secondary" : "text-success"}`} strokeWidth={2} />
+                      {/* Feature text color */}
                       <span className={plan.popular ? "text-white/90" : "text-gray-600"}>{feature}</span>
                     </li>
                   ))}
@@ -220,7 +224,7 @@ export default function PricingPage() {
             ))}
           </div>
           
-           {/* Comparison Table - UPDATED: Annual first */}
+           {/* Comparison Table */}
            <div className="max-w-2xl mx-auto mt-12 mb-8">
              <Heading as="h3" className="text-center mb-6">Why switch to Annual?</Heading>
              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">

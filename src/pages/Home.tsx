@@ -89,7 +89,7 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Content */}
             <div className="text-center lg:text-left">
-              <Badge variant="success" className="mb-6 bg-success/10 text-success-dark border-transparent pl-1 pr-3 py-1">
+              <Badge variant="soft-success" className="mb-6 pl-1 pr-3 py-1">
                  <span className="w-2 h-2 rounded-full bg-success mr-2"></span>
                  Designed for Fine Motor Skills
               </Badge>
