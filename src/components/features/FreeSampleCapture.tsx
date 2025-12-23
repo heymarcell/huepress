@@ -3,7 +3,7 @@ import { Button, Input } from "@/components/ui";
 import { Sparkles, Gift } from "lucide-react";
 import { analytics } from "@/lib/analytics";
 
-export function FreeSampleCapture() {
+export function FreeSampleCapture({ source = "free_sample_homepage" }: { source?: string }) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,7 +29,7 @@ export function FreeSampleCapture() {
       const response = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source: "free_sample_homepage" }),
+        body: JSON.stringify({ email, source }),
       });
       
       if (!response.ok) {
@@ -37,7 +37,7 @@ export function FreeSampleCapture() {
       }
       
       // Track lead generation
-      analytics.generateLead('free_sample_homepage');
+      analytics.generateLead(source);
       
       setSubmitted(true);
     } catch (err) {

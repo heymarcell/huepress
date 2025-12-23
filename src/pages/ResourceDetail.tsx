@@ -18,6 +18,7 @@ import SEO from "@/components/SEO";
 import { apiClient } from "@/lib/api-client";
 import { StructuredData } from "@/components/StructuredData";
 import { analytics } from "@/lib/analytics";
+import { FreeSampleCapture } from "@/components/features/FreeSampleCapture";
 
 const mockAsset = {
   id: "1",
@@ -47,7 +48,6 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
   const { isSubscriber, isLoaded, isSignedIn } = useSubscription();
   const { getToken } = useAuth();
   const [showEmailCapture, setShowEmailCapture] = useState(false);
-  const [email, setEmail] = useState("");
   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
     isOpen: false,
     title: "",
@@ -102,22 +102,7 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
     }
   };
 
-  const handleFreeSample = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Integrate with email service
-    
-    // Track lead generation from PDP
-    analytics.generateLead('free_sample_pdp');
-    
-    setAlertState({
-      isOpen: true,
-      title: "Sample Sent!",
-      message: `Your free sample will be sent to ${email} (Demo mode).`,
-      variant: "success"
-    });
-    setShowEmailCapture(false);
-    setEmail("");
-  };
+
 
   if (!isLoaded) {
     return <div className="h-14 skeleton rounded-xl w-full" />;
@@ -181,22 +166,12 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
           Get 3 Free Pages
         </button>
       ) : (
-        <form onSubmit={handleFreeSample} className="space-y-2">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-            required
-            className="w-full px-4 py-3 border border-gray-200 rounded-md focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none text-sm"
-          />
-          <Button variant="outline" size="md" className="w-full" type="submit">
-            Get 3 Free Pages
-          </Button>
-          <p className="text-[10px] text-gray-400 text-center">
-            Watermarked samples. No spam, unsubscribe anytime.
-          </p>
-        </form>
+        <div className="pt-2">
+           <FreeSampleCapture source="free_sample_pdp" />
+           <p className="text-[10px] text-gray-400 text-center mt-2">
+             Watermarked samples. No spam, unsubscribe anytime.
+           </p>
+        </div>
       )}
 
       {/* Login link */}

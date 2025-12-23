@@ -47,15 +47,12 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
       body: JSON.stringify({
         email,
         groups: [MAILERLITE_GROUP_ID],
-        fields: {
-          source,
-        },
       }),
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error("MailerLite error:", error);
+      const errorText = await response.text();
+      console.error("MailerLite error:", errorText);
       
       // If subscriber already exists, that's still a success
       if (response.status === 409) {
@@ -65,7 +62,11 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
         );
       }
       
-      throw new Error("Failed to subscribe");
+      // Return specific error for debugging
+      return new Response(
+        JSON.stringify({ success: false, error: "MailerLite API Error", details: errorText }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(
