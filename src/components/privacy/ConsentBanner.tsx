@@ -43,7 +43,6 @@ export const ConsentBanner: React.FC = () => {
             variant="outline"
             onClick={rejectAll}
             size="sm"
-            className="border-2 border-ink hover:bg-ink hover:text-white"
           >
             Reject All
           </Button>
