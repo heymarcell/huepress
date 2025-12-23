@@ -245,7 +245,7 @@ export default function VaultPage() {
                   {/* Inject Banner after 4th item (approx row 1 on desktop, row 2 on mobile) */}
                   {showFreeSampleBanner && index === 3 && (
                     <div className="col-span-full py-4 lg:py-8">
-                       <FreeSampleBanner />
+                       <FreeSampleBanner className="rounded-[32px] border-none ring-1 ring-secondary/10 bg-secondary/5 shadow-sm py-10 overflow-hidden" />
                     </div>
                   )}
               </React.Fragment>
