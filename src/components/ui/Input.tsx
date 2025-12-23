@@ -22,7 +22,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           id={id}
           ref={ref}
           className={`
-            w-full px-4 py-3 bg-white border rounded-md focus:ring-2 outline-none text-ink placeholder:text-gray-400 transition-all duration-200
+            w-full h-12 px-4 bg-white border rounded-md 
+            focus:ring-2 outline-none text-ink placeholder:text-gray-400 
+            transition-all duration-200
             ${error 
               ? "border-error focus:border-error focus:ring-error/10" 
               : "border-gray-200 focus:border-secondary focus:ring-secondary/10"
@@ -47,3 +49,4 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   }
 );
 Input.displayName = "Input";
+

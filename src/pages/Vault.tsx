@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
-import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button, StickyCTA } from "@/components/ui";
+import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button } from "@/components/ui";
 import { Gift, Sparkles, Send, ArrowUpDown, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
 
@@ -133,13 +133,12 @@ function FreeSampleBanner() {
               placeholder="mom@example.com"
               required
               aria-label="Email address for free sample pack"
-              className="w-full sm:w-64 px-4 py-3 text-sm bg-white border border-transparent rounded-md text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-sm h-[48px]"
+              className="w-full sm:w-64 h-12 px-4 text-sm bg-white border border-transparent rounded-md text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-sm"
             />
             <Button 
-              variant="primary" 
-              size="lg" 
+              variant="ghost" 
               type="submit" 
-              className="w-full sm:w-auto whitespace-nowrap shadow-lg !bg-white !text-secondary hover:!bg-gray-50 border-none !rounded-md h-[48px]"
+              className="w-full sm:w-auto whitespace-nowrap shadow-lg bg-white text-secondary hover:bg-gray-50"
               rightIcon={<Send className="w-4 h-4" />}
             >
               Get 3 Free Pages
@@ -464,7 +463,6 @@ export default function VaultPage() {
           )}
         </div>
       </div>
-      <StickyCTA />
     </div>
   );
 }

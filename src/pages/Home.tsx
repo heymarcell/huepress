@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { 
   Button, 
   ResourceCard, 
-  StickyCTA, 
   Section, 
   Heading, 
   Text,
@@ -107,12 +106,12 @@ export default function HomePage() {
               <div className="mb-8">
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                   <Link to="/pricing">
-                    <Button variant="primary" size="lg" className="shadow-xl shadow-primary/20 hover:scale-105 transition-all w-full sm:w-auto h-[56px]">
+                    <Button variant="primary" size="lg" className="w-full sm:w-auto">
                       Join for $5/mo
                     </Button>
                   </Link>
                   <a href="#free-sample">
-                    <Button variant="outline" size="lg" className="shadow-md hover:scale-105 transition-all w-full sm:w-auto h-[56px]">
+                    <Button variant="outline" size="lg" className="w-full sm:w-auto">
                       Get 3 Free Pages
                     </Button>
                   </a>
@@ -483,8 +482,7 @@ export default function HomePage() {
       </Section>
 
 
-      {/* Mobile Sticky CTA */}
-      <StickyCTA />
+
     </>
   );
 }

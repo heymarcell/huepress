@@ -65,7 +65,6 @@ export function FreeSampleCapture() {
             aria-label="Email address for free sample pack"
             error={error || undefined}
             helperText="No credit card. Sent in 1–2 minutes."
-            className="h-[50px]" /* Match button height if needed, standard is usually auto, but let's be safe. Button size=md is py-3 px-6. Input py-3. Should match. */
           />
         </div>
         <div className="">

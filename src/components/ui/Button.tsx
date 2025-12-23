@@ -24,20 +24,50 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const baseStyles =
-      "inline-flex items-center justify-center gap-2 font-sans font-bold transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]";
+    // Base styles with consistent animations for all buttons
+    const baseStyles = `
+      inline-flex items-center justify-center gap-2 
+      font-sans font-bold 
+      rounded-md
+      transition-all duration-300 ease-out
+      focus:outline-none focus:ring-2 focus:ring-offset-2 
+      disabled:opacity-50 disabled:cursor-not-allowed
+      hover:scale-[1.02]
+      active:scale-[0.97]
+      hover:shadow-lg
+    `;
 
+    // Variant styles - outline uses inset box-shadow for consistent sizing
     const variants = {
-      primary: "bg-primary text-white hover:bg-primary-hover focus:ring-primary",
-      secondary: "bg-secondary text-white hover:bg-secondary-hover focus:ring-secondary",
-      outline: "border-2 border-ink text-ink bg-transparent hover:bg-ink hover:text-white focus:ring-ink",
-      ghost: "bg-transparent text-ink hover:bg-gray-100 focus:ring-gray-400",
+      primary: `
+        bg-primary text-white 
+        hover:bg-primary-hover hover:shadow-primary/25
+        focus:ring-primary
+      `,
+      secondary: `
+        bg-secondary text-white 
+        hover:bg-secondary-hover hover:shadow-secondary/25
+        focus:ring-secondary
+      `,
+      outline: `
+        bg-white text-ink 
+        shadow-[inset_0_0_0_2px_theme(colors.ink)]
+        hover:bg-ink hover:text-white hover:shadow-ink/25
+        focus:ring-ink
+      `,
+      ghost: `
+        bg-transparent text-ink 
+        hover:bg-gray-100 hover:shadow-none
+        focus:ring-gray-400
+      `,
     };
 
+    // Fixed heights for consistent sizing across all button variants
+    // sm: 40px, md: 48px, lg: 56px
     const sizes = {
-      sm: "px-4 py-2.5 text-sm rounded-md",
-      md: "px-6 py-3 text-button rounded-md",
-      lg: "px-8 py-3.5 text-lg rounded-md",
+      sm: "h-10 px-4 text-sm",
+      md: "h-12 px-6 text-button",
+      lg: "h-14 px-8 text-lg",
     };
 
     return (

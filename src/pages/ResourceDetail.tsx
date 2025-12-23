@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useState } from "react";
-import { Button, StickyCTA } from "@/components/ui";
+import { Button } from "@/components/ui";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { useSubscription } from "@/lib/auth";
 import { useAuth } from "@clerk/clerk-react";
@@ -347,9 +347,7 @@ export default function ResourceDetailPage() {
             </div>
           </div>
         </div>
-        <div className="h-24 md:h-0" />
       </div>
-      <StickyCTA />
     </div>
   );
 }
