@@ -23,7 +23,7 @@ export default function AboutPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="prose prose-lg mx-auto text-gray-600">
             <p className="mb-6">
-              Hi, I'm Marcell. I started HuePress with a simple mission: to create coloring pages that don't frustrate kids (or parents).
+              Hi, I'm Sarah. I started HuePress with a simple mission: to create coloring pages that don't frustrate kids (or parents).
             </p>
             <p className="mb-6">
               We've all been there—searching for "free coloring pages" only to find low-quality pixelated images, aggressive ads, or designs so complex they end up in the trash bin after 5 minutes of struggle.

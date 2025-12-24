@@ -1,4 +1,7 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { apiClient } from "@/lib/api-client";
+import { Asset } from "@/api/types";
 import { 
   Button, 
   ResourceCard, 
@@ -26,14 +29,7 @@ import {
 } from "lucide-react";
 
 // Featured items with real thumbnails
-const featuredItems = [
-  { id: "1", title: "Cozy Capybara", imageUrl: "/thumbnails/thumb_capybara_1766354990805.png", tags: ["Animals", "Calm"], isNew: true },
-  { id: "2", title: "Ocean Whale", imageUrl: "/thumbnails/thumb_whale_1766355003894.png", tags: ["Animals", "Focus"], isNew: false },
-  { id: "3", title: "Friendly T-Rex", imageUrl: "/thumbnails/thumb_dinosaur_1766355016602.png", tags: ["Animals", "Bold"], isNew: true },
-  { id: "4", title: "Astronaut Cat", imageUrl: "/thumbnails/thumb_astronaut_cat_1766355051538.png", tags: ["Fantasy", "Creative"], isNew: false },
-  { id: "5", title: "Beautiful Butterfly", imageUrl: "/thumbnails/thumb_butterfly_1766355075205.png", tags: ["Nature", "Calm"], isNew: false },
-  { id: "6", title: "Magical Unicorn", imageUrl: "/thumbnails/thumb_unicorn_1766355087780.png", tags: ["Fantasy", "Creative"], isNew: true },
-];
+
 
 // Value propositions with Lucide icons
 const features = [
@@ -79,6 +75,20 @@ const painPoints = [
 ];
 
 export default function HomePage() {
+  const [featuredItems, setFeaturedItems] = useState<Asset[]>([]);
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const data = await apiClient.assets.list({ limit: 8 });
+        setFeaturedItems(data.assets || []);
+      } catch (err) {
+        console.error("Failed to load featured assets", err);
+      }
+    };
+    fetchFeatured();
+  }, []);
+
   return (
     <>
       <SEO />
@@ -190,18 +200,30 @@ export default function HomePage() {
             <Text variant="large" className="max-w-2xl mx-auto">Over 500 bold, curated designs across trending themes. New drops every Sunday.</Text>
           </div>
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-             {/* Showing more items to look impressive - duplicating the list for effect until we have real data */}
-             {[...featuredItems, ...featuredItems, ...featuredItems].slice(0, 8).map((item, idx) => (
+             {featuredItems.length > 0 ? (
+               featuredItems.map((item, idx) => (
                <ResourceCard
-                 key={`${item.id}-${idx}`}
+                 key={item.id}
                  id={item.id}
                  title={item.title}
-                 imageUrl={item.imageUrl}
-                 tags={item.tags}
+                 imageUrl={item.image_url}
+                 tags={(item.tags || []).slice(0, 2)}
                  isLocked={true}
-                 isNew={idx < 2} // Only first few are new
+                 isNew={idx < 2} 
+                 assetId={item.asset_id}
+                 slug={item.slug}
                />
-             ))}
+             ))
+             ) : (
+               // Loading Skeletons
+               [...Array(4)].map((_, i) => (
+                   <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 h-64 animate-pulse">
+                       <div className="bg-gray-100 w-full h-40 rounded-lg mb-4"></div>
+                       <div className="bg-gray-100 h-4 w-3/4 rounded mb-2"></div>
+                       <div className="bg-gray-100 h-3 w-1/2 rounded"></div>
+                   </div>
+               ))
+             )}
            </div>
            
           <div className="text-center mt-10">

@@ -25,11 +25,7 @@ import { AboutDesign } from "@/components/features/AboutDesign";
 
 // Mock asset removed - fetching from API now
 
-const relatedItems = [
-  { id: "2", title: "Ocean Whale", imageUrl: "/thumbnails/thumb_whale_1766355003894.png" },
-  { id: "3", title: "Friendly T-Rex", imageUrl: "/thumbnails/thumb_dinosaur_1766355016602.png" },
-  { id: "4", title: "Astronaut Cat", imageUrl: "/thumbnails/thumb_astronaut_cat_1766355051538.png" },
-];
+
 
 // Trust badges with Lucide icons
 const trustBadges = [
@@ -272,6 +268,7 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
 export default function ResourceDetailPage() {
   const { id, slug } = useParams<{ id: string; slug: string }>();
   const [asset, setAsset] = useState<Asset | null>(null);
+  const [relatedItems, setRelatedItems] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -296,6 +293,17 @@ export default function ResourceDetailPage() {
 
         const data = await apiClient.assets.get(lookupId);
         setAsset(data);
+
+        // Fetch related items
+        if (data.category) {
+           try {
+             const related = await apiClient.assets.list({ category: data.category, limit: 4 });
+             setRelatedItems(related.assets?.filter(a => a.id !== data.id).slice(0, 3) || []);
+           } catch(e) {
+             console.error("Failed to load related items", e);
+           }
+        }
+
       } catch (err) {
         console.error(err);
         setError("Failed to load asset");
@@ -444,11 +452,11 @@ export default function ResourceDetailPage() {
                 <h3 className="font-serif text-h3 text-ink mb-4">You might also like</h3>
                 <div className="grid grid-cols-3 gap-4">
                   {relatedItems.map((item) => (
-                    <Link key={item.id} to={`/vault/${item.id}`} className="group">
+                    <Link key={item.id} to={item.asset_id && item.slug ? `/coloring-pages/${item.slug}-${item.asset_id}` : `/vault/${item.id}`} className="group">
                       <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                         <div className="aspect-a4 bg-white p-3">
-                          {item.imageUrl ? (
-                            <img src={item.imageUrl} alt={item.title} className="object-contain w-full h-full" />
+                          {item.image_url ? (
+                            <img src={item.image_url} alt={item.title} className="object-contain w-full h-full" />
                           ) : (
                             <FileText className="w-8 h-8 text-gray-200 mx-auto" />
                           )}
