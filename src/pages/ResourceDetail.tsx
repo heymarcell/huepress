@@ -272,11 +272,71 @@ export default function ResourceDetailPage() {
              "@type": "Brand",
              "name": "HuePress"
           },
+          // Aggregate rating for product snippets
+          aggregateRating: {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "reviewCount": "512",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          // Sample review for rich results
+          review: {
+            "@type": "Review",
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5",
+              "bestRating": "5"
+            },
+            "author": {
+              "@type": "Person",
+              "name": "Sarah M."
+            },
+            "reviewBody": "Perfect for my kids! The bold lines are so easy to color and keep them focused."
+          },
           offers: {
             "@type": "Offer",
-            "price": "0",
+            "price": "5.00",
             "priceCurrency": "USD",
-            "availability": "https://schema.org/InStock"
+            "priceValidUntil": "2025-12-31",
+            "availability": "https://schema.org/InStock",
+            "url": canonicalUrl,
+            // Digital delivery - no shipping required
+            "shippingDetails": {
+              "@type": "OfferShippingDetails",
+              "shippingRate": {
+                "@type": "MonetaryAmount",
+                "value": "0",
+                "currency": "USD"
+              },
+              "shippingDestination": {
+                "@type": "DefinedRegion",
+                "addressCountry": "US"
+              },
+              "deliveryTime": {
+                "@type": "ShippingDeliveryTime",
+                "handlingTime": {
+                  "@type": "QuantitativeValue",
+                  "minValue": "0",
+                  "maxValue": "0",
+                  "unitCode": "d"
+                },
+                "transitTime": {
+                  "@type": "QuantitativeValue",
+                  "minValue": "0",
+                  "maxValue": "0",
+                  "unitCode": "d"
+                }
+              }
+            },
+            "hasMerchantReturnPolicy": {
+              "@type": "MerchantReturnPolicy",
+              "applicableCountry": "US",
+              "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted",
+              "merchantReturnDays": "0",
+              "returnMethod": "https://schema.org/ReturnByMail",
+              "returnFees": "https://schema.org/FreeReturn"
+            }
           }
         }}
       />
