@@ -77,8 +77,16 @@ export default function AdminAssetForm() {
 
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessingSvg, setIsProcessingSvg] = useState(false);
+
+  // Cleanup preview URL on unmount or change
+  useEffect(() => {
+    return () => {
+      if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+    };
+  }, [pdfPreviewUrl]);
   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
     isOpen: false,
     title: "",
@@ -185,46 +193,92 @@ export default function AdminAssetForm() {
         height: finalH
       });
       
-      // Footer (Copyright)
-      const year = new Date().getFullYear();
-      doc.setFontSize(9);
-      doc.setTextColor(80); // gray
-      doc.text(`© ${year} HuePress - huepress.com`, A4_WIDTH / 2, A4_HEIGHT - 15, { align: "center" });
+      // Footer REMOVED per request (clean page for coloring)
 
-      // Page 2: Instructions (Low Ink Mode)
+      // Page 2: The HuePress Guide (Stylish Marketing Page)
       doc.addPage();
       
-      // Eco-friendly styles (Minimal black text)
+      // HEADER
+      doc.setFont("times", "bold");
+      doc.setFontSize(32);
       doc.setTextColor(30);
-      doc.setFontSize(18);
-      doc.text("Printing Instructions", 20, 30);
+      doc.text("HuePress", 105, 30, { align: "center" });
       
-      doc.setFontSize(11);
-      doc.setTextColor(60);
-      doc.text([
-          "This coloring page is optimized for both A4 and US Letter paper.",
-          "",
-          "For Best Results:",
-          "1. Select 'Fit to Page' or 'Scale to Fit' in your printer settings.",
-          "2. Print on heavy cardstock or mixed media paper if you plan to use markers or paint.",
-          "3. Use 'High Quality' or 'Photo' print mode for crisp lines.",
-          "",
-          "Share Your Art:",
-          "We love seeing your creations! Tag us @HuePress on social media to be featured.",
-          "",
-          "Happy Coloring!",
-          "— The HuePress Team"
-      ], 20, 45);
-      
-      // Add QR Code link text/ID
-      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
       doc.setTextColor(100);
-      doc.text(`Asset ID: ${formData.title ? "Generated for " + formData.title : "New Asset"}`, 20, 270);
-      doc.text("huepress.com", 20, 275);
+      doc.text("Color Your World", 105, 38, { align: "center" });
+      
+      doc.setDrawColor(200);
+      doc.line(60, 45, 150, 45); // Separator
+
+      // SECTION 1: PRINTING GUIDE
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(50);
+      doc.text("Printing Guide", 20, 65);
+
+      // Box
+      doc.setDrawColor(220);
+      doc.setFillColor(250, 250, 250);
+      doc.roundedRect(20, 70, 170, 35, 3, 3, "FD");
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(80);
+      doc.text("• Use 'Fit to Page' setting to ensure no edges are cut off.", 28, 82);
+      doc.text("• We recommend heavy cardstock or mixed media paper.", 28, 90);
+      doc.text("• Select 'High Quality' print mode for the crispest lines.", 28, 98);
+
+      // SECTION 2: SHARE & ENGAGE
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(50);
+      doc.text("Show Off Your Masterpiece", 20, 125);
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(80);
+      doc.text("We love seeing your creativity! Tag us to be featured:", 20, 135);
+      
+      doc.setFontSize(12);
+      doc.setTextColor(30);
+      doc.text("@HuePress  #HuePressColoring", 20, 145);
+
+      // SECTION 3: REVIEWS (Call to Action)
+      doc.setDrawColor(200); 
+      doc.setLineWidth(0.5);
+      doc.roundedRect(20, 165, 170, 40, 3, 3, "S");
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(30);
+      doc.text("Enjoying this page?", 105, 180, { align: "center" });
+      
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(80);
+      doc.text("Help us grow by leaving a review on Trustpilot:", 105, 190, { align: "center" });
+      
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.text("huepress.co/review", 105, 198, { align: "center" });
+
+      // FOOTER
+      doc.setFontSize(9);
+      doc.setTextColor(150);
+      doc.text("Discover thousands more at huepress.co", 105, 260, { align: "center" });
+      // Generate a short ID
+      const shortId = formData.title ? formData.title.substring(0, 15).replace(/\s/g, "") : "Asset";
+      doc.text(`Asset ID: ${shortId}-${new Date().getTime().toString().slice(-6)}`, 105, 265, { align: "center" });
 
       const pdfBlob = doc.output("blob");
       const pdfFileObj = new File([pdfBlob], file.name.replace(".svg", ".pdf"), { type: "application/pdf" });
       setPdfFile(pdfFileObj);
+      
+      // Create Preview URL
+      const previewUrl = URL.createObjectURL(pdfFileObj);
+      setPdfPreviewUrl(previewUrl);
 
       setAlertState({
         isOpen: true,
@@ -632,11 +686,35 @@ export default function AdminAssetForm() {
             {/* PDF */}
             <div>
               <label className="block text-sm font-medium text-ink mb-2">PDF File</label>
+              
+              {/* Preview Button if PDF exists */}
+              {pdfPreviewUrl && (
+                <div className="mb-3">
+                   <a 
+                     href={pdfPreviewUrl} 
+                     target="_blank" 
+                     rel="noreferrer"
+                     className="flex items-center justify-center gap-2 w-full py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors border border-red-100"
+                   >
+                     <Eye className="w-4 h-4" />
+                     Preview Generated PDF
+                   </a>
+                </div>
+              )}
+
               <div className="relative">
                 <input
                   type="file"
                   accept="application/pdf"
-                  onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setPdfFile(file);
+                    if (file) {
+                      setPdfPreviewUrl(URL.createObjectURL(file));
+                    } else {
+                      setPdfPreviewUrl(null);
+                    }
+                  }}
                   className="hidden"
                   id="pdf-upload"
                 />
