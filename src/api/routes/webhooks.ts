@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { Webhook } from "svix";
 import { Bindings } from "../types";
+import { trackGA4Signup } from "../../lib/ga4-conversions";
+import { trackCompleteRegistration } from "../../lib/meta-conversions";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -69,6 +71,31 @@ app.post("/clerk", async (c) => {
             .run();
 
           console.log("User created:", email);
+
+          // Track signup in GA4
+          if (c.env.GA4_API_SECRET && c.env.GA4_MEASUREMENT_ID) {
+            const ga4Result = await trackGA4Signup(
+              c.env.GA4_MEASUREMENT_ID,
+              c.env.GA4_API_SECRET,
+              { userId: user.id, method: 'email' }
+            );
+            if (ga4Result.success) {
+              console.log('GA4 SignUp event sent for:', email);
+            }
+          }
+
+          // Track signup in Meta
+          if (c.env.META_ACCESS_TOKEN && c.env.META_PIXEL_ID) {
+            const metaResult = await trackCompleteRegistration(
+              c.env.META_ACCESS_TOKEN,
+              c.env.META_PIXEL_ID,
+              c.env.SITE_URL,
+              { email, externalId: user.id }
+            );
+            if (metaResult.success) {
+              console.log('Meta CompleteRegistration event sent for:', email);
+            }
+          }
         }
         break;
       }

@@ -118,3 +118,44 @@ export async function trackGA4Purchase(
     },
   });
 }
+
+/**
+ * Track a Sign Up event
+ * Called when a new user registers
+ */
+export async function trackGA4Signup(
+  measurementId: string,
+  apiSecret: string,
+  data: {
+    userId: string;
+    method?: string; // e.g., 'email', 'google', 'apple'
+  }
+): Promise<{ success: boolean; error?: string }> {
+  return sendGA4Event(measurementId, apiSecret, {
+    eventName: 'sign_up',
+    userId: data.userId,
+    params: {
+      method: data.method || 'email',
+    },
+  });
+}
+
+/**
+ * Track a Lead/Email Capture event
+ * Called when a user submits their email for newsletter/free samples
+ */
+export async function trackGA4Lead(
+  measurementId: string,
+  apiSecret: string,
+  data: {
+    source?: string; // e.g., 'newsletter', 'free_samples', 'vault_email'
+  }
+): Promise<{ success: boolean; error?: string }> {
+  return sendGA4Event(measurementId, apiSecret, {
+    eventName: 'generate_lead',
+    params: {
+      lead_source: data.source || 'website',
+    },
+  });
+}
+
