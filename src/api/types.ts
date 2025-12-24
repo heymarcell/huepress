@@ -16,6 +16,8 @@ export type Bindings = {
   ASSETS_CDN_URL: string; // e.g., https://assets.huepress.co
   PINTEREST_ACCESS_TOKEN: string;
   PINTEREST_AD_ACCOUNT_ID: string; // e.g., 549769812316
+  GA4_API_SECRET: string;
+  GA4_MEASUREMENT_ID: string; // e.g., G-XXXXXXXX
 };
 
 export interface Asset {

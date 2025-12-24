@@ -24,6 +24,7 @@ bucket_name = "huepress-assets-public"
 # STRIPE_WEBHOOK_SECRET
 # META_ACCESS_TOKEN
 # PINTEREST_ACCESS_TOKEN
+# GA4_API_SECRET
 
 [vars]
 ENVIRONMENT = "development"
@@ -32,3 +33,5 @@ ADMIN_EMAILS = "marcell@neongod.io"
 SITE_URL = "https://huepress.co"
 ASSETS_CDN_URL = "https://assets.huepress.co"
 PINTEREST_AD_ACCOUNT_ID = "549769812316"
+GA4_MEASUREMENT_ID = "" # TODO: Set your GA4 Measurement ID (format: G-XXXXXXXX)
+

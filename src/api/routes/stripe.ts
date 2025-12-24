@@ -3,6 +3,7 @@ import { getAuth } from "@hono/clerk-auth";
 import { Bindings } from "../types";
 import { trackPurchase, trackSubscribe } from "../../lib/meta-conversions";
 import { trackPinterestCheckout } from "../../lib/pinterest-conversions";
+import { trackGA4Purchase } from "../../lib/ga4-conversions";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -260,6 +261,27 @@ app.post("/webhooks/stripe", async (c) => {
                 console.log('Pinterest Checkout event sent for:', customerEmail);
               } else {
                 console.error('Pinterest Checkout event failed:', pinterestResult.error);
+              }
+            }
+
+            // 6. Send GA4 Measurement Protocol event (server-side tracking)
+            if (c.env.GA4_API_SECRET && c.env.GA4_MEASUREMENT_ID) {
+              const ga4Result = await trackGA4Purchase(
+                c.env.GA4_MEASUREMENT_ID,
+                c.env.GA4_API_SECRET,
+                {
+                  transactionId: subscriptionId,
+                  value: subscriptionValue,
+                  currency: 'USD',
+                  userId: clerkId,
+                  itemName: isAnnual ? 'HuePress Annual' : 'HuePress Monthly',
+                }
+              );
+              
+              if (ga4Result.success) {
+                console.log('GA4 Purchase event sent for:', customerEmail);
+              } else {
+                console.error('GA4 Purchase event failed:', ga4Result.error);
               }
             }
         }
