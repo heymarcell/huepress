@@ -227,7 +227,7 @@ export default function VaultPage() {
           </div>
         ) : (
           <div className="text-center py-16">
-            <Search className="w-16 h-16 text-gray-200 mx-auto mb-4" strokeWidth={1.5} />
+            <img src="/404-robot.svg" alt="No designs found" className="w-48 h-48 mx-auto mb-6" />
             <h3 className="font-serif text-h3 text-ink mb-2">No designs found</h3>
             <p className="text-gray-500 mb-4">Try a different search or filter</p>
             <button 
