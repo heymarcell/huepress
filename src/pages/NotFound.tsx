@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui";
-import { FileQuestion, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import SEO from "@/components/SEO";
 
 export default function NotFoundPage() {
@@ -8,9 +8,9 @@ export default function NotFoundPage() {
     <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
       <SEO title="Page Not Found | HuePress" />
       
-      {/* Icon Container */}
-      <div className="w-24 h-24 bg-secondary/10 rounded-full flex items-center justify-center mb-6 animate-fade-in">
-        <FileQuestion className="w-12 h-12 text-secondary" strokeWidth={1.5} />
+      {/* Robot Illustration */}
+      <div className="w-40 h-56 mb-6 animate-fade-in">
+        <img src="/404-robot.svg" alt="Lost robot" className="w-full h-full object-contain" />
       </div>
 
       <h1 className="font-serif text-display text-ink mb-4">

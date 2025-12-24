@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <!-- 
+    Instagram Highlight Cover: Q&A
+    Using Lucide "MessageCircleQuestion" icon
+  -->
+  
+  <!-- Background -->
+  <rect width="1080" height="1080" fill="#F3EFFF"/>
+  
+  <!-- MessageCircleQuestion Icon (Lucide exact path, scaled and centered) -->
+  <g transform="translate(540, 540) scale(12)" stroke="#111827" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Circle bubble -->
+    <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" transform="translate(-12, -12)"/>
+    <!-- Question mark curve -->
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" transform="translate(-12, -12)"/>
+    <!-- Question mark dot -->
+    <path d="M12 17h.01" transform="translate(-12, -12)"/>
+  </g>
+</svg>

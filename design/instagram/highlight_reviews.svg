@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <!-- 
+    Instagram Highlight Cover: Reviews
+    Using Lucide "Star" icon (filled)
+  -->
+  
+  <!-- Background -->
+  <rect width="1080" height="1080" fill="#F97360"/>
+  
+  <!-- Star Icon (Lucide exact path, scaled and centered) -->
+  <g transform="translate(540, 540) scale(12)">
+    <polygon 
+      points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" 
+      transform="translate(-12, -12)"
+      fill="#FFFFFF"
+      stroke="#FFFFFF"
+      stroke-width="1"
+      stroke-linecap="round" 
+      stroke-linejoin="round"
+    />
+  </g>
+</svg>
