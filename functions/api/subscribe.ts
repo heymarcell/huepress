@@ -27,7 +27,7 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
 
   try {
     const body = await request.json() as { email: string; source?: string };
-    const { email, source = "website" } = body;
+    const { email, source: _source = "website" } = body;
 
     if (!email || !email.includes("@")) {
       return new Response(

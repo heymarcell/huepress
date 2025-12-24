@@ -45,7 +45,7 @@ async function fetchApi<T>(path: string, options: RequestInit & { token?: string
     headers,
   });
 
-  const data = await response.json() as any;
+  const data = await response.json() as T & { error?: string };
 
   if (!response.ok) {
     throw new Error(data.error || "API Request Failed");
@@ -94,7 +94,7 @@ export const apiClient = {
         body: formData,
       });
 
-      const data = await response.json() as any;
+      const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error || "Failed to create asset");
       return data;
     }

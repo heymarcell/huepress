@@ -56,8 +56,8 @@ export const ConsentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       // No stored consent
       // Fetch region to determine if we should show banner
       fetch('/api/geo')
-        .then(res => res.json())
-        .then((data: any) => {
+        .then(res => res.json() as Promise<{ country?: string }>)
+        .then((data) => {
           const country = data.country || 'US';
           const EEA_COUNTRIES = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'GB', 'IS', 'LI', 'NO', 'CH'];
           

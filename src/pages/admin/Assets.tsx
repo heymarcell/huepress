@@ -5,9 +5,19 @@ import { Button } from "@/components/ui";
 import { useUser } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
 
+interface AdminAsset {
+  id: string;
+  title: string;
+  category: string;
+  skill: string;
+  status: 'published' | 'draft';
+  downloads?: number;
+  createdAt?: string;
+}
+
 export default function AdminAssets() {
   const { user } = useUser();
-  const [assets, setAssets] = useState<any[]>([]);
+  const [assets, setAssets] = useState<AdminAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
 

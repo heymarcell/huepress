@@ -9,15 +9,15 @@ export interface ConsentState {
 
 declare global {
   interface Window {
-    dataLayer: any[];
-    gtag: (...args: any[]) => void;
+    dataLayer: unknown[];
+    gtag: (...args: unknown[]) => void;
   }
 }
 
 // Initialize dataLayer and gtag
 export const initAnalytics = () => {
   window.dataLayer = window.dataLayer || [];
-  function gtag(...args: any[]) {
+  function gtag(...args: unknown[]) {
     window.dataLayer.push(args);
   }
   window.gtag = window.gtag || gtag;

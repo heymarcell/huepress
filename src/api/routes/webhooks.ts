@@ -28,7 +28,16 @@ app.post("/clerk", async (c) => {
   // Create new Svix instance with secret
   const wh = new Webhook(WEBHOOK_SECRET);
 
-  let evt: any;
+  // Clerk webhook event type
+  interface ClerkWebhookEvent {
+    type: string;
+    data: {
+      id: string;
+      email_addresses?: Array<{ email_address: string }>;
+    };
+  }
+
+  let evt: ClerkWebhookEvent;
 
   // Verify payload
   try {
@@ -36,7 +45,7 @@ app.post("/clerk", async (c) => {
       "svix-id": svix_id,
       "svix-timestamp": svix_timestamp,
       "svix-signature": svix_signature,
-    });
+    }) as ClerkWebhookEvent;
   } catch (err) {
     console.error("Error verifying webhook:", err);
     return c.json({ error: "Error occured" }, 400);
