@@ -180,6 +180,8 @@ export async function trackPinterestCheckout(
     currency: string;
     orderId?: string;
     externalId?: string;
+    clientIpAddress?: string;
+    clientUserAgent?: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
   return sendPinterestEvent(accessToken, adAccountId, {
@@ -189,6 +191,8 @@ export async function trackPinterestCheckout(
     currency: data.currency,
     orderId: data.orderId,
     externalId: data.externalId,
+    clientIpAddress: data.clientIpAddress,
+    clientUserAgent: data.clientUserAgent,
     eventSourceUrl: `${siteUrl}/pricing`,
   });
 }

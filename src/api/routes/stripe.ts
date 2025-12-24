@@ -171,6 +171,12 @@ app.post("/webhooks/stripe", async (c) => {
             const isAnnual = session.amount_total && session.amount_total >= 4000; // $40+ = annual
             const subscriptionValue = isAnnual ? 45 : 5; // $45/year or $5/month
             
+            // Extract client info for enhanced matching (EMQ optimization)
+            // Note: In webhook context, these come from Stripe's server, not the user
+            // For better EMQ, we'd pass these from the checkout flow
+            const clientIpAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for')?.split(',')[0]?.trim();
+            const clientUserAgent = c.req.header('user-agent');
+            
             if (c.env.META_ACCESS_TOKEN) {
               
               // Track Purchase event
@@ -184,6 +190,8 @@ app.post("/webhooks/stripe", async (c) => {
                   currency: 'USD',
                   orderId: subscriptionId,
                   externalId: clerkId,
+                  clientIpAddress,
+                  clientUserAgent,
                 }
               );
               
@@ -203,6 +211,8 @@ app.post("/webhooks/stripe", async (c) => {
                   value: subscriptionValue,
                   currency: 'USD',
                   externalId: clerkId,
+                  clientIpAddress,
+                  clientUserAgent,
                 }
               );
               
@@ -225,6 +235,8 @@ app.post("/webhooks/stripe", async (c) => {
                   currency: 'USD',
                   orderId: subscriptionId,
                   externalId: clerkId,
+                  clientIpAddress,
+                  clientUserAgent,
                 }
               );
               

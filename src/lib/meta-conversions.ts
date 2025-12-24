@@ -189,6 +189,8 @@ export async function trackPurchase(
     currency: string;
     orderId?: string;
     externalId?: string;
+    clientIpAddress?: string;
+    clientUserAgent?: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
   return sendMetaEvent(accessToken, pixelId, {
@@ -198,6 +200,8 @@ export async function trackPurchase(
     currency: data.currency,
     orderId: data.orderId,
     externalId: data.externalId,
+    clientIpAddress: data.clientIpAddress,
+    clientUserAgent: data.clientUserAgent,
     eventSourceUrl: `${siteUrl}/pricing`,
   });
 }
@@ -214,6 +218,8 @@ export async function trackSubscribe(
     value: number;
     currency: string;
     externalId?: string;
+    clientIpAddress?: string;
+    clientUserAgent?: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
   return sendMetaEvent(accessToken, pixelId, {
@@ -222,6 +228,8 @@ export async function trackSubscribe(
     value: data.value,
     currency: data.currency,
     externalId: data.externalId,
+    clientIpAddress: data.clientIpAddress,
+    clientUserAgent: data.clientUserAgent,
     eventSourceUrl: `${siteUrl}/pricing`,
   });
 }
