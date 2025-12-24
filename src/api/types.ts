@@ -14,6 +14,8 @@ export type Bindings = {
   ADMIN_EMAILS: string; // Comma-separated list of admin emails
   SITE_URL: string; // e.g., https://huepress.co
   ASSETS_CDN_URL: string; // e.g., https://assets.huepress.co
+  PINTEREST_ACCESS_TOKEN: string;
+  PINTEREST_AD_ACCOUNT_ID: string; // e.g., 549769812316
 };
 
 export interface Asset {

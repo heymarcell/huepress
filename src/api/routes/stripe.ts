@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { getAuth } from "@hono/clerk-auth";
 import { Bindings } from "../types";
 import { trackPurchase, trackSubscribe } from "../../lib/meta-conversions";
+import { trackPinterestCheckout } from "../../lib/pinterest-conversions";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -166,10 +167,11 @@ app.post("/webhooks/stripe", async (c) => {
            }
 
             // 4. Send Meta Conversions API events (server-side tracking)
+            // Calculate subscription value for tracking (used by both Meta and Pinterest)
+            const isAnnual = session.amount_total && session.amount_total >= 4000; // $40+ = annual
+            const subscriptionValue = isAnnual ? 45 : 5; // $45/year or $5/month
+            
             if (c.env.META_ACCESS_TOKEN) {
-              // Determine subscription value from price
-              const isAnnual = session.amount_total && session.amount_total >= 4000; // $40+ = annual
-              const subscriptionValue = isAnnual ? 45 : 5; // $45/year or $5/month
               
               // Track Purchase event
               const purchaseResult = await trackPurchase(
@@ -208,6 +210,28 @@ app.post("/webhooks/stripe", async (c) => {
                 console.log('Meta Subscribe event sent for:', customerEmail);
               } else {
                 console.error('Meta Subscribe event failed:', subscribeResult.error);
+              }
+            }
+
+            // 5. Send Pinterest Conversions API event (server-side tracking)
+            if (c.env.PINTEREST_ACCESS_TOKEN) {
+              const pinterestResult = await trackPinterestCheckout(
+                c.env.PINTEREST_ACCESS_TOKEN,
+                c.env.PINTEREST_AD_ACCOUNT_ID,
+                c.env.SITE_URL,
+                {
+                  email: customerEmail,
+                  value: subscriptionValue,
+                  currency: 'USD',
+                  orderId: subscriptionId,
+                  externalId: clerkId,
+                }
+              );
+              
+              if (pinterestResult.success) {
+                console.log('Pinterest Checkout event sent for:', customerEmail);
+              } else {
+                console.error('Pinterest Checkout event failed:', pinterestResult.error);
               }
             }
         }

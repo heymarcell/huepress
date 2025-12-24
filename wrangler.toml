@@ -23,6 +23,7 @@ bucket_name = "huepress-assets-public"
 # STRIPE_SECRET_KEY
 # STRIPE_WEBHOOK_SECRET
 # META_ACCESS_TOKEN
+# PINTEREST_ACCESS_TOKEN
 
 [vars]
 ENVIRONMENT = "development"
@@ -30,3 +31,4 @@ META_PIXEL_ID = "1588901548777498"
 ADMIN_EMAILS = "marcell@neongod.io"
 SITE_URL = "https://huepress.co"
 ASSETS_CDN_URL = "https://assets.huepress.co"
+PINTEREST_AD_ACCOUNT_ID = "549769812316"
