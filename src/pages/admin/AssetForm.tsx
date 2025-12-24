@@ -104,12 +104,10 @@ export default function AdminAssetForm() {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement("canvas");
-          // Use standard size or keep original? Keep original.
           canvas.width = img.width;
           canvas.height = img.height;
           const ctx = canvas.getContext("2d");
           if (!ctx) return reject(new Error("No canvas context"));
-          // Fill white background for transparency
           ctx.fillStyle = "#FFFFFF";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0);
@@ -125,33 +123,104 @@ export default function AdminAssetForm() {
       const webpFile = new File([webpBlob], file.name.replace(".svg", ".webp"), { type: "image/webp" });
       setThumbnailFile(webpFile);
 
-      // 2. PDF Generation (jsPDF + svg2pdf)
+      // 2. Advanced PDF Generation (Safe Zone & Metadata)
       const svgText = await file.text();
       const parser = new DOMParser();
       const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
       const svgElement = svgDoc.documentElement;
 
-      // Ensure width/height exist for PDF sizing
-      // Default to A4 points logic if missing: 595 x 842
-      let width = parseFloat(svgElement.getAttribute("width") || "595");
-      let height = parseFloat(svgElement.getAttribute("height") || "842");
+      // Helper to parse dimensions (handle px or unitless)
+      const getDim = (val: string | null) => {
+        if (!val) return 0;
+        return parseFloat(val.replace("px", ""));
+      };
+      
+      // Determine intrinsic size (width/height attr -> viewBox -> Default A4 pt)
+      const viewBox = svgElement.getAttribute("viewBox")?.split(/[\s,]+/).map(parseFloat);
+      const svgW = getDim(svgElement.getAttribute("width")) || (viewBox ? viewBox[2] : 595);
+      const svgH = getDim(svgElement.getAttribute("height")) || (viewBox ? viewBox[3] : 842);
 
-      // Handle "px" in svg attributes
-      if (svgElement.getAttribute("width")?.includes("px")) width = parseFloat(svgElement.getAttribute("width")!);
-      if (svgElement.getAttribute("height")?.includes("px")) height = parseFloat(svgElement.getAttribute("height")!);
+      // A4 Dimensions (mm)
+      const A4_WIDTH = 210;
+      const A4_HEIGHT = 297;
+      
+      // Safe Zone (mm) - Optimized for 8.5x11" (Letter) and A4 compatibility
+      // Letter is wider (216mm) but shorter (279mm) than A4.
+      // A4 is narrower (210mm) but taller (297mm).
+      // To fit BOTH, we must stay within the intersection minus margins.
+      // Width: Limited by A4 (210mm) - 25mm margin = 185mm
+      // Height: Limited by Letter (279mm) - 25mm margin = 254mm
+      const SAFE_WIDTH = 185; 
+      const SAFE_HEIGHT = 254;
 
       const doc = new jsPDF({
-        orientation: width > height ? "landscape" : "portrait",
-        unit: "pt",
-        format: [width, height] 
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4" 
       });
 
-      await doc.svg(svgElement, {
-        x: 0,
-        y: 0,
-        width: width,
-        height: height
+      // Inject Metadata (Hidden properties)
+      doc.setProperties({
+        title: formData.title || file.name.replace(".svg", ""),
+        subject: formData.description || "Coloring Page from HuePress",
+        author: "HuePress",
+        keywords: `${formData.category}, ${formData.skill}, coloring page, huepress`,
+        creator: "HuePress Automated Generator"
       });
+
+      // Calculate Scale to fit Safe Zone strictly
+      const scale = Math.min(SAFE_WIDTH / svgW, SAFE_HEIGHT / svgH);
+      const finalW = svgW * scale;
+      const finalH = svgH * scale;
+
+      // Center image on A4 page
+      const x = (A4_WIDTH - finalW) / 2;
+      const y = (A4_HEIGHT - finalH) / 2;
+
+      // Page 1: The Masterpiece
+      await doc.svg(svgElement, {
+        x,
+        y,
+        width: finalW,
+        height: finalH
+      });
+      
+      // Footer (Copyright)
+      const year = new Date().getFullYear();
+      doc.setFontSize(9);
+      doc.setTextColor(80); // gray
+      doc.text(`© ${year} HuePress - huepress.com`, A4_WIDTH / 2, A4_HEIGHT - 15, { align: "center" });
+
+      // Page 2: Instructions (Low Ink Mode)
+      doc.addPage();
+      
+      // Eco-friendly styles (Minimal black text)
+      doc.setTextColor(30);
+      doc.setFontSize(18);
+      doc.text("Printing Instructions", 20, 30);
+      
+      doc.setFontSize(11);
+      doc.setTextColor(60);
+      doc.text([
+          "This coloring page is optimized for both A4 and US Letter paper.",
+          "",
+          "For Best Results:",
+          "1. Select 'Fit to Page' or 'Scale to Fit' in your printer settings.",
+          "2. Print on heavy cardstock or mixed media paper if you plan to use markers or paint.",
+          "3. Use 'High Quality' or 'Photo' print mode for crisp lines.",
+          "",
+          "Share Your Art:",
+          "We love seeing your creations! Tag us @HuePress on social media to be featured.",
+          "",
+          "Happy Coloring!",
+          "— The HuePress Team"
+      ], 20, 45);
+      
+      // Add QR Code link text/ID
+      doc.setFontSize(9);
+      doc.setTextColor(100);
+      doc.text(`Asset ID: ${formData.title ? "Generated for " + formData.title : "New Asset"}`, 20, 270);
+      doc.text("huepress.com", 20, 275);
 
       const pdfBlob = doc.output("blob");
       const pdfFileObj = new File([pdfBlob], file.name.replace(".svg", ".pdf"), { type: "application/pdf" });
@@ -160,7 +229,7 @@ export default function AdminAssetForm() {
       setAlertState({
         isOpen: true,
         title: "Magic Complete! ✨",
-        message: "Successfully generated PDF and WebP from your SVG.",
+        message: "Successfully generated safe-zone PDF and WebP.",
         variant: "success"
       });
 
