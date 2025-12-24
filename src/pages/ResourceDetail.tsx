@@ -18,6 +18,8 @@ import { apiClient } from "@/lib/api-client";
 import { StructuredData } from "@/components/StructuredData";
 import { analytics } from "@/lib/analytics";
 import { FreeSampleCapture } from "@/components/features/FreeSampleCapture";
+import { ReviewForm } from "@/components/features/ReviewForm";
+import { ReviewList } from "@/components/features/ReviewList";
 
 const mockAsset = {
   id: "1",
@@ -42,6 +44,32 @@ const trustBadges = [
   { icon: PenTool, label: "Bold Lines" },
   { icon: Sparkles, label: "No Watermark" },
 ];
+
+// Reviews section component
+function ReviewsSection({ assetId }: { assetId: string }) {
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { isSubscriber } = useSubscription();
+
+  const handleReviewSubmitted = () => {
+    setRefreshTrigger((prev) => prev + 1);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-6 lg:p-8 mt-6">
+      <h3 className="font-serif text-h3 text-ink mb-4">Reviews</h3>
+      
+      {/* Review List */}
+      <ReviewList assetId={assetId} refreshTrigger={refreshTrigger} />
+      
+      {/* Review Form (subscribers only) */}
+      {isSubscriber && (
+        <div className="mt-6 pt-4 border-t border-gray-100">
+          <ReviewForm assetId={assetId} onReviewSubmitted={handleReviewSubmitted} />
+        </div>
+      )}
+    </div>
+  );
+}
 
 function DownloadSection({ assetId, title }: { assetId: string; title: string }) {
   const { isSubscriber, isLoaded, isSignedIn } = useSubscription();
@@ -399,9 +427,10 @@ export default function ResourceDetailPage() {
 
               {/* Download/Unlock Section */}
               <DownloadSection assetId={id || "1"} title={asset.title} />
-
-
             </div>
+
+            {/* Reviews Section */}
+            <ReviewsSection assetId={id || "1"} />
 
             {/* Related */}
             <div className="mt-8">
