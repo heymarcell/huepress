@@ -120,7 +120,7 @@ app.get("/download/:id", async (c) => {
     return new Response(file.body, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${asset.title}.pdf"`,
+        "Content-Disposition": `attachment; filename="huepress-${asset.asset_id}-${asset.slug}.pdf"`,
       },
     });
   } catch (error) {

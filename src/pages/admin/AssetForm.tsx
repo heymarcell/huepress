@@ -57,6 +57,13 @@ const HUEPRESS_LOGO_SVG = `<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" 
   </g>
 </svg>`;
 
+const SOCIAL_ICONS = {
+  INSTAGRAM: `<svg viewBox="0 0 24 24" fill="none" class="w-6 h-6"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm4-8c0 2.2-1.8 4-4 4s-4-1.8-4-4 1.8-4 4-4 4 1.8 4 4zm-4-2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm4-2.5c0 .28-.22.5-.5.5s-.5-.22-.5-.5.22-.5.5-.5.5.22.5.5z" fill="#303030"/></svg>`, // Simple circle representation
+  FACEBOOK: `<svg viewBox="0 0 24 24" fill="#303030"><path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.53-4.5-10.02-10-10.02z"/></svg>`,
+  PINTEREST: `<svg viewBox="0 0 24 24" fill="#303030"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.24 2.65 7.89 6.43 9.35-.09-.79-.16-2.01.03-2.87.17-.78 1.1-4.66 1.1-4.66s-.28-.56-.28-1.39c0-1.3.75-2.27 1.69-2.27.8 0 1.18.6 1.18 1.32 0 .8-.51 2.01-.77 3.12-.22.93.47 1.69 1.38 1.69 1.66 0 2.94-1.75 2.94-4.28 0-2.26-1.63-3.84-3.95-3.84-2.88 0-4.57 2.16-4.57 4.39 0 .87.33 1.8.75 2.3.08.1.09.19.07.29l-.28 1.14c-.04.18-.14.22-.33.13-1.22-.57-1.98-2.35-1.98-3.79 0-3.08 2.24-5.92 6.46-5.92 3.39 0 6.02 2.42 6.02 5.65 0 3.38-2.13 6.1-5.1 6.1-.99 0-1.92-.52-2.24-1.13l-.61 2.32c-.22.84-.81 1.9-1.21 2.54.91.28 1.88.43 2.88.43 5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>`,
+  WEBSITE: `<svg viewBox="0 0 24 24" fill="#303030"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>`
+};
+
 // Helper to parse comma-separated tags
 const parseTags = (tags: string) => tags.split(",").map(t => t.trim()).filter(Boolean);
 
@@ -162,18 +169,31 @@ export default function AdminAssetForm() {
       const assetIdPrefix = id ? `${id}-` : "draft-";
       const baseFilename = `huepress-${assetIdPrefix}${cleanName}`; 
 
-      // 2. WebP Generation (Canvas)
+      // 2. WebP Generation (Canvas) - Forced 1:1 Square
       const webpBlob = await new Promise<Blob>((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
+          const SIZE = 1024; // Standardize thumbnail size
           const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height;
+          canvas.width = SIZE;
+          canvas.height = SIZE;
           const ctx = canvas.getContext("2d");
           if (!ctx) return reject(new Error("No canvas context"));
+          
+          // White Background
           ctx.fillStyle = "#FFFFFF";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0);
+          ctx.fillRect(0, 0, SIZE, SIZE);
+          
+          // Calculate Scale (Contain)
+          const scale = Math.min(SIZE / img.width, SIZE / img.height);
+          const w = img.width * scale;
+          const h = img.height * scale;
+          const x = (SIZE - w) / 2;
+          const y = (SIZE - h) / 2;
+          
+          // Draw Centered
+          ctx.drawImage(img, x, y, w, h);
+          
           canvas.toBlob(blob => {
             if (blob) resolve(blob);
             else reject(new Error("Canvas blob failed"));
@@ -223,12 +243,12 @@ export default function AdminAssetForm() {
         format: "a4" 
       });
 
-      // Inject Metadata (Hidden properties)
+      // Inject Metadata (Full Detail)
       doc.setProperties({
         title: formData.title || file.name.replace(".svg", ""),
-        subject: formData.description || "Coloring Page from HuePress",
+        subject: formData.extendedDescription || formData.description || "Coloring Page",
         author: "HuePress",
-        keywords: `${formData.category}, ${formData.skill}, coloring page, huepress`,
+        keywords: formData.metaKeywords || `${formData.category}, ${formData.skill}, coloring page, huepress`,
         creator: "HuePress Automated Generator"
       });
 
@@ -330,10 +350,37 @@ export default function AdminAssetForm() {
       doc.setTextColor(0, 0, 0);
       doc.text("huepress.co/review", 112, 210);
 
-      // FOOTER
+      // FOOTER - SOCIALS
+      const startX = 65;
+      const gap = 20;
+      const iconY = 240;
+      const iconSize = 8;
+      
+      // Facebook
+      const fbNode = new DOMParser().parseFromString(SOCIAL_ICONS.FACEBOOK, "image/svg+xml").documentElement;
+      await doc.svg(fbNode, { x: startX, y: iconY, width: iconSize, height: iconSize });
+      doc.link(startX, iconY, iconSize, iconSize, { url: "https://facebook.com/huepressco" });
+
+      // Instagram
+      const igNode = new DOMParser().parseFromString(SOCIAL_ICONS.INSTAGRAM, "image/svg+xml").documentElement;
+      await doc.svg(igNode, { x: startX + gap, y: iconY, width: iconSize, height: iconSize });
+      doc.link(startX + gap, iconY, iconSize, iconSize, { url: "https://instagram.com/huepressco" });
+
+      // Pinterest
+      const pinNode = new DOMParser().parseFromString(SOCIAL_ICONS.PINTEREST, "image/svg+xml").documentElement;
+      await doc.svg(pinNode, { x: startX + gap * 2, y: iconY, width: iconSize, height: iconSize });
+      doc.link(startX + gap * 2, iconY, iconSize, iconSize, { url: "https://pinterest.com/huepressco" });
+
+      // Website
+      const webNode = new DOMParser().parseFromString(SOCIAL_ICONS.WEBSITE, "image/svg+xml").documentElement;
+      await doc.svg(webNode, { x: startX + gap * 3, y: iconY, width: iconSize, height: iconSize });
+      doc.link(startX + gap * 3, iconY, iconSize, iconSize, { url: "https://huepress.co" });
+
+      // Copyright
       doc.setFontSize(9);
       doc.setTextColor(150);
-      doc.text("Discover thousands more at huepress.co", 105, 260, { align: "center" });
+      doc.text(`Copyright © ${new Date().getFullYear()} HuePress. All rights reserved.`, 105, 260, { align: "center" });
+      
       // Generate a short ID
       const shortId = formData.title ? formData.title.substring(0, 15).replace(/\s/g, "") : "Asset";
       doc.text(`Asset ID: ${shortId}-${new Date().getTime().toString().slice(-6)}`, 105, 265, { align: "center" });

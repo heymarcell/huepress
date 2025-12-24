@@ -93,16 +93,7 @@ app.post("/assets", async (c) => {
       return c.json({ error: "Missing required fields" }, 400);
     }
 
-    // 1. Upload Thumbnail to Public R2
-    const thumbnailKey = `thumbnails/${Date.now()}_${thumbnailFile.name}`;
-    await c.env.ASSETS_PUBLIC.put(thumbnailKey, thumbnailFile);
-    const thumbnailUrl = `${c.env.ASSETS_CDN_URL}/${thumbnailKey}`;
-
-    // 2. Upload PDF to Private R2
-    const pdfKey = `pdfs/${Date.now()}_${pdfFile.name}`;
-    await c.env.ASSETS_PRIVATE.put(pdfKey, pdfFile);
-
-    // 3. Generate SEO ID and Slug
+    // 1. Generate SEO ID and Slug
     const code = CATEGORY_CODES[category] || "GEN";
     const prefix = `HP-${code}-`;
     
@@ -120,6 +111,15 @@ app.post("/assets", async (c) => {
 
     const assetId = `${prefix}${sequence.toString().padStart(4, '0')}`;
     const slug = slugify(title);
+
+    // 2. Upload Thumbnail to Public R2
+    const thumbnailKey = `thumbnails/${assetId}_${thumbnailFile.name}`;
+    await c.env.ASSETS_PUBLIC.put(thumbnailKey, thumbnailFile);
+    const thumbnailUrl = `${c.env.ASSETS_CDN_URL}/${thumbnailKey}`;
+
+    // 3. Upload PDF to Private R2
+    const pdfKey = `pdfs/huepress-${assetId}-${slug}.pdf`;
+    await c.env.ASSETS_PRIVATE.put(pdfKey, pdfFile);
 
     // 4. Insert into D1
     const id = crypto.randomUUID();
