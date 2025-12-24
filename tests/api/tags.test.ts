@@ -51,7 +51,7 @@ describe("Tags API", () => {
         const res = await app.request("http://localhost/1", {}, mockEnv);
         expect(res.status).toBe(200);
         
-        const data = await res.json();
+        const data = await res.json() as { tag: any };
         expect(data.tag).toEqual(mockTag);
         expect(mockPrepare).toHaveBeenCalledWith(expect.stringContaining("WHERE id = ? OR slug = ?"));
     });
