@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useUser, useAuth } from "@clerk/clerk-react";
 import { Link } from "react-router-dom";
 import { createPortalSession } from "./stripe";
