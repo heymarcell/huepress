@@ -19,6 +19,7 @@ const TermsOfServicePage = lazy(() => import("./pages/TermsOfService"));
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
 const AdminAssets = lazy(() => import("./pages/admin/Assets"));
 const AdminAssetForm = lazy(() => import("./pages/admin/AssetForm"));
+const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 
 import ScrollToTop from "./components/ScrollToTop";
 import { ConsentProvider } from "./context/ConsentContext";
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="assets" element={<AdminAssets />} />
         <Route path="assets/new" element={<AdminAssetForm />} />
         <Route path="assets/:id/edit" element={<AdminAssetForm />} />
+        <Route path="settings" element={<AdminSettings />} />
       </Route>
       </Routes>
       </Suspense>

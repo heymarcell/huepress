@@ -1,22 +1,64 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Images, TrendingUp, Users, Download } from "lucide-react";
+import { useUser } from "@clerk/clerk-react";
+import { apiClient } from "@/lib/api-client";
+import { Asset } from "@/api/types";
 
-// Mock stats - will be replaced with API call
-const stats = [
-  { label: "Total Assets", value: "24", icon: Images, color: "bg-primary" },
-  { label: "Downloads", value: "1,234", icon: Download, color: "bg-secondary" },
-  { label: "Subscribers", value: "156", icon: Users, color: "bg-ink" },
-  { label: "This Week", value: "+12%", icon: TrendingUp, color: "bg-green-500" },
-];
-
-const recentAssets = [
-  { id: 1, title: "Capybara in Flower Garden", status: "published", downloads: 45 },
-  { id: 2, title: "Ocean Whale", status: "published", downloads: 32 },
-  { id: 3, title: "Friendly T-Rex", status: "draft", downloads: 0 },
-  { id: 4, title: "Astronaut Cat", status: "published", downloads: 28 },
-];
+interface DashboardStats {
+  totalAssets: number;
+  totalDownloads: number;
+  totalSubscribers: number;
+  newAssetsThisWeek: number;
+}
 
 export default function AdminDashboard() {
+  const { user } = useUser();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalAssets: 0,
+    totalDownloads: 0,
+    totalSubscribers: 0,
+    newAssetsThisWeek: 0
+  });
+  const [recentAssets, setRecentAssets] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.primaryEmailAddress?.emailAddress) return;
+
+    const loadData = async () => {
+      try {
+        const email = user.primaryEmailAddress!.emailAddress;
+        
+        // Parallel fetch
+        const [statsData, assetsData] = await Promise.all([
+          apiClient.admin.getStats(email),
+          apiClient.admin.listAssets(email)
+        ]);
+
+        setStats(statsData);
+        setRecentAssets(assetsData.assets.slice(0, 5)); // Top 5
+      } catch (error) {
+        console.error("Failed to load dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [user]);
+
+  const statCards = [
+    { label: "Total Assets", value: stats.totalAssets.toString(), icon: Images, color: "bg-primary" },
+    { label: "Downloads", value: stats.totalDownloads.toLocaleString(), icon: Download, color: "bg-secondary" },
+    { label: "Subscribers", value: stats.totalSubscribers.toString(), icon: Users, color: "bg-ink" },
+    { label: "This Week", value: `+${stats.newAssetsThisWeek}`, icon: TrendingUp, color: "bg-green-500" },
+  ];
+
+  if (loading) {
+     return <div className="p-8 text-center text-gray-500 animate-pulse">Loading dashboard...</div>;
+  }
+
   return (
     <div>
       <div className="mb-8">
@@ -26,7 +68,7 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, i) => (
+        {statCards.map((stat, i) => (
           <div 
             key={stat.label} 
             className="bg-white/60 backdrop-blur-md rounded-xl p-6 shadow-sm border border-white/40 hover:shadow-md hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 group"
@@ -52,7 +94,10 @@ export default function AdminDashboard() {
           </Link>
         </div>
         <div className="divide-y divide-gray-100/50">
-          {recentAssets.map((asset) => (
+          {recentAssets.length === 0 ? (
+             <div className="p-8 text-center text-gray-500">No assets found. Create your first one!</div>
+          ) : (
+            recentAssets.map((asset) => (
             <div key={asset.id} className="p-4 flex items-center justify-between hover:bg-white/60 transition-colors group cursor-pointer">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
@@ -60,7 +105,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <p className="font-medium text-ink group-hover:text-primary transition-colors">{asset.title}</p>
-                  <p className="text-xs text-gray-500">{asset.downloads} downloads</p>
+                  <p className="text-xs text-gray-500">{asset.download_count || 0} downloads</p>
                 </div>
               </div>
               <span
@@ -73,7 +118,7 @@ export default function AdminDashboard() {
                 {asset.status.charAt(0).toUpperCase() + asset.status.slice(1)}
               </span>
             </div>
-          ))}
+          )))}
         </div>
       </div>
     </div>

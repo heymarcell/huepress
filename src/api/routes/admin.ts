@@ -150,4 +150,43 @@ app.post("/assets", async (c) => {
   }
 });
 
+// ADMIN: Get Dashboard Stats
+app.get("/stats", async (c) => {
+  const adminEmail = c.req.header("X-Admin-Email");
+  
+  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  try {
+    // 1. Total Assets
+    const assetsCount = await c.env.DB.prepare("SELECT COUNT(*) as count FROM assets").first<{ count: number }>();
+    
+    // 2. Total Downloads
+    const downloadsCount = await c.env.DB.prepare("SELECT SUM(download_count) as count FROM assets").first<{ count: number }>();
+    
+    // 3. New Assets This Week
+    const newAssetsCount = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM assets 
+      WHERE created_at >= datetime('now', '-7 days')
+    `).first<{ count: number }>();
+
+    // 4. Total Subscribers (Active)
+    const subscribersCount = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM users 
+      WHERE subscription_status = 'active'
+    `).first<{ count: number }>();
+
+    return c.json({
+      totalAssets: assetsCount?.count || 0,
+      totalDownloads: downloadsCount?.count || 0,
+      totalSubscribers: subscribersCount?.count || 0,
+      newAssetsThisWeek: newAssetsCount?.count || 0
+    });
+  } catch (error) {
+    console.error("Stats error:", error);
+    return c.json({ error: "Failed to fetch stats" }, 500);
+  }
+});
+
 export default app;

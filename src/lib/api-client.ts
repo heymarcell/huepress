@@ -105,6 +105,16 @@ export const apiClient = {
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error || "Failed to create asset");
       return data;
+    },
+    getStats: async (adminEmail: string) => {
+      return fetchApi<{
+        totalAssets: number;
+        totalDownloads: number;
+        totalSubscribers: number;
+        newAssetsThisWeek: number;
+      }>("/api/admin/stats", {
+        headers: { "X-Admin-Email": adminEmail }
+      });
     }
   },
   billing: {
