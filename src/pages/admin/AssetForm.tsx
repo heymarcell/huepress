@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui";
 import { AlertModal } from "@/components/ui/AlertModal";
@@ -7,8 +7,11 @@ import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
 
-const categories = ["Animals", "Fantasy", "Nature", "Vehicles", "Food", "Holidays", "Characters"];
-const skills = ["Easy", "Medium", "Hard"];
+import { Tag } from "@/api/types";
+
+// Helper to parse comma-separated tags
+const parseTags = (tags: string) => tags.split(",").map(t => t.trim()).filter(Boolean);
+
 
 interface AssetFormData {
   title: string;
@@ -31,11 +34,13 @@ export default function AdminAssetForm() {
   const navigate = useNavigate();
   const isEditing = Boolean(id);
 
+  const [availableTags, setAvailableTags] = useState<Record<string, Tag[]>>({});
+  
   const [formData, setFormData] = useState<AssetFormData>({
     title: "",
     description: "",
-    category: categories[0],
-    skill: skills[0],
+    category: "", // Will be set after loading tags
+    skill: "",
     tags: "",
     status: "draft",
     extendedDescription: "",
@@ -45,6 +50,27 @@ export default function AdminAssetForm() {
     therapeuticBenefits: "",
     metaKeywords: "",
   });
+
+  // Fetch Tags
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const data = await apiClient.tags.list();
+        setAvailableTags(data.grouped);
+        
+        // Set defaults if empty
+        setFormData(prev => ({
+          ...prev,
+          category: prev.category || data.grouped.category?.[0]?.name || "",
+          skill: prev.skill || data.grouped.skill?.[0]?.name || ""
+        }));
+      } catch (err) {
+        console.error("Failed to load tags", err);
+      }
+    };
+    fetchTags();
+  }, []);
+
 
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -176,8 +202,9 @@ export default function AdminAssetForm() {
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-white"
               >
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
+                <option value="">Select Category</option>
+                {(availableTags.category || []).map((cat) => (
+                  <option key={cat.id} value={cat.name}>{cat.name}</option>
                 ))}
               </select>
             </div>
@@ -189,8 +216,9 @@ export default function AdminAssetForm() {
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-white"
               >
-                {skills.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                <option value="">Select Skill</option>
+                {(availableTags.skill || []).map((s) => (
+                  <option key={s.id} value={s.name}>{s.name}</option>
                 ))}
               </select>
             </div>
@@ -279,17 +307,89 @@ export default function AdminAssetForm() {
             </div>
           </div>
 
-          {/* Tags */}
-          <div>
-            <label className="block text-sm font-medium text-ink mb-2">Tags (comma separated)</label>
-            <input
-              type="text"
-              name="tags"
-              value={formData.tags}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
-              placeholder="capybara, flowers, cute, relaxing"
-            />
+          {/* Tags Selection */}
+          <div className="space-y-4">
+             <label className="block text-sm font-medium text-ink">Tags & Themes</label>
+             
+             {/* Themes */}
+             {availableTags.theme && availableTags.theme.length > 0 && (
+               <div className="bg-gray-50 p-4 rounded-xl">
+                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Themes</span>
+                 <div className="flex flex-wrap gap-2">
+                   {availableTags.theme.map(tag => {
+                     const isSelected = parseTags(formData.tags).includes(tag.name);
+                     return (
+                       <button
+                         type="button"
+                         key={tag.id}
+                         onClick={() => {
+                           const current = parseTags(formData.tags);
+                           const newTags = isSelected 
+                             ? current.filter(t => t !== tag.name)
+                             : [...current, tag.name];
+                           setFormData(prev => ({ ...prev, tags: newTags.join(", ") }));
+                         }}
+                         className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
+                           isSelected 
+                             ? "bg-secondary text-white border-secondary" 
+                             : "bg-white text-gray-600 border-gray-200 hover:border-secondary/30"
+                         }`}
+                       >
+                         {tag.name}
+                       </button>
+                     );
+                   })}
+                 </div>
+               </div>
+             )}
+
+             {/* Age Groups */}
+             {availableTags.age_group && availableTags.age_group.length > 0 && (
+               <div className="bg-gray-50 p-4 rounded-xl">
+                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Age Groups</span>
+                 <div className="flex flex-wrap gap-2">
+                   {availableTags.age_group.map(tag => {
+                     const isSelected = parseTags(formData.tags).includes(tag.name);
+                     return (
+                       <button
+                         type="button"
+                         key={tag.id}
+                         onClick={() => {
+                           const current = parseTags(formData.tags);
+                           const newTags = isSelected 
+                             ? current.filter(t => t !== tag.name)
+                             : [...current, tag.name];
+                           setFormData(prev => ({ ...prev, tags: newTags.join(", ") }));
+                         }}
+                         className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
+                           isSelected 
+                             ? "bg-primary text-white border-primary" 
+                             : "bg-white text-gray-600 border-gray-200 hover:border-primary/30"
+                         }`}
+                       >
+                         {tag.name}
+                       </button>
+                     );
+                   })}
+                 </div>
+               </div>
+             )}
+
+             {/* Custom Tags Input */}
+             <div>
+               <label className="block text-xs font-medium text-gray-500 mb-2">Additional Tags (comma separated)</label>
+               <input
+                 type="text"
+                 name="tags"
+                 value={formData.tags}
+                 onChange={handleChange}
+                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
+                 placeholder="cat, garden, sunshine..."
+               />
+               <p className="text-xs text-gray-400 mt-1">
+                  Selected themes and age groups are automatically added here.
+               </p>
+             </div>
           </div>
 
           {/* File Uploads */}
