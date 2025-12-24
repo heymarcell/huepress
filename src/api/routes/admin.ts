@@ -23,9 +23,9 @@ app.get("/assets", async (c) => {
       "SELECT * FROM assets ORDER BY created_at DESC"
     ).all();
     
-    const assets = results?.map((asset: any) => ({
+    const assets = results?.map((asset: Record<string, unknown>) => ({
       ...asset,
-      tags: asset.tags ? JSON.parse(asset.tags) : [],
+      tags: asset.tags ? JSON.parse(asset.tags as string) : [],
     }));
 
     return c.json({ assets });

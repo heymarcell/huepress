@@ -166,7 +166,7 @@ export async function sendMetaEvent(
       }),
     });
 
-    const result = await response.json() as any;
+    const result = await response.json() as { events_received?: number; error?: { message?: string } };
 
     if (!response.ok) {
       console.error('Meta Conversions API error:', result);
@@ -178,9 +178,10 @@ export async function sendMetaEvent(
 
     console.log(`Meta event sent: ${event.eventName}`, { eventId, eventsReceived: result.events_received });
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Meta Conversions API exception:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage };
   }
 }
 

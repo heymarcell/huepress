@@ -47,5 +47,5 @@ export interface User {
 export interface ApiResponse<T> {
   data?: T;
   error?: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }

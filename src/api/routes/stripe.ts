@@ -52,7 +52,7 @@ app.post("/checkout", async (c) => {
       body: new URLSearchParams(payload),
     });
 
-    const session = await response.json() as any;
+    const session = await response.json() as { url?: string; error?: { message?: string } };
 
     if (!response.ok) {
       console.error("Stripe error:", session);
@@ -60,9 +60,10 @@ app.post("/checkout", async (c) => {
     }
 
     return c.json({ url: session.url });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Checkout error:", error);
-    return c.json({ error: error.message || "Checkout failed" }, 500);
+    const message = error instanceof Error ? error.message : "Checkout failed";
+    return c.json({ error: message }, 500);
   }
 });
 

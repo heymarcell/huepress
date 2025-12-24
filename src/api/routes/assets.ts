@@ -29,9 +29,9 @@ app.get("/assets", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(query).bind(...params).all();
     
-    const assets = results?.map((asset: any) => ({
+    const assets = results?.map((asset: Record<string, unknown>) => ({
       ...asset,
-      tags: asset.tags ? JSON.parse(asset.tags) : [],
+      tags: asset.tags ? JSON.parse(asset.tags as string) : [],
     }));
 
     return c.json({ assets, count: assets?.length || 0 });
