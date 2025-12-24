@@ -7,7 +7,7 @@ describe("Assets API", () => {
     let mockAll: Mock;
     let mockFirst: Mock;
     let mockRun: Mock;
-    let mockEnv: any;
+    let mockEnv: Record<string, unknown>;
     let mockR2Get: Mock; 
     
     beforeEach(() => {
@@ -36,7 +36,7 @@ describe("Assets API", () => {
         const res = await app.request("http://localhost/assets", {}, mockEnv);
         expect(res.status).toBe(200);
         
-        const data = await res.json() as { assets: any[], count: number };
+        const data = await res.json() as { assets: {tags: unknown}[], count: number };
         expect(data.assets).toHaveLength(1);
         expect(data.assets[0].tags).toEqual(["tag1"]);
     });

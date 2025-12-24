@@ -6,7 +6,7 @@ describe("Tags API", () => {
     let mockPrepare: Mock;
     let mockAll: Mock;
     let mockFirst: Mock;
-    let mockEnv: any;
+    let mockEnv: Record<string, unknown>;
     
     beforeEach(() => {
         mockAll = vi.fn();
@@ -30,7 +30,7 @@ describe("Tags API", () => {
         const res = await app.request("http://localhost/", {}, mockEnv);
         expect(res.status).toBe(200);
         
-        const data = await res.json() as { tags: any[], grouped: Record<string, any[]> };
+        const data = await res.json() as { tags: unknown[], grouped: Record<string, unknown[]> };
         expect(data.tags).toHaveLength(2);
         expect(data.grouped.category).toHaveLength(1);
         expect(data.grouped.skill).toHaveLength(1);
@@ -51,7 +51,7 @@ describe("Tags API", () => {
         const res = await app.request("http://localhost/1", {}, mockEnv);
         expect(res.status).toBe(200);
         
-        const data = await res.json() as { tag: any };
+        const data = await res.json() as { tag: unknown };
         expect(data.tag).toEqual(mockTag);
         expect(mockPrepare).toHaveBeenCalledWith(expect.stringContaining("WHERE id = ? OR slug = ?"));
     });

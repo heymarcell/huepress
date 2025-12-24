@@ -12,7 +12,8 @@ describe("Reviews API", () => {
     let mockAll: Mock;
     let mockRun: Mock;
     let mockFirst: Mock;
-    let mockEnv: any;
+
+    let mockEnv: Record<string, unknown>;
     
     beforeEach(() => {
         mockAll = vi.fn();
@@ -42,7 +43,7 @@ describe("Reviews API", () => {
 
         const res = await app.request("http://localhost/123", {}, mockEnv);
         expect(res.status).toBe(200);
-        const data = await res.json() as any;
+        const data = await res.json() as { reviews: unknown[] };
         expect(data.reviews).toHaveLength(1);
     });
 

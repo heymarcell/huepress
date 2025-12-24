@@ -7,7 +7,7 @@ describe("Admin API", () => {
     let mockAll: Mock;
     let mockRun: Mock;
     let mockFirst: Mock;
-    let mockEnv: any;
+    let mockEnv: Record<string, unknown>;
     let mockR2Put: Mock;
     
     beforeEach(() => {
