@@ -27,7 +27,7 @@ bucket_name = "huepress-assets-public"
 # GA4_API_SECRET
 
 [vars]
-ENVIRONMENT = "development"
+ENVIRONMENT = "production"
 META_PIXEL_ID = "1588901548777498"
 ADMIN_EMAILS = "marcell@neongod.io"
 SITE_URL = "https://huepress.co"

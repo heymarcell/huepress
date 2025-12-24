@@ -20,15 +20,30 @@ import { analytics } from "@/lib/analytics";
 import { FreeSampleCapture } from "@/components/features/FreeSampleCapture";
 import { ReviewForm } from "@/components/features/ReviewForm";
 import { ReviewList } from "@/components/features/ReviewList";
+import { AboutDesign } from "@/components/features/AboutDesign";
 
 const mockAsset = {
   id: "1",
   title: "Cozy Capybara",
   description: "A friendly capybara enjoying a peaceful moment. Perfect for calming activities and developing fine motor skills with bold, easy-to-color lines.",
   category: "Animals",
-  skill: "Calm",
+  skill: "Easy",
   imageUrl: "/thumbnails/thumb_capybara_1766354990805.png",
   isNew: true,
+  // Extended SEO content
+  extendedDescription: "The capybara is the world's largest rodent, known for its gentle and social nature. This thoughtfully designed coloring page features bold, easy-to-color lines that are perfect for developing fine motor skills while providing a calming, screen-free activity.",
+  funFacts: [
+    "Capybaras can hold their breath underwater for up to 5 minutes!",
+    "They are highly social and often seen with birds sitting on their heads.",
+    "Baby capybaras can run and swim within hours of being born."
+  ],
+  suggestedActivities: [
+    "Count the different textures you can create with various coloring tools",
+    "Research where capybaras live and add a habitat background",
+    "Practice blending colors for a realistic fur effect"
+  ],
+  coloringTips: "Start with light colors and build up layers. Use brown and tan shades for the fur, leaving white highlights for dimension.",
+  therapeuticBenefits: "Large, calming shapes help develop focus and provide a relaxing activity for wind-down time. The simple design reduces frustration while still being engaging."
 };
 
 const relatedItems = [
@@ -432,7 +447,16 @@ export default function ResourceDetailPage() {
             {/* Reviews Section */}
             <ReviewsSection assetId={id || "1"} />
 
-            {/* Related */}
+            {/* About This Design - Rich Content Module */}
+            <AboutDesign
+              extendedDescription={asset.extendedDescription}
+              funFacts={asset.funFacts}
+              suggestedActivities={asset.suggestedActivities}
+              coloringTips={asset.coloringTips}
+              therapeuticBenefits={asset.therapeuticBenefits}
+              category={asset.category}
+              skill={asset.skill}
+            />
             <div className="mt-8">
               <h3 className="font-serif text-h3 text-ink mb-4">You might also like</h3>
               <div className="grid grid-cols-3 gap-4">

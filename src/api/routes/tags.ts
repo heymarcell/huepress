@@ -1,0 +1,87 @@
+import { Hono } from "hono";
+import { Bindings, Tag } from "../types";
+
+const app = new Hono<{ Bindings: Bindings }>();
+
+// GET /tags - Get all tags, optionally filtered by type
+app.get("/", async (c) => {
+  const type = c.req.query("type");
+
+  try {
+    let query = "SELECT * FROM tags";
+    const params: string[] = [];
+
+    if (type) {
+      query += " WHERE type = ?";
+      params.push(type);
+    }
+
+    query += " ORDER BY type, display_order";
+
+    const result = await c.env.DB.prepare(query)
+      .bind(...params)
+      .all<Tag>();
+
+    // Group tags by type for easier UI consumption
+    const grouped = (result.results || []).reduce((acc, tag) => {
+      if (!acc[tag.type]) {
+        acc[tag.type] = [];
+      }
+      acc[tag.type].push(tag);
+      return acc;
+    }, {} as Record<string, Tag[]>);
+
+    return c.json({
+      tags: result.results || [],
+      grouped,
+    });
+  } catch (error) {
+    console.error("Error fetching tags:", error);
+    return c.json({ error: "Failed to fetch tags" }, 500);
+  }
+});
+
+// GET /tags/:id - Get a single tag
+app.get("/:id", async (c) => {
+  const id = c.req.param("id");
+
+  try {
+    const tag = await c.env.DB.prepare(
+      "SELECT * FROM tags WHERE id = ? OR slug = ?"
+    )
+      .bind(id, id)
+      .first<Tag>();
+
+    if (!tag) {
+      return c.json({ error: "Tag not found" }, 404);
+    }
+
+    return c.json({ tag });
+  } catch (error) {
+    console.error("Error fetching tag:", error);
+    return c.json({ error: "Failed to fetch tag" }, 500);
+  }
+});
+
+// GET /tags/asset/:assetId - Get tags for a specific asset
+app.get("/asset/:assetId", async (c) => {
+  const assetId = c.req.param("assetId");
+
+  try {
+    const result = await c.env.DB.prepare(`
+      SELECT t.* FROM tags t
+      INNER JOIN asset_tags at ON t.id = at.tag_id
+      WHERE at.asset_id = ?
+      ORDER BY t.type, t.display_order
+    `)
+      .bind(assetId)
+      .all<Tag>();
+
+    return c.json({ tags: result.results || [] });
+  } catch (error) {
+    console.error("Error fetching asset tags:", error);
+    return c.json({ error: "Failed to fetch asset tags" }, 500);
+  }
+});
+
+export default app;

@@ -9,6 +9,7 @@ import adminRoute from "./routes/admin";
 import stripeRoute from "./routes/stripe";
 import webhooksRoute from "./routes/webhooks";
 import reviewsRoute from "./routes/reviews";
+import tagsRoute from "./routes/tags";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -21,7 +22,7 @@ app.get("/", (c) => {
   return c.json({ 
     name: "HuePress API", 
     version: "1.0.0",
-    endpoints: ["/api/health", "/api/assets", "/api/download/:id", "/api/reviews/:assetId"]
+    endpoints: ["/api/health", "/api/assets", "/api/download/:id", "/api/reviews/:assetId", "/api/tags"]
   });
 });
 
@@ -43,5 +44,6 @@ app.route("/api/admin", adminRoute); // /api/admin/assets
 app.route("/api", stripeRoute);      // /api/checkout, /api/portal, /api/webhooks/stripe
 app.route("/api/webhooks", webhooksRoute); // /api/webhooks/clerk
 app.route("/api/reviews", reviewsRoute); // /api/reviews/:assetId
+app.route("/api/tags", tagsRoute);   // /api/tags
 
 export default app;

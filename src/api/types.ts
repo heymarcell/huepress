@@ -22,8 +22,11 @@ export type Bindings = {
 
 export interface Asset {
   id: string;
+  asset_id?: string;  // Human-readable ID (HP-ANM-0001)
+  slug?: string;      // URL-friendly slug (cozy-capybara)
   title: string;
   description: string;
+  extended_description?: string;
   category: string;
   skill: string;
   image_url: string;
@@ -32,6 +35,21 @@ export interface Asset {
   tags: string[];
   created_at: string;
   download_count: number;
+  // SEO Content
+  fun_facts?: string[];     // JSON array
+  suggested_activities?: string[];  // JSON array
+  coloring_tips?: string;
+  therapeutic_benefits?: string;
+  meta_keywords?: string;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  type: 'category' | 'theme' | 'age_group' | 'skill';
+  slug: string;
+  description?: string;
+  display_order: number;
 }
 
 export interface User {

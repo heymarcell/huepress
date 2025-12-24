@@ -31,7 +31,7 @@ export function ReviewList({ assetId, refreshTrigger }: ReviewListProps) {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const response = await fetch(`${API_URL}/reviews/${assetId}`);
+        const response = await fetch(`${API_URL}/api/reviews/${assetId}`);
         const data = await response.json() as ReviewsResponse;
         setReviews(data.reviews || []);
         setAverageRating(data.averageRating);
