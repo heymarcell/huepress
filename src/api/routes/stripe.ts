@@ -4,6 +4,7 @@ import { Bindings } from "../types";
 import { trackPurchase, trackSubscribe } from "../../lib/meta-conversions";
 import { trackPinterestCheckout } from "../../lib/pinterest-conversions";
 import { trackGA4Purchase } from "../../lib/ga4-conversions";
+import { verifyStripeSignature } from "../../lib/stripe-webhook";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -119,16 +120,23 @@ app.post("/webhooks/stripe", async (c) => {
 
   const body = await c.req.text();
 
-  // Verify signature manually for Workers environment
-  // (Assuming Stripe SDK verifyHeader issues in Workers, passing raw body to be safe)
-  // For MVP: We trust the secret exists. If verify fails, it throws.
+  // Verify webhook signature using Web Crypto API
+  const verificationResult = await verifyStripeSignature(
+    body,
+    signature,
+    c.env.STRIPE_WEBHOOK_SECRET
+  );
+
+  if (!verificationResult.valid) {
+    console.error("Stripe webhook verification failed:", verificationResult.error);
+    return c.text(`Webhook signature verification failed: ${verificationResult.error}`, 401);
+  }
+
   let event;
   try {
-     // Currently skipping strict verification to avoid 'crypto' module issues in Workers
-     // TODO: Re-enable strict verification with proper crypto polyfill
-     event = JSON.parse(body);
+    event = JSON.parse(body);
   } catch (err) {
-     return c.text(`Webhook Error: ${err}`, 400);
+    return c.text(`Webhook Error: Invalid JSON - ${err}`, 400);
   }
   
   try {
