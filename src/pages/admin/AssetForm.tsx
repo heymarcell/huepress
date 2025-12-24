@@ -76,17 +76,19 @@ export default function AdminAssetForm() {
 
 
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessingSvg, setIsProcessingSvg] = useState(false);
 
-  // Cleanup preview URL on unmount or change
+  // Cleanup preview URLs
   useEffect(() => {
     return () => {
       if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+      if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl);
     };
-  }, [pdfPreviewUrl]);
+  }, [pdfPreviewUrl, thumbnailPreviewUrl]);
   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
     isOpen: false,
     title: "",
@@ -107,7 +109,14 @@ export default function AdminAssetForm() {
 
     setIsProcessingSvg(true);
     try {
-      // 1. WebP Generation (Canvas)
+      // 1. Generate Clean Filename
+      const cleanName = formData.title 
+        ? formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+        : file.name.replace(".svg", "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      
+      const baseFilename = `huepress-${cleanName}`; // e.g. huepress-cute-capybara
+
+      // 2. WebP Generation (Canvas)
       const webpBlob = await new Promise<Blob>((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
@@ -128,10 +137,11 @@ export default function AdminAssetForm() {
         img.src = URL.createObjectURL(file);
       });
       
-      const webpFile = new File([webpBlob], file.name.replace(".svg", ".webp"), { type: "image/webp" });
+      const webpFile = new File([webpBlob], `${baseFilename}.webp`, { type: "image/webp" });
       setThumbnailFile(webpFile);
+      setThumbnailPreviewUrl(URL.createObjectURL(webpFile));
 
-      // 2. Advanced PDF Generation (Safe Zone & Metadata)
+      // 3. Advanced PDF Generation (Safe Zone & Metadata)
       const svgText = await file.text();
       const parser = new DOMParser();
       const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
@@ -273,7 +283,7 @@ export default function AdminAssetForm() {
       doc.text(`Asset ID: ${shortId}-${new Date().getTime().toString().slice(-6)}`, 105, 265, { align: "center" });
 
       const pdfBlob = doc.output("blob");
-      const pdfFileObj = new File([pdfBlob], file.name.replace(".svg", ".pdf"), { type: "application/pdf" });
+      const pdfFileObj = new File([pdfBlob], `${baseFilename}.pdf`, { type: "application/pdf" });
       setPdfFile(pdfFileObj);
       
       // Create Preview URL
@@ -661,11 +671,31 @@ export default function AdminAssetForm() {
             {/* Thumbnail */}
             <div>
               <label className="block text-sm font-medium text-ink mb-2">Thumbnail</label>
+              
+              {/* Thumbnail Preview */}
+              {thumbnailPreviewUrl && (
+                <div className="mb-3 relative group w-32 h-32 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden mx-auto">
+                  <img 
+                    src={thumbnailPreviewUrl} 
+                    alt="Thumbnail Preview" 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              )}
+
               <div className="relative">
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
-                  onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setThumbnailFile(file);
+                    if (file) {
+                      setThumbnailPreviewUrl(URL.createObjectURL(file));
+                    } else {
+                      setThumbnailPreviewUrl(null);
+                    }
+                  }}
                   className="hidden"
                   id="thumbnail-upload"
                 />
