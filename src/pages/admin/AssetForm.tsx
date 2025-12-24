@@ -109,12 +109,13 @@ export default function AdminAssetForm() {
 
     setIsProcessingSvg(true);
     try {
-      // 1. Generate Clean Filename
+      // 1. Generate Clean Filename (with ID if available)
       const cleanName = formData.title 
         ? formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
         : file.name.replace(".svg", "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
       
-      const baseFilename = `huepress-${cleanName}`; // e.g. huepress-cute-capybara
+      const assetIdPrefix = id ? `${id}-` : "draft-";
+      const baseFilename = `huepress-${assetIdPrefix}${cleanName}`; 
 
       // 2. WebP Generation (Canvas)
       const webpBlob = await new Promise<Blob>((resolve, reject) => {
