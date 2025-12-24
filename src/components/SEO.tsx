@@ -5,7 +5,9 @@ interface SEOProps {
   description?: string;
   image?: string;
   url?: string;
-  type?: "website" | "article";
+  canonical?: string;
+  type?: "website" | "article" | "product"; // Added product
+  keywords?: string; // Added keywords
 }
 
 const defaults = {
@@ -21,7 +23,9 @@ export function SEO({
   description = defaults.description,
   image = defaults.image,
   url = defaults.url,
+  canonical,
   type = defaults.type,
+  keywords,
 }: SEOProps) {
   const fullTitle = title === defaults.title ? title : `${title} | HuePress`;
   // Ensure absolute URL for image if it starts with /
@@ -32,7 +36,8 @@ export function SEO({
       {/* Standard Metadata */}
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
-      <link rel="canonical" href={url} />
+      {keywords && <meta name="keywords" content={keywords} />}
+      <link rel="canonical" href={canonical || url} />
 
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />

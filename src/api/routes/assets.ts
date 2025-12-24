@@ -41,15 +41,15 @@ app.get("/assets", async (c) => {
   }
 });
 
-// Get single asset by ID
+// Get single asset by ID, Asset ID (HP-...), or Slug
 app.get("/assets/:id", async (c) => {
   const id = c.req.param("id");
 
   try {
     const asset = await c.env.DB.prepare(
-      "SELECT * FROM assets WHERE id = ? AND status = 'published'"
+      "SELECT * FROM assets WHERE (id = ? OR asset_id = ? OR slug = ?) AND status = 'published'"
     )
-      .bind(id)
+      .bind(id, id, id)
       .first();
 
     if (!asset) {
@@ -59,6 +59,8 @@ app.get("/assets/:id", async (c) => {
     return c.json({
       ...asset,
       tags: asset.tags ? JSON.parse(asset.tags as string) : [],
+      fun_facts: asset.fun_facts ? JSON.parse(asset.fun_facts as string) : [],
+      suggested_activities: asset.suggested_activities ? JSON.parse(asset.suggested_activities as string) : [],
     });
   } catch (error) {
     console.error("Database error:", error);

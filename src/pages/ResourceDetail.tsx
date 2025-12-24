@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Asset } from "@/api/types";
 import { Button } from "@/components/ui";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { useSubscription } from "@/lib/auth";
@@ -22,29 +23,7 @@ import { ReviewForm } from "@/components/features/ReviewForm";
 import { ReviewList } from "@/components/features/ReviewList";
 import { AboutDesign } from "@/components/features/AboutDesign";
 
-const mockAsset = {
-  id: "1",
-  title: "Cozy Capybara",
-  description: "A friendly capybara enjoying a peaceful moment. Perfect for calming activities and developing fine motor skills with bold, easy-to-color lines.",
-  category: "Animals",
-  skill: "Easy",
-  imageUrl: "/thumbnails/thumb_capybara_1766354990805.png",
-  isNew: true,
-  // Extended SEO content
-  extendedDescription: "The capybara is the world's largest rodent, known for its gentle and social nature. This thoughtfully designed coloring page features bold, easy-to-color lines that are perfect for developing fine motor skills while providing a calming, screen-free activity.",
-  funFacts: [
-    "Capybaras can hold their breath underwater for up to 5 minutes!",
-    "They are highly social and often seen with birds sitting on their heads.",
-    "Baby capybaras can run and swim within hours of being born."
-  ],
-  suggestedActivities: [
-    "Count the different textures you can create with various coloring tools",
-    "Research where capybaras live and add a habitat background",
-    "Practice blending colors for a realistic fur effect"
-  ],
-  coloringTips: "Start with light colors and build up layers. Use brown and tan shades for the fur, leaving white highlights for dimension.",
-  therapeuticBenefits: "Large, calming shapes help develop focus and provide a relaxing activity for wind-down time. The simple design reduces frustration while still being engaging."
-};
+// Mock asset removed - fetching from API now
 
 const relatedItems = [
   { id: "2", title: "Ocean Whale", imageUrl: "/thumbnails/thumb_whale_1766355003894.png" },
@@ -291,191 +270,195 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
 }
 
 export default function ResourceDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  // In a real app, use SWR/React Query or loader data
-  const asset = mockAsset; 
-  const canonicalUrl = `https://huepress.co/vault/${id}`;
+  const { id, slug } = useParams<{ id: string; slug: string }>();
+  const [asset, setAsset] = useState<Asset | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchAsset = async () => {
+      setIsLoading(true);
+      setError("");
+      
+      try {
+        let lookupId = id;
+        
+        // Handle SEO slug: cozy-capybara-HP-ANM-0001 -> HP-ANM-0001
+        if (!lookupId && slug) {
+            const match = slug.match(/(HP-[A-Z]{3}-\d{4})$/);
+            lookupId = match ? match[1] : slug;
+        }
+
+        if (!lookupId) {
+            setError("Asset not found");
+            return;
+        }
+
+        const data = await apiClient.assets.get(lookupId);
+        setAsset(data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load asset");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAsset();
+  }, [id, slug]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-32 pb-16 flex justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-gray-500">Loading design...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !asset) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-32 pb-16 text-center px-6">
+        <div className="max-w-md mx-auto">
+          <h1 className="font-serif text-3xl font-bold text-gray-900 mb-4">{error || "Design Not Found"}</h1>
+          <p className="text-gray-600 mb-8">We couldn't find the coloring page you're looking for. It may have been moved or removed.</p>
+          <Link to="/vault">
+            <Button variant="primary" size="lg">Browse The Vault</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // SEO Canonical URL
+  const canonicalUrl = `https://huepress.co/coloring-pages/${asset.slug || "design"}-${asset.asset_id || asset.id}`;
+  
+  // Use fetched asset ID for components
+  const assetId = asset.id;
 
   return (
     <div className="bg-gray-50 min-h-screen">
       <SEO 
-        title={asset.title} 
+        title={`${asset.title} - Coloring Page | HuePress`}
         description={asset.description}
-        image={asset.imageUrl}
-        url={canonicalUrl}
-        type="article"
+        image={asset.image_url}
+        canonical={canonicalUrl}
+        type="product"
+        keywords={asset.meta_keywords}
       />
-      <StructuredData 
-        type="Product"
-        data={{
-          name: asset.title,
-          description: asset.description,
-          image: asset.imageUrl.startsWith("http") ? asset.imageUrl : `https://huepress.co${asset.imageUrl}`,
-          brand: {
-             "@type": "Brand",
-             "name": "HuePress"
-          },
-          // Aggregate rating for product snippets
-          aggregateRating: {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "reviewCount": "512",
-            "bestRating": "5",
-            "worstRating": "1"
-          },
-          // Sample review for rich results
-          review: {
-            "@type": "Review",
-            "reviewRating": {
-              "@type": "Rating",
-              "ratingValue": "5",
-              "bestRating": "5"
-            },
-            "author": {
-              "@type": "Person",
-              "name": "Sarah M."
-            },
-            "reviewBody": "Perfect for my kids! The bold lines are so easy to color and keep them focused."
-          },
-          offers: {
-            "@type": "Offer",
-            "price": "5.00",
-            "priceCurrency": "USD",
-            "priceValidUntil": "2025-12-31",
-            "availability": "https://schema.org/InStock",
-            "url": canonicalUrl,
-            // Digital delivery - no shipping required
-            "shippingDetails": {
-              "@type": "OfferShippingDetails",
-              "shippingRate": {
-                "@type": "MonetaryAmount",
-                "value": "0",
-                "currency": "USD"
-              },
-              "shippingDestination": {
-                "@type": "DefinedRegion",
-                "addressCountry": "US"
-              },
-              "deliveryTime": {
-                "@type": "ShippingDeliveryTime",
-                "handlingTime": {
-                  "@type": "QuantitativeValue",
-                  "minValue": "0",
-                  "maxValue": "0",
-                  "unitCode": "d"
-                },
-                "transitTime": {
-                  "@type": "QuantitativeValue",
-                  "minValue": "0",
-                  "maxValue": "0",
-                  "unitCode": "d"
-                }
-              }
-            },
-            "hasMerchantReturnPolicy": {
-              "@type": "MerchantReturnPolicy",
-              "applicableCountry": "US",
-              "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted",
-              "merchantReturnDays": "0",
-              "returnMethod": "https://schema.org/ReturnByMail",
-              "returnFees": "https://schema.org/FreeReturn"
+      
+      {asset.asset_id && (
+        <StructuredData 
+          type="Product"
+          data={{
+            name: asset.title,
+            description: asset.description,
+            image: asset.image_url,
+            sku: asset.asset_id,
+            offers: {
+              "@type": "Offer",
+              "price": "5.00",
+              "priceCurrency": "USD",
+              "availability": "https://schema.org/InStock"
             }
-          }
-        }}
-      />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <nav className="mb-6">
-          <ol className="flex items-center gap-2 text-sm">
-            <li><Link to="/vault" className="text-gray-500 hover:text-ink">The Vault</Link></li>
-            <li className="text-gray-400">/</li>
-            <li className="text-ink font-medium">{asset.title}</li>
-          </ol>
-        </nav>
+          }}
+        />
+      )}
 
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Left: Preview on pure white paper */}
-          <div className="relative">
-            <div className="sticky top-24">
-              <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                {/* Pure white paper - NO gray, NO overlays */}
-                <div className="relative aspect-a4 bg-white p-6">
-                  {asset.imageUrl ? (
-                    <img 
-                      src={asset.imageUrl} 
-                      alt={asset.title} 
-                      className="object-contain w-full h-full"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <FileText className="w-16 h-16 text-gray-200" />
-                    </div>
-                  )}
-                  {asset.isNew && (
-                    <div className="absolute top-4 left-4 bg-secondary text-white text-xs font-bold px-3 py-1 rounded-md">NEW</div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Trust badges below preview */}
-              <div className="flex flex-wrap justify-center gap-3 mt-4">
-                {trustBadges.map((badge) => (
-                  <span key={badge.label} className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-white px-3 py-1.5 rounded-md shadow-sm">
-                    <badge.icon className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    {badge.label}
-                  </span>
-                ))}
-              </div>
+      {/* Hero Section */}
+      <div className="pt-24 lg:pt-32 pb-12 lg:pb-20">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 items-start max-w-6xl mx-auto">
+            
+            {/* Left Column: Preview */}
+            <div className="w-full lg:w-1/2">
+               <div className="sticky top-32">
+                 <div className="relative aspect-a4 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 group">
+                   <img 
+                     src={asset.image_url} 
+                     alt={asset.title}
+                     className="w-full h-full object-contain p-4 group-hover:scale-[1.02] transition-transform duration-500"
+                   />
+                   
+                   {/* Capture Overlay */}
+                   <FreeSampleCapture source={`ResourceDetail:${assetId}`} />
+                 </div>
+
+                 {/* Trust Badges */}
+                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+                   {trustBadges.map((badge, idx) => (
+                     <div key={idx} className="flex flex-col items-center gap-2 text-center">
+                       <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-primary">
+                         <badge.icon className="w-5 h-5" />
+                       </div>
+                       <span className="text-xs font-medium text-gray-500">{badge.label}</span>
+                     </div>
+                   ))}
+                 </div>
+               </div>
             </div>
-          </div>
 
-          {/* Right: Details */}
-          <div>
-            <div className="bg-white rounded-2xl shadow-lg p-6 lg:p-8">
-              <div className="flex gap-2 mb-4">
-                <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-md">{asset.category}</span>
-                <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-md">{asset.skill}</span>
+            {/* Right Column: Details */}
+            <div className="w-full lg:w-1/2">
+              <div className="flex flex-wrap items-center gap-3 mb-6">
+                 <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider rounded-full">
+                   {asset.category}
+                 </span>
+                 <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold uppercase tracking-wider rounded-full">
+                   {asset.skill} Level
+                 </span>
               </div>
 
-              <h1 className="font-serif text-h1 text-ink mb-4">{asset.title}</h1>
-              <p className="text-gray-500 mb-8">{asset.description}</p>
+              <h1 className="font-serif text-4xl lg:text-5xl text-ink mb-6 leading-tight">
+                {asset.title}
+              </h1>
+
+              <p className="text-lg text-gray-600 leading-relaxed mb-8">
+                {asset.description}
+              </p>
 
               {/* Download/Unlock Section */}
-              <DownloadSection assetId={id || "1"} title={asset.title} />
-            </div>
+              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
+                <DownloadSection assetId={assetId} title={asset.title} />
+              </div>
 
-            {/* Reviews Section */}
-            <ReviewsSection assetId={id || "1"} />
+              {/* Reviews Section */}
+              <ReviewsSection assetId={assetId} />
 
-            {/* About This Design - Rich Content Module */}
-            <AboutDesign
-              extendedDescription={asset.extendedDescription}
-              funFacts={asset.funFacts}
-              suggestedActivities={asset.suggestedActivities}
-              coloringTips={asset.coloringTips}
-              therapeuticBenefits={asset.therapeuticBenefits}
-              category={asset.category}
-              skill={asset.skill}
-            />
-            <div className="mt-8">
-              <h3 className="font-serif text-h3 text-ink mb-4">You might also like</h3>
-              <div className="grid grid-cols-3 gap-4">
-                {relatedItems.map((item) => (
-                  <Link key={item.id} to={`/vault/${item.id}`} className="group">
-                    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                      <div className="aspect-a4 bg-white p-3">
-                        {item.imageUrl ? (
-                          <img src={item.imageUrl} alt={item.title} className="object-contain w-full h-full" />
-                        ) : (
-                          <FileText className="w-8 h-8 text-gray-200 mx-auto" />
-                        )}
+              {/* About This Design - Rich Content Module */}
+              <AboutDesign
+                extendedDescription={asset.extended_description}
+                funFacts={asset.fun_facts}
+                suggestedActivities={asset.suggested_activities}
+                coloringTips={asset.coloring_tips}
+                therapeuticBenefits={asset.therapeutic_benefits}
+                category={asset.category}
+                skill={asset.skill}
+              />
+
+              {/* Related */}
+              <div className="mt-8">
+                <h3 className="font-serif text-h3 text-ink mb-4">You might also like</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  {relatedItems.map((item) => (
+                    <Link key={item.id} to={`/vault/${item.id}`} className="group">
+                      <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                        <div className="aspect-a4 bg-white p-3">
+                          {item.imageUrl ? (
+                            <img src={item.imageUrl} alt={item.title} className="object-contain w-full h-full" />
+                          ) : (
+                            <FileText className="w-8 h-8 text-gray-200 mx-auto" />
+                          )}
+                        </div>
+                        <div className="px-5 pb-5">
+                          <h4 className="text-xs font-medium text-ink group-hover:text-primary transition-colors line-clamp-1">{item.title}</h4>
+                        </div>
                       </div>
-                      <div className="px-5 pb-5">
-                        <h4 className="text-xs font-medium text-ink group-hover:text-primary transition-colors line-clamp-1">{item.title}</h4>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

@@ -47,6 +47,7 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="vault" element={<VaultPage />} />
         <Route path="vault/:id" element={<ResourceDetailPage />} />
+        <Route path="coloring-pages/:slug" element={<ResourceDetailPage />} />
         <Route path="pricing" element={<PricingPage />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="privacy" element={<PrivacyPolicyPage />} />

@@ -17,6 +17,13 @@ interface AssetFormData {
   skill: string;
   tags: string;
   status: "draft" | "published";
+  // SEO Fields
+  extendedDescription: string;
+  funFacts: string; // Newline separated
+  suggestedActivities: string; // Newline separated
+  coloringTips: string;
+  therapeuticBenefits: string;
+  metaKeywords: string;
 }
 
 export default function AdminAssetForm() {
@@ -31,6 +38,12 @@ export default function AdminAssetForm() {
     skill: skills[0],
     tags: "",
     status: "draft",
+    extendedDescription: "",
+    funFacts: "",
+    suggestedActivities: "",
+    coloringTips: "",
+    therapeuticBenefits: "",
+    metaKeywords: "",
   });
 
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -66,9 +79,27 @@ export default function AdminAssetForm() {
 
     try {
       const form = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        form.append(key, value as string);
-      });
+      // Basic Fields
+      form.append("title", formData.title);
+      form.append("description", formData.description);
+      form.append("category", formData.category);
+      form.append("skill", formData.skill);
+      form.append("tags", formData.tags);
+      form.append("status", formData.status);
+      
+      // SEO Fields
+      form.append("extended_description", formData.extendedDescription);
+      form.append("coloring_tips", formData.coloringTips);
+      form.append("therapeutic_benefits", formData.therapeuticBenefits);
+      form.append("meta_keywords", formData.metaKeywords);
+      
+      // JSON Arrays (split by newline)
+      const factsArray = formData.funFacts.split("\n").map(s => s.trim()).filter(Boolean);
+      const activitiesArray = formData.suggestedActivities.split("\n").map(s => s.trim()).filter(Boolean);
+      
+      form.append("fun_facts", JSON.stringify(factsArray));
+      form.append("suggested_activities", JSON.stringify(activitiesArray));
+
       form.append("thumbnail", thumbnailFile);
       form.append("pdf", pdfFile);
 
@@ -165,16 +196,99 @@ export default function AdminAssetForm() {
             </div>
           </div>
 
+          {/* Extended SEO Content */}
+          <div className="border-t border-gray-100 pt-6 space-y-6">
+            <h3 className="font-serif text-h3 text-ink">Rich Content & SEO</h3>
+            
+            {/* Extended Description */}
+            <div>
+              <label className="block text-sm font-medium text-ink mb-2">Extended Description (About This Design)</label>
+              <textarea
+                name="extendedDescription"
+                value={formData.extendedDescription}
+                onChange={handleChange}
+                rows={4}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
+                placeholder="Detailed story about the subject..."
+              />
+            </div>
+
+            {/* Fun Facts & Activities */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-ink mb-2">Fun Facts (One per line)</label>
+                <textarea
+                  name="funFacts"
+                  value={formData.funFacts}
+                  onChange={handleChange}
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
+                  placeholder="Capybaras love water&#10;They are social animals"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-ink mb-2">Suggested Activities (One per line)</label>
+                <textarea
+                  name="suggestedActivities"
+                  value={formData.suggestedActivities}
+                  onChange={handleChange}
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
+                  placeholder="Count the spots&#10;Color the background green"
+                />
+              </div>
+            </div>
+
+            {/* Tips & Benefits */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-ink mb-2">Coloring Tips</label>
+                <textarea
+                  name="coloringTips"
+                  value={formData.coloringTips}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
+                  placeholder="Start with light colors..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-ink mb-2">Therapeutic Benefits</label>
+                <textarea
+                  name="therapeuticBenefits"
+                  value={formData.therapeuticBenefits}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
+                  placeholder="Helps develop focus..."
+                />
+              </div>
+            </div>
+            
+            {/* Meta Keywords */}
+             <div>
+              <label className="block text-sm font-medium text-ink mb-2">Meta Keywords</label>
+              <input
+                type="text"
+                name="metaKeywords"
+                value={formData.metaKeywords}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
+                placeholder="keyword1, keyword2, keyword3"
+              />
+            </div>
+          </div>
+
           {/* Tags */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-2">Tags</label>
+            <label className="block text-sm font-medium text-ink mb-2">Tags (comma separated)</label>
             <input
               type="text"
               name="tags"
               value={formData.tags}
               onChange={handleChange}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
-              placeholder="capybara, flowers, cute, relaxing (comma-separated)"
+              placeholder="capybara, flowers, cute, relaxing"
             />
           </div>
 
