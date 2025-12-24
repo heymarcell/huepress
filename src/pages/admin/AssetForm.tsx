@@ -9,6 +9,9 @@ import { apiClient } from "@/lib/api-client";
 
 import { Tag } from "@/api/types";
 
+import { jsPDF } from "jspdf";
+import "svg2pdf.js";
+
 // Helper to parse comma-separated tags
 const parseTags = (tags: string) => tags.split(",").map(t => t.trim()).filter(Boolean);
 
@@ -75,6 +78,7 @@ export default function AdminAssetForm() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessingSvg, setIsProcessingSvg] = useState(false);
   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
     isOpen: false,
     title: "",
@@ -88,6 +92,90 @@ export default function AdminAssetForm() {
   };
 
   const { user } = useUser();
+
+  const handleSvgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessingSvg(true);
+    try {
+      // 1. WebP Generation (Canvas)
+      const webpBlob = await new Promise<Blob>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          // Use standard size or keep original? Keep original.
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return reject(new Error("No canvas context"));
+          // Fill white background for transparency
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob(blob => {
+            if (blob) resolve(blob);
+            else reject(new Error("Canvas blob failed"));
+          }, "image/webp", 0.9);
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+      
+      const webpFile = new File([webpBlob], file.name.replace(".svg", ".webp"), { type: "image/webp" });
+      setThumbnailFile(webpFile);
+
+      // 2. PDF Generation (jsPDF + svg2pdf)
+      const svgText = await file.text();
+      const parser = new DOMParser();
+      const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
+      const svgElement = svgDoc.documentElement;
+
+      // Ensure width/height exist for PDF sizing
+      // Default to A4 points logic if missing: 595 x 842
+      let width = parseFloat(svgElement.getAttribute("width") || "595");
+      let height = parseFloat(svgElement.getAttribute("height") || "842");
+
+      // Handle "px" in svg attributes
+      if (svgElement.getAttribute("width")?.includes("px")) width = parseFloat(svgElement.getAttribute("width")!);
+      if (svgElement.getAttribute("height")?.includes("px")) height = parseFloat(svgElement.getAttribute("height")!);
+
+      const doc = new jsPDF({
+        orientation: width > height ? "landscape" : "portrait",
+        unit: "pt",
+        format: [width, height] 
+      });
+
+      await doc.svg(svgElement, {
+        x: 0,
+        y: 0,
+        width: width,
+        height: height
+      });
+
+      const pdfBlob = doc.output("blob");
+      const pdfFileObj = new File([pdfBlob], file.name.replace(".svg", ".pdf"), { type: "application/pdf" });
+      setPdfFile(pdfFileObj);
+
+      setAlertState({
+        isOpen: true,
+        title: "Magic Complete! ✨",
+        message: "Successfully generated PDF and WebP from your SVG.",
+        variant: "success"
+      });
+
+    } catch (err) {
+      console.error("SVG Auto-process failed", err);
+      setAlertState({
+        isOpen: true,
+        title: "Magic Failed",
+        message: "Could not process SVG. Please upload files manually.",
+        variant: "error"
+      });
+    } finally {
+      setIsProcessingSvg(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -416,24 +504,55 @@ export default function AdminAssetForm() {
           <div className="bg-white/80 backdrop-blur-md rounded-xl shadow-sm border border-white/60 p-6 space-y-6">
             <h3 className="font-bold text-ink">Media</h3>
             
+            {/* Master SVG Upload (Magic) */}
+            <div className="bg-gradient-to-br from-primary/5 to-secondary/5 p-4 rounded-xl border border-primary/10">
+              <label className="block text-sm font-bold text-ink mb-1">✨ Magic Upload (SVG)</label>
+              <p className="text-xs text-gray-500 mb-3">Upload an SVG to automatically generate the PDF and Thumbnail.</p>
+              
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/svg+xml"
+                  onChange={handleSvgUpload}
+                  className="hidden"
+                  id="svg-upload"
+                />
+                <label
+                  htmlFor="svg-upload"
+                  className="flex flex-col items-center justify-center gap-2 w-full px-4 py-8 border-2 border-dashed border-primary/30 bg-white/50 rounded-lg cursor-pointer hover:border-primary hover:bg-white/80 transition-all group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <span className="text-sm font-medium text-ink">
+                    {isProcessingSvg ? "Generating files..." : "Upload Master SVG"}
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div className="my-4 border-t border-gray-100 flex items-center gap-2">
+               <span className="text-xs text-gray-400 bg-white px-2 -mt-2.5">OR Manual Upload</span>
+            </div>
+
             {/* Thumbnail */}
             <div>
               <label className="block text-sm font-medium text-ink mb-2">Thumbnail</label>
               <div className="relative">
                 <input
                   type="file"
-                  accept="image/png,image/jpeg"
+                  accept="image/png,image/jpeg,image/webp"
                   onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
                   className="hidden"
                   id="thumbnail-upload"
                 />
                 <label
                   htmlFor="thumbnail-upload"
-                  className={`flex flex-col items-center justify-center gap-2 w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
+                  className={`flex flex-col items-center justify-center gap-2 w-full px-4 py-4 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
                     thumbnailFile ? "border-primary bg-primary/5" : "border-gray-200 hover:border-primary hover:bg-primary/5"
                   }`}
                 >
-                  <Upload className={`w-5 h-5 ${thumbnailFile ? "text-primary" : "text-gray-400"}`} />
+                  <Upload className={`w-4 h-4 ${thumbnailFile ? "text-primary" : "text-gray-400"}`} />
                   <span className={`text-xs ${thumbnailFile ? "text-primary font-medium" : "text-gray-500"}`}>
                     {thumbnailFile ? thumbnailFile.name : "Upload Image"}
                   </span>
@@ -454,11 +573,11 @@ export default function AdminAssetForm() {
                 />
                 <label
                   htmlFor="pdf-upload"
-                  className={`flex flex-col items-center justify-center gap-2 w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
+                  className={`flex flex-col items-center justify-center gap-2 w-full px-4 py-4 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
                     pdfFile ? "border-red-500 bg-red-50" : "border-gray-200 hover:border-red-500 hover:bg-red-50"
                   }`}
                 >
-                  <Upload className={`w-5 h-5 ${pdfFile ? "text-red-500" : "text-gray-400"}`} />
+                  <Upload className={`w-4 h-4 ${pdfFile ? "text-red-500" : "text-gray-400"}`} />
                   <span className={`text-xs ${pdfFile ? "text-red-600 font-medium" : "text-gray-500"}`}>
                     {pdfFile ? pdfFile.name : "Upload PDF"}
                   </span>
