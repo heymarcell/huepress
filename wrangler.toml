@@ -33,5 +33,4 @@ ADMIN_EMAILS = "marcell@neongod.io"
 SITE_URL = "https://huepress.co"
 ASSETS_CDN_URL = "https://assets.huepress.co"
 PINTEREST_AD_ACCOUNT_ID = "549769812316"
-GA4_MEASUREMENT_ID = "" # TODO: Set your GA4 Measurement ID (format: G-XXXXXXXX)
-
+GA4_MEASUREMENT_ID = "G-QTF6MPM5SQ"
