@@ -101,10 +101,19 @@ export const apiClient = {
   },
   billing: {
     createCheckout: async (priceId: string, token: string, email?: string) => {
+      // Extract Meta cookies for enhanced Event Match Quality (browser → server)
+      const getCookie = (name: string): string | undefined => {
+        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? match[2] : undefined;
+      };
+      
+      const fbp = getCookie('_fbp');  // Facebook browser ID
+      const fbc = getCookie('_fbc');  // Facebook click ID (from ad clicks)
+      
       return fetchApi<{ url: string }>("/api/checkout", {
         method: "POST",
         token,
-        body: JSON.stringify({ priceId, email })
+        body: JSON.stringify({ priceId, email, fbp, fbc })
       });
     },
     createPortal: async (token: string) => {

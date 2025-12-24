@@ -8,13 +8,17 @@ const app = new Hono<{ Bindings: Bindings }>();
 
 // Create Stripe Checkout session
 app.post("/checkout", async (c) => {
-  const { priceId, email } = await c.req.json();
+  const { priceId, email, fbp, fbc } = await c.req.json();
   
   // Get Clerk user from auth header
   const authHeader = c.req.header("Authorization");
   if (!authHeader) {
     return c.json({ error: "Unauthorized" }, 401);
   }
+
+  // Capture client info for enhanced Event Match Quality
+  const clientIpAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for')?.split(',')[0]?.trim();
+  const clientUserAgent = c.req.header('user-agent');
 
   try {
     // Create Stripe Checkout Session using fetch (Workers compatible)
@@ -26,6 +30,12 @@ app.post("/checkout", async (c) => {
       "line_items[0][quantity]": "1",
       "metadata[waiver_accepted]": "true", // Record that they accepted the modal on frontend
     };
+
+    // Store tracking data in metadata for webhook retrieval
+    if (fbp) payload["metadata[fbp]"] = fbp;
+    if (fbc) payload["metadata[fbc]"] = fbc;
+    if (clientIpAddress) payload["metadata[client_ip]"] = clientIpAddress;
+    if (clientUserAgent) payload["metadata[client_ua]"] = clientUserAgent.substring(0, 500); // Stripe metadata limit
 
     if (email) {
       payload["customer_email"] = email;
@@ -171,11 +181,12 @@ app.post("/webhooks/stripe", async (c) => {
             const isAnnual = session.amount_total && session.amount_total >= 4000; // $40+ = annual
             const subscriptionValue = isAnnual ? 45 : 5; // $45/year or $5/month
             
-            // Extract client info for enhanced matching (EMQ optimization)
-            // Note: In webhook context, these come from Stripe's server, not the user
-            // For better EMQ, we'd pass these from the checkout flow
-            const clientIpAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for')?.split(',')[0]?.trim();
-            const clientUserAgent = c.req.header('user-agent');
+            // Extract tracking data from Stripe session metadata (captured during checkout)
+            // This contains the user's actual browser data, not Stripe's server data
+            const fbp = session.metadata?.fbp;
+            const fbc = session.metadata?.fbc;
+            const clientIpAddress = session.metadata?.client_ip;
+            const clientUserAgent = session.metadata?.client_ua;
             
             if (c.env.META_ACCESS_TOKEN) {
               
@@ -192,6 +203,8 @@ app.post("/webhooks/stripe", async (c) => {
                   externalId: clerkId,
                   clientIpAddress,
                   clientUserAgent,
+                  fbp,
+                  fbc,
                 }
               );
               
@@ -213,6 +226,8 @@ app.post("/webhooks/stripe", async (c) => {
                   externalId: clerkId,
                   clientIpAddress,
                   clientUserAgent,
+                  fbp,
+                  fbc,
                 }
               );
               

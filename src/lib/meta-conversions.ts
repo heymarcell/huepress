@@ -82,6 +82,8 @@ export async function sendMetaEvent(
     clientIpAddress?: string;
     clientUserAgent?: string;
     externalId?: string;
+    fbp?: string; // Facebook browser ID (_fbp cookie)
+    fbc?: string; // Facebook click ID (_fbc cookie)
     testEventCode?: string; // Set to your test code during development
   }
 ): Promise<{ success: boolean; error?: string }> {
@@ -103,6 +105,12 @@ export async function sendMetaEvent(
     }
     if (event.clientUserAgent) {
       userData.client_user_agent = event.clientUserAgent;
+    }
+    if (event.fbp) {
+      userData.fbp = event.fbp;
+    }
+    if (event.fbc) {
+      userData.fbc = event.fbc;
     }
 
     // Build custom data
@@ -191,6 +199,8 @@ export async function trackPurchase(
     externalId?: string;
     clientIpAddress?: string;
     clientUserAgent?: string;
+    fbp?: string;
+    fbc?: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
   return sendMetaEvent(accessToken, pixelId, {
@@ -202,6 +212,8 @@ export async function trackPurchase(
     externalId: data.externalId,
     clientIpAddress: data.clientIpAddress,
     clientUserAgent: data.clientUserAgent,
+    fbp: data.fbp,
+    fbc: data.fbc,
     eventSourceUrl: `${siteUrl}/pricing`,
   });
 }
@@ -220,6 +232,8 @@ export async function trackSubscribe(
     externalId?: string;
     clientIpAddress?: string;
     clientUserAgent?: string;
+    fbp?: string;
+    fbc?: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
   return sendMetaEvent(accessToken, pixelId, {
@@ -230,6 +244,8 @@ export async function trackSubscribe(
     externalId: data.externalId,
     clientIpAddress: data.clientIpAddress,
     clientUserAgent: data.clientUserAgent,
+    fbp: data.fbp,
+    fbc: data.fbc,
     eventSourceUrl: `${siteUrl}/pricing`,
   });
 }
