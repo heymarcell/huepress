@@ -3,18 +3,18 @@ import { Bindings } from "../types";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// Middleware or helper for admin check could be added here
-const ADMIN_EMAILS = ["marcell@neongod.io"];
-
-function isAdmin(email?: string) {
-  return email && ADMIN_EMAILS.includes(email);
+// Admin check using environment variable
+function isAdmin(email: string | undefined, adminEmails: string): boolean {
+  if (!email) return false;
+  const allowedEmails = adminEmails.split(',').map(e => e.trim().toLowerCase());
+  return allowedEmails.includes(email.toLowerCase());
 }
 
 // ADMIN: Get all assets (including drafts)
 app.get("/assets", async (c) => {
   const adminEmail = c.req.header("X-Admin-Email");
   
-  if (!isAdmin(adminEmail)) {
+  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -39,7 +39,7 @@ app.get("/assets", async (c) => {
 app.post("/assets", async (c) => {
   const adminEmail = c.req.header("X-Admin-Email");
   
-  if (!isAdmin(adminEmail)) {
+  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -65,7 +65,7 @@ app.post("/assets", async (c) => {
     // 1. Upload Thumbnail to Public R2
     const thumbnailKey = `thumbnails/${Date.now()}_${thumbnailFile.name}`;
     await c.env.ASSETS_PUBLIC.put(thumbnailKey, thumbnailFile);
-    const thumbnailUrl = `https://assets.huepress.co/${thumbnailKey}`; // Or R2 dev URL
+    const thumbnailUrl = `${c.env.ASSETS_CDN_URL}/${thumbnailKey}`;
 
     // 2. Upload PDF to Private R2
     const pdfKey = `pdfs/${Date.now()}_${pdfFile.name}`;

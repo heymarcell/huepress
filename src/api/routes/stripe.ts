@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getAuth } from "@hono/clerk-auth";
 import { Bindings } from "../types";
+import { trackPurchase, trackSubscribe } from "../../lib/meta-conversions";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -18,8 +19,8 @@ app.post("/checkout", async (c) => {
     // Create Stripe Checkout Session using fetch (Workers compatible)
     const payload: Record<string, string> = {
       "mode": "subscription",
-      "success_url": "https://huepress.co/vault?success=true",
-      "cancel_url": "https://huepress.co/pricing?canceled=true",
+      "success_url": `${c.env.SITE_URL}/vault?success=true`,
+      "cancel_url": `${c.env.SITE_URL}/pricing?canceled=true`,
       "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
       "metadata[waiver_accepted]": "true", // Record that they accepted the modal on frontend
@@ -79,7 +80,7 @@ app.post("/portal", async (c) => {
       },
       body: new URLSearchParams({
         "customer": customerId,
-        "return_url": "https://huepress.co/vault",
+        "return_url": `${c.env.SITE_URL}/vault`,
       }),
     });
 
@@ -163,6 +164,52 @@ app.post("/webhooks/stripe", async (c) => {
            } else {
              console.log("Clerk metadata updated for:", clerkId);
            }
+
+            // 4. Send Meta Conversions API events (server-side tracking)
+            if (c.env.META_ACCESS_TOKEN) {
+              // Determine subscription value from price
+              const isAnnual = session.amount_total && session.amount_total >= 4000; // $40+ = annual
+              const subscriptionValue = isAnnual ? 45 : 5; // $45/year or $5/month
+              
+              // Track Purchase event
+              const purchaseResult = await trackPurchase(
+                c.env.META_ACCESS_TOKEN,
+                c.env.META_PIXEL_ID,
+                c.env.SITE_URL,
+                {
+                  email: customerEmail,
+                  value: subscriptionValue,
+                  currency: 'USD',
+                  orderId: subscriptionId,
+                  externalId: clerkId,
+                }
+              );
+              
+              if (purchaseResult.success) {
+                console.log('Meta Purchase event sent for:', customerEmail);
+              } else {
+                console.error('Meta Purchase event failed:', purchaseResult.error);
+              }
+              
+              // Track Subscribe event
+              const subscribeResult = await trackSubscribe(
+                c.env.META_ACCESS_TOKEN,
+                c.env.META_PIXEL_ID,
+                c.env.SITE_URL,
+                {
+                  email: customerEmail,
+                  value: subscriptionValue,
+                  currency: 'USD',
+                  externalId: clerkId,
+                }
+              );
+              
+              if (subscribeResult.success) {
+                console.log('Meta Subscribe event sent for:', customerEmail);
+              } else {
+                console.error('Meta Subscribe event failed:', subscribeResult.error);
+              }
+            }
         }
         break;
       }
