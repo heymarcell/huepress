@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 
 export interface ResourceCardProps {
   id: string;
+  assetId?: string; // HP-ANM-0001
+  slug?: string;
   title: string;
   imageUrl?: string;
   tags?: string[];
@@ -12,6 +14,8 @@ export interface ResourceCardProps {
 
 export function ResourceCard({
   id,
+  assetId,
+  slug,
   title,
   imageUrl,
   tags = [],
@@ -19,9 +23,14 @@ export function ResourceCard({
   isNew = false,
   isFree = false,
 }: ResourceCardProps) {
+  // Construct SEO-friendly URL if possible
+  const link = assetId && slug 
+    ? `/coloring-pages/${slug}-${assetId}`
+    : `/vault/${id}`;
+
   return (
     <article className="group relative">
-      <Link to={`/vault/${id}`} className="block">
+      <Link to={link} className="block">
         {/* Card container with shadow, not on the paper */}
         <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-200 overflow-hidden border border-gray-100">
           

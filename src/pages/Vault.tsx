@@ -1,101 +1,29 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
+import { apiClient } from "@/lib/api-client";
+import { Asset, Tag } from "@/api/types";
 import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button } from "@/components/ui";
 import { ArrowUpDown, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
 
 import { FreeSampleBanner } from "@/components/features/FreeSampleBanner";
 
-// Mock data with real thumbnails
-const mockAssets = [
-  {
-    id: "1",
-    title: "Cozy Capybara",
-    imageUrl: "/thumbnails/thumb_capybara_1766354990805.png",
-    category: "Animals",
-    skill: "Calm",
-    tags: ["Animals", "Calm", "Trending"],
-    isNew: true,
-    isLocked: true,
-  },
-  {
-    id: "2",
-    title: "Ocean Whale",
-    imageUrl: "/thumbnails/thumb_whale_1766355003894.png",
-    category: "Animals",
-    skill: "Focus",
-    tags: ["Animals", "Ocean", "Focus"],
-    isNew: false,
-    isLocked: true,
-  },
-  {
-    id: "3",
-    title: "Friendly T-Rex",
-    imageUrl: "/thumbnails/thumb_dinosaur_1766355016602.png",
-    category: "Animals",
-    skill: "Bold",
-    tags: ["Animals", "Dinosaur", "Bold"],
-    isNew: true,
-    isLocked: true,
-  },
-  {
-    id: "4",
-    title: "Astronaut Cat",
-    imageUrl: "/thumbnails/thumb_astronaut_cat_1766355051538.png",
-    category: "Fantasy",
-    skill: "Creative",
-    tags: ["Fantasy", "Space", "Cats"],
-    isNew: false,
-    isLocked: true,
-  },
-  {
-    id: "5",
-    title: "Beautiful Butterfly",
-    imageUrl: "/thumbnails/thumb_butterfly_1766355075205.png",
-    category: "Nature",
-    skill: "Calm",
-    tags: ["Nature", "Calm", "Patterns"],
-    isNew: false,
-    isLocked: true,
-  },
-  {
-    id: "6",
-    title: "Magical Unicorn",
-    imageUrl: "/thumbnails/thumb_unicorn_1766355087780.png",
-    category: "Fantasy",
-    skill: "Creative",
-    tags: ["Fantasy", "Magic", "Trending"],
-    isNew: true,
-    isLocked: true,
-  },
-];
-
-const categories = [
-  { label: "Animals (120)", value: "Animals" },
-  { label: "Fantasy (90)", value: "Fantasy" },
-  { label: "Nature (85)", value: "Nature" },
-  { label: "Vehicles (40)", value: "Vehicles" },
-  { label: "Holidays (65)", value: "Holidays" },
-];
-
-const skills = [
-  { label: "Calm", value: "Calm" },
-  { label: "Focus", value: "Focus" },
-  { label: "Bold", value: "Bold" },
-  { label: "Creative", value: "Creative" },
-];
-
 
 
 export default function VaultPage() {
   const { isSubscriber } = useSubscription();
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [tags, setTags] = useState<Record<string, Tag[]>>({});
+  
+  // Filter States
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSkill, setSelectedSkill] = useState("");
+  const [selectedTag, setSelectedTag] = useState(""); // General tag filter (Theme/Age)
   const [sortBy, setSortBy] = useState("newest");
-
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
@@ -107,46 +35,81 @@ export default function VaultPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Simulate async filtering
+  // Fetch Tags on mount
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const data = await apiClient.tags.list();
+        setTags(data.grouped);
+      } catch (err) {
+        console.error("Failed to load tags", err);
+      }
+    };
+    fetchTags();
+  }, []);
+
+  // Fetch Assets when filters change
+  useEffect(() => {
+    const fetchAssets = async () => {
+      setIsLoading(true);
+      try {
+        const data = await apiClient.assets.list({
+            category: selectedCategory || undefined,
+            skill: selectedSkill || undefined,
+            tag: selectedTag || undefined,
+            limit: 100 // Fetch decent batch for now
+        });
+        setAssets(data.assets || []);
+      } catch (err) {
+        console.error("Failed to load assets", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAssets();
+  }, [selectedCategory, selectedSkill, selectedTag]); // Search doesn't trigger refetch yet, implementation limit
+
+
   const handleSearch = (query: string) => {
-    setIsLoading(true);
     setSearchQuery(query);
-    setTimeout(() => setIsLoading(false), 300);
   };
 
   const handleCategoryChange = (value: string) => {
-    setIsLoading(true);
     setSelectedCategory(value);
-    setTimeout(() => setIsLoading(false), 200);
   };
 
   const handleSkillChange = (value: string) => {
-    setIsLoading(true);
     setSelectedSkill(value);
-    setTimeout(() => setIsLoading(false), 200);
   };
 
-  // Define which assets are free samples (Mock logic)
-  // In real app, this would be a property on the asset
-  const freeSampleIds = ["1", "3", "5"]; // Capybara, T-Rex, Butterfly
+  const handleTagChange = (value: string) => {
+    setSelectedTag(value); // Assuming single tag selection for now
+  };
 
-  // Filter assets based on search, category, and skill
+  // Client-side filtering for Search Query on the fetched batch
   const filteredAssets = useMemo(() => {
-    return mockAssets.filter((asset) => {
+    return assets.filter((asset) => {
       const matchesSearch = searchQuery === "" || 
         asset.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        asset.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesCategory = selectedCategory === "" || asset.category === selectedCategory;
-      const matchesSkill = selectedSkill === "" || asset.skill === selectedSkill;
+        (asset.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      return matchesSearch && matchesCategory && matchesSkill;
+      return matchesSearch;
     }).sort((a, b) => {
-      if (sortBy === "newest") return (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0);
+      if (sortBy === "newest") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       return 0; 
     });
-  }, [searchQuery, selectedCategory, selectedSkill, sortBy]);
+  }, [searchQuery, assets, sortBy]);
 
   const showFreeSampleBanner = !isSubscriber;
+
+
+  // assets.category column stores "Animals".
+  // So value should be t.name!
+  // Same for skill.
+  const categoriesUI = (tags.category || []).map(t => ({ label: t.name, value: t.name }));
+  const skillsUI = (tags.skill || []).map(t => ({ label: t.name, value: t.name }));
+  const themesUI = (tags.theme || []).map(t => ({ label: t.name, value: t.name }));
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -161,23 +124,38 @@ export default function VaultPage() {
           <p className="text-gray-500">500+ fridge-worthy designs, ready to print</p>
         </div>
 
-        {/* Search Bar - improved placeholder */}
+        {/* Search Bar */}
         <SearchBar onSearch={handleSearch} placeholder="Try 'Dinosaur', 'Space', or 'Calm'..." />
 
         {/* Filters - Horizontal Scroll on Mobile */}
         <div className="space-y-4 mb-8">
+          {/* Categories */}
           <div className="flex overflow-x-auto md:overflow-visible flex-nowrap md:flex-wrap items-center gap-2 pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-            <span className="text-sm font-medium text-gray-500 whitespace-nowrap">Theme:</span>
+            <span className="text-sm font-medium text-gray-500 whitespace-nowrap">Category:</span>
             <FilterBar
-              categories={categories}
+              categories={categoriesUI}
               selectedCategory={selectedCategory}
               onCategoryChange={handleCategoryChange}
             />
           </div>
+          
+           {/* Themes - if available */}
+           {themesUI.length > 0 && (
+            <div className="flex overflow-x-auto md:overflow-visible flex-nowrap md:flex-wrap items-center gap-2 pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+              <span className="text-sm font-medium text-gray-500 whitespace-nowrap">Theme:</span>
+              <FilterBar
+                categories={themesUI}
+                selectedCategory={selectedTag}
+                onCategoryChange={handleTagChange}
+              />
+            </div>
+           )}
+
+          {/* Skills */}
           <div className="flex overflow-x-auto md:overflow-visible flex-nowrap md:flex-wrap items-center gap-2 pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
             <span className="text-sm font-medium text-gray-500 whitespace-nowrap">Skill:</span>
             <FilterBar
-              categories={skills}
+              categories={skillsUI}
               selectedCategory={selectedSkill}
               onCategoryChange={handleSkillChange}
             />
@@ -186,8 +164,6 @@ export default function VaultPage() {
 
         {/* Sorting & Free Toggle */}
         <div className="flex items-center justify-between mb-6">
-
-
            <div className="flex items-center gap-2">
               <ArrowUpDown className="w-4 h-4 text-gray-400" />
               <select 
@@ -196,20 +172,20 @@ export default function VaultPage() {
                 className="text-sm font-medium text-ink bg-transparent border-none outline-none focus:ring-0 cursor-pointer"
               >
                  <option value="newest">Newest First</option>
-                 <option value="popular">Most Popular</option>
-                 <option value="calmest">Calmest</option>
+                 <option value="oldest">Oldest First</option>
               </select>
            </div>
         </div>
 
-        {/* Clear filters button - only when filters are active */}
-        {(searchQuery || selectedCategory || selectedSkill) && (
+        {/* Clear filters button */}
+        {(searchQuery || selectedCategory || selectedSkill || selectedTag) && (
           <div className="mb-6">
             <button 
               onClick={() => {
                 setSearchQuery("");
                 setSelectedCategory("");
                 setSelectedSkill("");
+                setSelectedTag("");
               }}
               className="text-sm text-primary hover:underline flex items-center gap-1"
             >
@@ -229,18 +205,19 @@ export default function VaultPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-8">
             {/* Resource Cards with Banner Injection */}
             {filteredAssets.map((asset, index) => {
-              // Determine if free sample
-              const isFreeSample = freeSampleIds.includes(asset.id);
+              // TODO: Determine if free sample from asset property
+              const isFreeSample = false; 
               return (
               <React.Fragment key={asset.id}>
                  <ResourceCard
                     id={asset.id}
                     title={asset.title}
-                    imageUrl={asset.imageUrl}
+                    imageUrl={asset.image_url}
                     tags={asset.tags}
                     isLocked={!isSubscriber && !isFreeSample}
-                    isNew={asset.isNew}
-
+                    isNew={asset.status === 'published' && new Date(asset.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)} // Logic for isNew? Asset missing isNew prop in interface unless I add it or compute it
+                    slug={asset.slug}
+                    assetId={asset.asset_id}
                   />
                   {/* Inject Banner after 4th item (approx row 1 on desktop, row 2 on mobile) */}
                   {showFreeSampleBanner && index === 3 && (
@@ -256,23 +233,12 @@ export default function VaultPage() {
             <Search className="w-16 h-16 text-gray-200 mx-auto mb-4" strokeWidth={1.5} />
             <h3 className="font-serif text-h3 text-ink mb-2">No designs found</h3>
             <p className="text-gray-500 mb-4">Try a different search or filter</p>
-            <div className="flex flex-wrap justify-center gap-2 mb-6">
-              <span className="text-sm text-gray-400">Popular:</span>
-              {["Capybara", "Calm", "Animals", "Fantasy"].map(tag => (
-                <button 
-                  key={tag}
-                  onClick={() => handleSearch(tag)}
-                  className="text-sm text-primary hover:underline"
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
             <button 
               onClick={() => {
                 setSearchQuery("");
                 setSelectedCategory("");
                 setSelectedSkill("");
+                setSelectedTag("");
               }}
               className="text-primary font-medium hover:underline"
             >
@@ -338,7 +304,7 @@ export default function VaultPage() {
             >
                 {showMobileFilters ? <X className="w-5 h-5" /> : <Filter className="w-5 h-5" />}
                 {/* Dot if filters active */}
-                {!showMobileFilters && (selectedCategory || selectedSkill) && (
+                {!showMobileFilters && (selectedCategory || selectedSkill || selectedTag) && (
                   <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-secondary border-2 border-white rounded-full" />
                 )}
             </button>
@@ -351,19 +317,18 @@ export default function VaultPage() {
                     className="text-sm font-medium text-ink bg-transparent border-none outline-none focus:ring-0 cursor-pointer max-w-[80px]"
                   >
                       <option value="newest">Newest</option>
-                      <option value="popular">Popular</option>
-                      <option value="calmest">Calmest</option>
+                      <option value="oldest">Oldest</option>
                   </select>
               </div>
           </div>
 
           {/* Expanded Mobile Filters */}
           {showMobileFilters && (
-            <div className="pt-4 pb-2 space-y-4 animate-in slide-in-from-top-2">
+            <div className="pt-4 pb-2 space-y-4 animate-in slide-in-from-top-2 h-[70vh] overflow-y-auto">
               <div className="space-y-2">
-                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Theme</p>
+                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Category</p>
                  <div className="flex flex-wrap gap-2">
-                   {categories.map(cat => (
+                   {categoriesUI.map(cat => (
                      <button
                        key={cat.value}
                        onClick={() => handleCategoryChange(selectedCategory === cat.value ? "" : cat.value)}
@@ -373,15 +338,35 @@ export default function VaultPage() {
                            : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                        }`}
                      >
-                       {cat.value}
+                       {cat.label}
                      </button>
                    ))}
                  </div>
               </div>
+
+              <div className="space-y-2">
+                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Theme</p>
+                 <div className="flex flex-wrap gap-2">
+                   {themesUI.map(theme => (
+                     <button
+                       key={theme.value}
+                       onClick={() => handleTagChange(selectedTag === theme.value ? "" : theme.value)}
+                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                         selectedTag === theme.value 
+                           ? "bg-ink text-white border-ink" 
+                           : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                       }`}
+                     >
+                       {theme.label}
+                     </button>
+                   ))}
+                 </div>
+              </div>
+
               <div className="space-y-2">
                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Skill</p>
                  <div className="flex flex-wrap gap-2">
-                   {skills.map(skill => (
+                   {skillsUI.map(skill => (
                      <button
                        key={skill.value}
                        onClick={() => handleSkillChange(selectedSkill === skill.value ? "" : skill.value)}
@@ -391,7 +376,7 @@ export default function VaultPage() {
                            : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                        }`}
                      >
-                       {skill.value}
+                       {skill.label}
                      </button>
                    ))}
                  </div>

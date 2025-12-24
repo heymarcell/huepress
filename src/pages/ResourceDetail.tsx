@@ -321,7 +321,8 @@ export default function ResourceDetailPage() {
   if (error || !asset) {
     return (
       <div className="min-h-screen bg-gray-50 pt-32 pb-16 text-center px-6">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md mx-auto text-center">
+          <img src="/404-robot.svg" alt="Robot not found" className="w-48 h-48 mx-auto mb-6" />
           <h1 className="font-serif text-3xl font-bold text-gray-900 mb-4">{error || "Design Not Found"}</h1>
           <p className="text-gray-600 mb-8">We couldn't find the coloring page you're looking for. It may have been moved or removed.</p>
           <Link to="/vault">

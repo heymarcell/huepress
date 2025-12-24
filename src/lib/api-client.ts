@@ -1,4 +1,4 @@
-import { Asset } from "@/api/types";
+import { Asset, Tag } from "@/api/types";
 
 // Helper to get base URL
 const API_URL = import.meta.env.VITE_API_URL || "/api"; // Default to relative proxy in dev
@@ -56,10 +56,11 @@ async function fetchApi<T>(path: string, options: RequestInit & { token?: string
 
 export const apiClient = {
   assets: {
-    list: async (params?: { category?: string; skill?: string; limit?: number }) => {
+    list: async (params?: { category?: string; skill?: string; tag?: string; limit?: number }) => {
       const searchParams = new URLSearchParams();
       if (params?.category) searchParams.append("category", params.category);
       if (params?.skill) searchParams.append("skill", params.skill);
+      if (params?.tag) searchParams.append("tag", params.tag);
       if (params?.limit) searchParams.append("limit", params.limit.toString());
       
       const queryString = searchParams.toString();
@@ -72,6 +73,12 @@ export const apiClient = {
        // Just returns the URL, logic handled by browser/component usually
        const cleanBase = API_URL.replace(/\/$/, "");
        return `${cleanBase}/api/download/${id}`;
+    }
+  },
+  tags: {
+    list: async (type?: string) => {
+      const path = type ? `/api/tags?type=${type}` : "/api/tags";
+      return fetchApi<{ tags: Tag[]; grouped: Record<string, Tag[]> }>(path);
     }
   },
   admin: {

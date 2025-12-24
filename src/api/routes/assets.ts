@@ -23,6 +23,13 @@ app.get("/assets", async (c) => {
     params.push(skill);
   }
 
+  const tag = c.req.query("tag");
+  if (tag) {
+    // Filter by tag in the tags JSON array
+    query += " AND EXISTS (SELECT 1 FROM json_each(tags) WHERE value = ?)";
+    params.push(tag);
+  }
+
   query += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
   params.push(limit.toString(), offset.toString());
 
