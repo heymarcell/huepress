@@ -30,6 +30,13 @@ app.get("/assets", async (c) => {
     params.push(tag);
   }
 
+  const search = c.req.query("search");
+  if (search) {
+    const term = `%${search}%`;
+    query += " AND (title LIKE ? OR description LIKE ? OR asset_id LIKE ? OR EXISTS (SELECT 1 FROM json_each(tags) WHERE value LIKE ?))";
+    params.push(term, term, term, term);
+  }
+
   query += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
   params.push(limit.toString(), offset.toString());
 

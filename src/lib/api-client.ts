@@ -56,11 +56,12 @@ async function fetchApi<T>(path: string, options: RequestInit & { token?: string
 
 export const apiClient = {
   assets: {
-    list: async (params?: { category?: string; skill?: string; tag?: string; limit?: number }) => {
+    list: async (params?: { category?: string; skill?: string; tag?: string; search?: string; limit?: number }) => {
       const searchParams = new URLSearchParams();
       if (params?.category) searchParams.append("category", params.category);
       if (params?.skill) searchParams.append("skill", params.skill);
       if (params?.tag) searchParams.append("tag", params.tag);
+      if (params?.search) searchParams.append("search", params.search);
       if (params?.limit) searchParams.append("limit", params.limit.toString());
       
       const queryString = searchParams.toString();

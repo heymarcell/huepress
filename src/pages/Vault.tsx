@@ -6,6 +6,7 @@ import { Asset, Tag } from "@/api/types";
 import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button } from "@/components/ui";
 import { ArrowUpDown, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
+import { useDebounce } from "@/hooks/useDebounce";
 
 import { FreeSampleBanner } from "@/components/features/FreeSampleBanner";
 
@@ -22,6 +23,7 @@ export default function VaultPage() {
   const [selectedTag, setSelectedTag] = useState(""); // General tag filter (Theme/Age)
   const [sortBy, setSortBy] = useState("newest");
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 500);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -57,7 +59,8 @@ export default function VaultPage() {
             category: selectedCategory || undefined,
             skill: selectedSkill || undefined,
             tag: selectedTag || undefined,
-            limit: 100 // Fetch decent batch for now
+            search: debouncedSearch || undefined,
+            limit: 100 
         });
         setAssets(data.assets || []);
       } catch (err) {
@@ -68,7 +71,7 @@ export default function VaultPage() {
     };
 
     fetchAssets();
-  }, [selectedCategory, selectedSkill, selectedTag]); // Search doesn't trigger refetch yet, implementation limit
+  }, [selectedCategory, selectedSkill, selectedTag, debouncedSearch]);
 
 
   const handleSearch = (query: string) => {
@@ -87,19 +90,13 @@ export default function VaultPage() {
     setSelectedTag(value); // Assuming single tag selection for now
   };
 
-  // Client-side filtering for Search Query on the fetched batch
   const filteredAssets = useMemo(() => {
-    return assets.filter((asset) => {
-      const matchesSearch = searchQuery === "" || 
-        asset.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (asset.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      return matchesSearch;
-    }).sort((a, b) => {
+    // Client-side sorting only (Search is server-side now)
+    return [...assets].sort((a, b) => {
       if (sortBy === "newest") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      return 0; 
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); // oldest
     });
-  }, [searchQuery, assets, sortBy]);
+  }, [assets, sortBy]);
 
   const showFreeSampleBanner = !isSubscriber;
 
