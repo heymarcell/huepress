@@ -56,52 +56,57 @@ export function AdminLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-primary/5">
       {/* Top Bar */}
-      <header className="bg-ink text-white">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/" className="text-white/60 hover:text-white text-sm">
+            <Link to="/" className="text-gray-500 hover:text-primary text-sm font-medium transition-colors">
               ← Back to Site
             </Link>
-            <span className="text-white/40">|</span>
-            <h1 className="font-serif font-bold">HuePress Admin</h1>
+            <span className="text-gray-200">|</span>
+            <div className="flex items-center gap-2">
+               <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-lg font-serif">H</div>
+               <h1 className="font-serif font-bold text-ink text-lg">HuePress Admin</h1>
+            </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-white/60">{userEmail}</span>
-            <Link to="/admin/settings" className="text-white/60 hover:text-white">
+            <span className="text-sm text-gray-500 font-medium">{userEmail}</span>
+            <Link to="/admin/settings" className="p-2 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-full transition-colors">
               <Settings className="w-5 h-5" />
             </Link>
           </div>
         </div>
       </header>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-64px)]">
-          <nav className="p-4 space-y-1">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                    isActive
-                      ? "bg-primary text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+      <div className="flex max-w-7xl mx-auto pt-6 px-4 gap-6">
+        {/* Sidebar - Floating Card */}
+        <aside className="w-64 hidden lg:block">
+          <div className="bg-white/60 backdrop-blur-md border border-white/40 shadow-sm rounded-xl p-4 sticky top-24">
+            <nav className="space-y-1">
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                      isActive
+                        ? "bg-primary text-white shadow-md shadow-primary/20"
+                        : "text-gray-600 hover:bg-white hover:text-primary hover:shadow-sm"
+                    }`}
+                  >
+                    <item.icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${isActive ? "text-white" : "text-gray-400 group-hover:text-primary"}`} />
+                    <span className="font-medium">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-8">
+        <main className="flex-1 pb-16">
           <Outlet />
         </main>
       </div>

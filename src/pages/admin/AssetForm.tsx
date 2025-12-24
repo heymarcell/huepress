@@ -164,7 +164,7 @@ export default function AdminAssetForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="max-w-2xl">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+        <div className="bg-white/80 backdrop-blur-md rounded-xl shadow-sm border border-white/60 p-8 space-y-8">
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-ink mb-2">Title *</label>
@@ -174,7 +174,7 @@ export default function AdminAssetForm() {
               value={formData.title}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
               placeholder="e.g., Friendly Capybara in Flower Garden"
             />
           </div>
@@ -187,7 +187,7 @@ export default function AdminAssetForm() {
               value={formData.description}
               onChange={handleChange}
               rows={3}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
               placeholder="A cute capybara surrounded by beautiful flowers..."
             />
           </div>
@@ -200,7 +200,7 @@ export default function AdminAssetForm() {
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-white"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-white"
               >
                 <option value="">Select Category</option>
                 {(availableTags.category || []).map((cat) => (
@@ -214,7 +214,7 @@ export default function AdminAssetForm() {
                 name="skill"
                 value={formData.skill}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-white"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-white"
               >
                 <option value="">Select Skill</option>
                 {(availableTags.skill || []).map((s) => (
@@ -236,7 +236,7 @@ export default function AdminAssetForm() {
                 value={formData.extendedDescription}
                 onChange={handleChange}
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
                 placeholder="Detailed story about the subject..."
               />
             </div>
@@ -250,7 +250,7 @@ export default function AdminAssetForm() {
                   value={formData.funFacts}
                   onChange={handleChange}
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
                   placeholder="Capybaras love water&#10;They are social animals"
                 />
               </div>
@@ -261,7 +261,7 @@ export default function AdminAssetForm() {
                   value={formData.suggestedActivities}
                   onChange={handleChange}
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
                   placeholder="Count the spots&#10;Color the background green"
                 />
               </div>
@@ -276,7 +276,7 @@ export default function AdminAssetForm() {
                   value={formData.coloringTips}
                   onChange={handleChange}
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
                   placeholder="Start with light colors..."
                 />
               </div>
@@ -287,7 +287,7 @@ export default function AdminAssetForm() {
                   value={formData.therapeuticBenefits}
                   onChange={handleChange}
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none"
                   placeholder="Helps develop focus..."
                 />
               </div>
@@ -301,7 +301,7 @@ export default function AdminAssetForm() {
                 name="metaKeywords"
                 value={formData.metaKeywords}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
                 placeholder="keyword1, keyword2, keyword3"
               />
             </div>
@@ -313,7 +313,7 @@ export default function AdminAssetForm() {
              
              {/* Themes */}
              {availableTags.theme && availableTags.theme.length > 0 && (
-               <div className="bg-gray-50 p-4 rounded-xl">
+               <div className="bg-gray-50 p-4 rounded-lg">
                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Themes</span>
                  <div className="flex flex-wrap gap-2">
                    {availableTags.theme.map(tag => {
@@ -345,7 +345,7 @@ export default function AdminAssetForm() {
 
              {/* Age Groups */}
              {availableTags.age_group && availableTags.age_group.length > 0 && (
-               <div className="bg-gray-50 p-4 rounded-xl">
+               <div className="bg-gray-50 p-4 rounded-lg">
                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Age Groups</span>
                  <div className="flex flex-wrap gap-2">
                    {availableTags.age_group.map(tag => {
@@ -383,7 +383,7 @@ export default function AdminAssetForm() {
                  name="tags"
                  value={formData.tags}
                  onChange={handleChange}
-                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
+                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
                  placeholder="cat, garden, sunshine..."
                />
                <p className="text-xs text-gray-400 mt-1">
@@ -406,7 +406,7 @@ export default function AdminAssetForm() {
                 />
                 <label
                   htmlFor="thumbnail-upload"
-                  className="flex items-center justify-center gap-2 w-full px-4 py-8 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-8 border-2 border-dashed border-gray-200 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
                 >
                   <Upload className="w-5 h-5 text-gray-400" />
                   <span className="text-sm text-gray-500">
@@ -427,7 +427,7 @@ export default function AdminAssetForm() {
                 />
                 <label
                   htmlFor="pdf-upload"
-                  className="flex items-center justify-center gap-2 w-full px-4 py-8 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-8 border-2 border-dashed border-gray-200 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
                 >
                   <Upload className="w-5 h-5 text-gray-400" />
                   <span className="text-sm text-gray-500">
@@ -440,29 +440,42 @@ export default function AdminAssetForm() {
 
           {/* Status */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-2">Status</label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
+            <label className="block text-sm font-medium text-ink mb-3">Status</label>
+            <div className="grid grid-cols-2 gap-4">
+              <label className="relative cursor-pointer group">
                 <input
                   type="radio"
                   name="status"
                   value="draft"
                   checked={formData.status === "draft"}
                   onChange={handleChange}
-                  className="w-4 h-4 text-primary"
+                  className="peer sr-only"
                 />
-                <span className="text-sm">Draft</span>
+                <div className="p-4 rounded-lg border-2 border-dashed border-gray-200 peer-checked:border-yellow-400 peer-checked:bg-yellow-50 transition-all hover:border-gray-300">
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="w-4 h-4 rounded-full border border-gray-300 peer-checked:border-yellow-500 peer-checked:bg-yellow-500" />
+                    <span className="font-bold text-ink">Draft</span>
+                  </div>
+                  <p className="text-xs text-gray-500 pl-7">Only visible to you</p>
+                </div>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
+              
+              <label className="relative cursor-pointer group">
                 <input
                   type="radio"
                   name="status"
                   value="published"
                   checked={formData.status === "published"}
                   onChange={handleChange}
-                  className="w-4 h-4 text-primary"
+                  className="peer sr-only"
                 />
-                <span className="text-sm">Published</span>
+                <div className="p-4 rounded-lg border-2 border-gray-200 peer-checked:border-green-500 peer-checked:bg-green-50 transition-all hover:border-gray-300">
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="w-4 h-4 rounded-full border border-gray-300 peer-checked:border-green-500 peer-checked:bg-green-500" />
+                    <span className="font-bold text-ink">Published</span>
+                  </div>
+                  <p className="text-xs text-gray-500 pl-7">Visible to everyone</p>
+                </div>
               </label>
             </div>
           </div>

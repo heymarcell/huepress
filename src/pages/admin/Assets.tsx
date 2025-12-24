@@ -97,7 +97,7 @@ export default function AdminAssets() {
       </div>
 
       {/* Assets Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-md rounded-xl shadow-sm border border-white/60 overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
@@ -111,43 +111,43 @@ export default function AdminAssets() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filteredAssets.map((asset) => (
-              <tr key={asset.id} className="hover:bg-gray-50">
+              <tr key={asset.id} className="hover:bg-white/60 transition-colors group">
                 <td className="px-6 py-4">
-                  <p className="font-medium text-ink">{asset.title}</p>
+                  <p className="font-medium text-ink group-hover:text-primary transition-colors">{asset.title}</p>
                   <p className="text-xs text-gray-400">Created {asset.createdAt}</p>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600">{asset.category}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{asset.skill}</td>
                 <td className="px-6 py-4">
                   <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    className={`px-3 py-1 text-xs font-medium rounded-full border ${
                       asset.status === "published"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
+                        ? "bg-green-50 text-green-700 border-green-200"
+                        : "bg-yellow-50 text-yellow-700 border-yellow-200"
                     }`}
                   >
-                    {asset.status}
+                    {asset.status.charAt(0).toUpperCase() + asset.status.slice(1)}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600">{asset.downloads}</td>
                 <td className="px-6 py-4">
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => toggleStatus(asset.id)}
-                      className="p-2 text-gray-400 hover:text-primary rounded-lg hover:bg-gray-100"
+                      className="p-2 text-gray-400 hover:text-primary rounded-lg hover:bg-white hover:shadow-sm transition-all"
                       title={asset.status === "published" ? "Unpublish" : "Publish"}
                     >
                       {asset.status === "published" ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                     <Link
                       to={`/admin/assets/${asset.id}/edit`}
-                      className="p-2 text-gray-400 hover:text-primary rounded-lg hover:bg-gray-100"
+                      className="p-2 text-gray-400 hover:text-primary rounded-lg hover:bg-white hover:shadow-sm transition-all"
                     >
                       <Pencil className="w-4 h-4" />
                     </Link>
                     <button
                       onClick={() => deleteAsset(asset.id)}
-                      className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-100"
+                      className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-white hover:shadow-sm transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

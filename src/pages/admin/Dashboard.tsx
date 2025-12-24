@@ -26,42 +26,51 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        {stats.map((stat, i) => (
+          <div 
+            key={stat.label} 
+            className="bg-white/60 backdrop-blur-md rounded-xl p-6 shadow-sm border border-white/40 hover:shadow-md hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 group"
+            style={{ animationDelay: `${i * 100}ms` }}
+          >
             <div className="flex items-center justify-between mb-4">
-              <div className={`w-10 h-10 ${stat.color} rounded-lg flex items-center justify-center`}>
-                <stat.icon className="w-5 h-5 text-white" />
+              <div className={`w-12 h-12 ${stat.color} rounded-lg shadow-lg shadow-${stat.color.replace("bg-", "")}/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                <stat.icon className="w-6 h-6 text-white" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-ink">{stat.value}</p>
-            <p className="text-sm text-gray-500">{stat.label}</p>
+            <p className="text-3xl font-bold text-ink mb-1">{stat.value}</p>
+            <p className="text-sm font-medium text-gray-500">{stat.label}</p>
           </div>
         ))}
       </div>
 
       {/* Recent Assets */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-bold text-ink">Recent Assets</h2>
-          <Link to="/admin/assets" className="text-primary text-sm hover:underline">
+      <div className="bg-white/60 backdrop-blur-md rounded-xl shadow-sm border border-white/40 overflow-hidden">
+        <div className="p-6 border-b border-gray-100/50 flex items-center justify-between bg-white/40">
+          <h2 className="font-serif font-bold text-xl text-ink">Recent Assets</h2>
+          <Link to="/admin/assets" className="text-primary text-sm font-medium hover:text-primary-hover hover:underline decoration-2 underline-offset-4 transition-all">
             View all →
           </Link>
         </div>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100/50">
           {recentAssets.map((asset) => (
-            <div key={asset.id} className="p-4 flex items-center justify-between hover:bg-gray-50">
-              <div>
-                <p className="font-medium text-ink">{asset.title}</p>
-                <p className="text-sm text-gray-500">{asset.downloads} downloads</p>
+            <div key={asset.id} className="p-4 flex items-center justify-between hover:bg-white/60 transition-colors group cursor-pointer">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                  <Images className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-medium text-ink group-hover:text-primary transition-colors">{asset.title}</p>
+                  <p className="text-xs text-gray-500">{asset.downloads} downloads</p>
+                </div>
               </div>
               <span
-                className={`px-2 py-1 text-xs font-medium rounded-full ${
+                className={`px-3 py-1 text-xs font-medium rounded-full border ${
                   asset.status === "published"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-yellow-100 text-yellow-700"
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-yellow-50 text-yellow-700 border-yellow-200"
                 }`}
               >
-                {asset.status}
+                {asset.status.charAt(0).toUpperCase() + asset.status.slice(1)}
               </span>
             </div>
           ))}
