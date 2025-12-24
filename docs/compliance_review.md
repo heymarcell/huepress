@@ -32,6 +32,6 @@ _**Disclaimer:** I am an AI, not a lawyer. This review is for informational purp
 
 ## ⚠️ Recommended Action Items
 
-- [ ] **Checkout Logic:** If detecting an EU IP address, ensure the "Right of Withdrawal" checkbox appears or is included in the "Pay" button disclaimer.
+- [x] **Checkout Logic:** EUWaiverModal shown to ALL users with mandatory "Right of Withdrawal" checkbox before proceeding to Stripe Checkout. ✅
 - [ ] **DMCA Registration:** Consider registering a specific agent with the US Copyright Office.
-- [ ] **Accessibility:** Ensure the link to "Terms of Service" is visible on every page (Footer), which we have already verified.
+- [x] **Accessibility:** Ensure the link to "Terms of Service" is visible on every page (Footer). ✅
