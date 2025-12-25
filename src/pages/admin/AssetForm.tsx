@@ -135,6 +135,7 @@ export default function AdminAssetForm() {
           // Set preview URLs if available
           if (asset.r2_key_public && !(asset.r2_key_public as string).startsWith("__draft__")) {
             setThumbnailPreviewUrl(`https://assets.huepress.co/${asset.r2_key_public}`);
+            setHasExistingFiles(true);
           }
           if (asset.r2_key_private && !(asset.r2_key_private as string).startsWith("__draft__")) {
             setPdfPreviewUrl(`Preview available`);
@@ -176,6 +177,7 @@ export default function AdminAssetForm() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasExistingFiles, setHasExistingFiles] = useState(false); // Track if editing asset has files
   const [isProcessingSvg, setIsProcessingSvg] = useState(false);
   
   // Store original SVG for potential regeneration
@@ -864,7 +866,10 @@ export default function AdminAssetForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!thumbnailFile || !pdfFile) {
+    
+    // Only require files for new assets, not when editing with existing files
+    const needsFiles = !isEditing || !hasExistingFiles;
+    if (needsFiles && (!thumbnailFile || !pdfFile)) {
       setAlertState({
         isOpen: true,
         title: "Missing Files",
@@ -915,7 +920,9 @@ export default function AdminAssetForm() {
         setPdfNeedsRegeneration(false);
       }
       
-      if (!currentThumbnail || !currentPdf) {
+      // Only require files for new assets or if regeneration was attempted but failed
+      const requiresNewFiles = !isEditing || !hasExistingFiles;
+      if (requiresNewFiles && (!currentThumbnail || !currentPdf)) {
         setAlertState({
           isOpen: true,
           title: "Missing Files",
@@ -954,8 +961,16 @@ export default function AdminAssetForm() {
       form.append("fun_facts", JSON.stringify(factsArray));
       form.append("suggested_activities", JSON.stringify(activitiesArray));
 
-      form.append("thumbnail", currentThumbnail);
-      form.append("pdf", currentPdf);
+      // Only append files if they exist (new uploads or regenerated)
+      if (currentThumbnail) {
+        form.append("thumbnail", currentThumbnail);
+      }
+      if (currentPdf) {
+        form.append("pdf", currentPdf);
+      }
+      
+      // Flag for backend: are we providing new files?
+      form.append("has_new_files", String(!!(currentThumbnail && currentPdf)));
 
       // Use production API URL if in prod, else local
       // apiClient handles API_URL internally, but createAsset needs manualFormData
