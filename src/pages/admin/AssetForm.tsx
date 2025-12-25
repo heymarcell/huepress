@@ -307,94 +307,127 @@ export default function AdminAssetForm() {
     const huepressLogoNode = new DOMParser().parseFromString(HUEPRESS_LOGO_SVG, "image/svg+xml").documentElement;
     await doc.svg(huepressLogoNode, { x: 65, y: 15, width: 80, height: 20 });
     
-    doc.setFontSize(18);
-    doc.setTextColor(60);
-    doc.setFont("helvetica", "bold");
-    doc.text("You're a Coloring Star!", 105, 55, { align: "center" });
-
-    doc.setFontSize(11);
+    // Tagline
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
     doc.setTextColor(100);
-    doc.text("Great job completing this masterpiece!", 105, 65, { align: "center" });
-    doc.text("We hope you had as much fun coloring as we did creating it.", 105, 72, { align: "center" });
-
-    doc.setFontSize(14);
+    doc.text("Color Your World", 105, 42, { align: "center" });
+    
+    // Divider
+    doc.setDrawColor(200);
+    doc.line(50, 48, 160, 48);
+    
+    // Printing Tips Section
     doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
     doc.setTextColor(50);
-    doc.text("Want More Designs?", 105, 95, { align: "center" });
-
-    doc.setFontSize(11);
+    doc.text("Printing Tips", 20, 65);
+    
+    doc.setDrawColor(230);
+    doc.setFillColor(252, 252, 252);
+    doc.roundedRect(20, 70, 170, 32, 2, 2, "FD");
+    
+    doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(100);
-    doc.text("Visit huepress.co and explore hundreds of unique coloring pages.", 105, 105, { align: "center" });
-    doc.text("New designs added weekly!", 105, 113, { align: "center" });
-
+    doc.setTextColor(80);
+    doc.text("• Select 'Fit to Page' in your printer settings", 28, 81);
+    doc.text("• We recommend thick cardstock for the best results", 28, 89);
+    doc.text("• Choose 'High Quality' print mode for crisp lines", 28, 97);
+    
+    // Share Section
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(50);
+    doc.text("Share Your Creation", 20, 120);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80);
+    doc.text("Finished coloring? We'd love to see it!", 20, 130);
+    
+    doc.setFontSize(11);
+    doc.setTextColor(40);
+    doc.setFont("helvetica", "bold");
+    doc.text("@huepressco    #HuePressColoring", 20, 140);
+    
+    // Get More Section
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(50);
+    doc.text("Discover More Designs", 20, 160);
+    
     const websiteUrl = "https://huepress.co";
-    const qrSize = 30;
-    const qrX = (A4_WIDTH - qrSize) / 2;
-    const qrY = 125;
+    const qrSize = 25;
+    const qrY = 165;
     
     const qrCanvas = document.createElement("canvas");
-    await QRCode.toCanvas(qrCanvas, websiteUrl, { width: 200, margin: 0 });
+    await QRCode.toCanvas(qrCanvas, websiteUrl, { width: 150, margin: 0 });
     const qrDataUrl = qrCanvas.toDataURL("image/png");
-    doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
-
+    doc.addImage(qrDataUrl, "PNG", 20, qrY, qrSize, qrSize);
+    
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text("Scan to visit huepress.co", A4_WIDTH / 2, qrY + qrSize + 8, { align: "center" });
+    doc.setTextColor(80);
+    doc.text("Scan to explore hundreds of unique coloring pages.", 50, qrY + 10);
+    doc.text("New designs added every week!", 50, qrY + 18);
 
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(50);
-    doc.text("Love HuePress? Leave Us a Review!", 105, 185, { align: "center" });
+    // Review Section  
+    doc.setDrawColor(220);
+    doc.setFillColor(250, 250, 250);
+    doc.roundedRect(20, 200, 170, 28, 2, 2, "FD");
     
     const trustpilotUrl = "https://www.trustpilot.com/review/huepress.co";
     const reviewQr = document.createElement("canvas");
-    await QRCode.toCanvas(reviewQr, trustpilotUrl, { width: 150, margin: 0 });
-    doc.addImage(reviewQr.toDataURL("image/png"), "PNG", 20, 195, 25, 25);
+    await QRCode.toCanvas(reviewQr, trustpilotUrl, { width: 120, margin: 0 });
+    doc.addImage(reviewQr.toDataURL("image/png"), "PNG", 25, 203, 22, 22);
 
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(80);
-    doc.text("Help us grow by leaving a review on Trustpilot.", 70, 202);
-    doc.text("Scan the QR code or visit:", 70, 210);
-    
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(0, 0, 0);
-    doc.text("huepress.co/review", 112, 210);
-
-    // Social Links with Text URLs
-    const startX = 20;
-    const iconY = 230;
-    const iconSize = 6;
-    const lineHeight = 5;
+    doc.setFontSize(11);
+    doc.setTextColor(40);
+    doc.text("Enjoying HuePress?", 52, 211);
     
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    
-    const fbNode = new DOMParser().parseFromString(SOCIAL_ICONS.FACEBOOK, "image/svg+xml").documentElement;
-    await doc.svg(fbNode, { x: startX, y: iconY, width: iconSize, height: iconSize });
-    doc.text("facebook.com/huepressco", startX + iconSize + 2, iconY + iconSize - 1);
-
-    const igNode = new DOMParser().parseFromString(SOCIAL_ICONS.INSTAGRAM, "image/svg+xml").documentElement;
-    await doc.svg(igNode, { x: startX, y: iconY + lineHeight * 2, width: iconSize, height: iconSize });
-    doc.text("instagram.com/huepressco", startX + iconSize + 2, iconY + lineHeight * 2 + iconSize - 1);
-
-    const pinNode = new DOMParser().parseFromString(SOCIAL_ICONS.PINTEREST, "image/svg+xml").documentElement;
-    await doc.svg(pinNode, { x: startX, y: iconY + lineHeight * 4, width: iconSize, height: iconSize });
-    doc.text("pinterest.com/huepressco", startX + iconSize + 2, iconY + lineHeight * 4 + iconSize - 1);
-
-    const webNode = new DOMParser().parseFromString(SOCIAL_ICONS.WEBSITE, "image/svg+xml").documentElement;
-    await doc.svg(webNode, { x: startX, y: iconY + lineHeight * 6, width: iconSize, height: iconSize });
-    doc.text("huepress.co", startX + iconSize + 2, iconY + lineHeight * 6 + iconSize - 1);
-
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(80);
-    doc.text("Questions? Email us: hello@huepress.co", 105, 268, { align: "center" });
+    doc.text("Your review helps us reach more families. Visit huepress.co/review", 52, 220);
+
+    // Social Links - 2x2 Grid Layout
+    const leftX = 25;           // Left column
+    const rightX = 115;         // Right column  
+    const row1Y = 232;          // First row
+    const row2Y = 240;          // Second row
+    const iconSize = 5;
+    
+    doc.setFontSize(8);
+    doc.setTextColor(80);
+    
+    // Row 1: Facebook (left) | Pinterest (right)
+    const fbNode = new DOMParser().parseFromString(SOCIAL_ICONS.FACEBOOK, "image/svg+xml").documentElement;
+    await doc.svg(fbNode, { x: leftX, y: row1Y, width: iconSize, height: iconSize });
+    doc.text("facebook.com/huepressco", leftX + iconSize + 2, row1Y + iconSize - 1);
+
+    const pinNode = new DOMParser().parseFromString(SOCIAL_ICONS.PINTEREST, "image/svg+xml").documentElement;
+    await doc.svg(pinNode, { x: rightX, y: row1Y, width: iconSize, height: iconSize });
+    doc.text("pinterest.com/huepressco", rightX + iconSize + 2, row1Y + iconSize - 1);
+
+    // Row 2: Instagram (left) | Website (right)
+    const igNode = new DOMParser().parseFromString(SOCIAL_ICONS.INSTAGRAM, "image/svg+xml").documentElement;
+    await doc.svg(igNode, { x: leftX, y: row2Y, width: iconSize, height: iconSize });
+    doc.text("instagram.com/huepressco", leftX + iconSize + 2, row2Y + iconSize - 1);
+
+    const webNode = new DOMParser().parseFromString(SOCIAL_ICONS.WEBSITE, "image/svg+xml").documentElement;
+    await doc.svg(webNode, { x: rightX, y: row2Y, width: iconSize, height: iconSize });
+    doc.text("huepress.co", rightX + iconSize + 2, row2Y + iconSize - 1);
+
+    // Email & Footer
+    doc.setFontSize(9);
+    doc.setTextColor(80);
+    doc.text("Questions? Email us: hello@huepress.co", 105, 255, { align: "center" });
 
     doc.setFontSize(9);
     doc.setTextColor(150);
-    doc.text(`Copyright © ${new Date().getFullYear()} HuePress. All rights reserved.`, 105, 275, { align: "center" });
-    doc.text(`Asset ID: ${assetId}`, 105, 280, { align: "center" });
+    doc.text(`Copyright © ${new Date().getFullYear()} HuePress. All rights reserved.`, 105, 262, { align: "center" });
+    doc.text(`Asset ID: ${assetId}`, 105, 267, { align: "center" });
 
     const pdfBlob = doc.output("blob");
     const pdfFile = new File([pdfBlob], `${baseFilename}.pdf`, { type: "application/pdf" });
