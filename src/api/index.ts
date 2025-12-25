@@ -46,7 +46,44 @@ app.route("/api", stripeRoute);      // /api/checkout, /api/portal, /api/webhook
 app.route("/api/webhooks", webhooksRoute); // /api/webhooks/clerk
 app.route("/api/reviews", reviewsRoute); // /api/reviews/:assetId
 app.route("/api/tags", tagsRoute);   // /api/tags
-app.route("/api/requests", requestsRoute); // /api/requests
+// app.route("/api/requests", requestsRoute); // Moved to inline for debugging
+
+import { getAuth } from "@hono/clerk-auth";
+
+// INLINE REQUESTS HANDLER
+app.post("/api/requests/submit", async (c) => {
+  try {
+    const auth = getAuth(c);
+    const body = await c.req.json();
+    const { title, description, email } = body;
+    
+    // Simple validation
+    if (!title || !description || !email) {
+      return c.json({ error: "Missing required fields" }, 400);
+    }
+    
+    const id = crypto.randomUUID();
+    const userId = auth?.userId || null;
+    let dbUserId = null;
+    
+    if (userId) {
+       const user = await c.env.DB.prepare("SELECT id, email FROM users WHERE clerk_id = ?").bind(userId).first<{ id: string, email: string }>();
+       if (user) {
+         dbUserId = user.id;
+       }
+    }
+
+    await c.env.DB.prepare(
+      `INSERT INTO design_requests (id, user_id, email, title, description, status)
+       VALUES (?, ?, ?, ?, ?, 'pending')`
+    ).bind(id, dbUserId, email, title, description).run();
+    
+    return c.json({ success: true, id });
+  } catch (error) {
+    console.error("Create request error:", error);
+    return c.json({ error: "Failed to submit request" }, 500);
+  }
+});
 
 // Serve public R2 assets directly (bypasses need for custom R2 domain)
 app.get("/cdn/*", async (c) => {
