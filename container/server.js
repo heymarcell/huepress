@@ -147,7 +147,9 @@ app.post('/pdf', async (req, res) => {
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--single-process',
+        '--no-zygote'
       ]
     });
 
@@ -328,7 +330,7 @@ app.post('/pdf', async (req, res) => {
       </html>
     `;
 
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setContent(html, { waitUntil: 'domcontentloaded' });
 
     // Generate PDF
     const pdfBuffer = await page.pdf({
