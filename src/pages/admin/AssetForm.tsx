@@ -438,7 +438,7 @@ export default function AdminAssetForm() {
     
     doc.setDrawColor(230);
     doc.setFillColor(252, 252, 252);
-    doc.roundedRect(20, 58, 170, 26, 2, 2, "FD");
+    doc.roundedRect(20, 58, 170, 30, 2, 2, "FD");
     
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
@@ -532,7 +532,7 @@ export default function AdminAssetForm() {
     doc.setFontSize(9);
     doc.setTextColor(80);
     doc.text("New therapy-grade coloring pages added every week. Visit huepress.co to explore", 20, 220);
-    doc.text("our full collection — animals, nature, holidays, and much more!", 20, 228);
+    doc.text("our full collection — animals, nature, holidays, and much more!", 20, 226);
 
     // === FOOTER: At actual bottom of page ===
     const footerY = A4_HEIGHT - 15; // A4 height is 297mm, footer at bottom
