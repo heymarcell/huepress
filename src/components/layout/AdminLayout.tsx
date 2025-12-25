@@ -16,18 +16,9 @@ export function AdminLayout() {
   // Loading state
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-primary/5 flex flex-col items-center justify-center">
-        <div className="relative mb-6">
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-secondary animate-pulse shadow-lg flex items-center justify-center">
-            <span className="text-white font-serif font-bold text-2xl">H</span>
-          </div>
-          <div className="absolute inset-0 w-14 h-14 rounded-xl border-2 border-primary/30 animate-ping" />
-        </div>
-        <div className="flex items-center justify-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
-          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
-        </div>
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <div className="w-10 h-10 border-3 border-gray-200 border-t-primary rounded-full animate-spin" />
+        <p className="mt-4 text-sm text-gray-400">Loading...</p>
       </div>
     );
   }
@@ -100,7 +91,7 @@ export function AdminLayout() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
                       isActive
                         ? "bg-primary text-white shadow-md shadow-primary/20"
                         : "text-gray-600 hover:bg-white hover:text-primary hover:shadow-sm"
