@@ -465,7 +465,7 @@ export default function ResourceDetailPage() {
                         key={idx}
                         to={`/vault?tag=${encodeURIComponent(tag)}`}
                         className="px-3 py-1.5 bg-gray-50 text-gray-500 text-xs rounded-full hover:bg-gray-100 hover:text-gray-700 transition-colors"
-                      >
+                        #{tag}
                       </Link>
                     ))}
                   </div>
