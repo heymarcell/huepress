@@ -3,15 +3,22 @@ import { Link } from "react-router-dom";
 import { Button, Input } from "@/components/ui";
 import { Sparkles, Gift } from "lucide-react";
 import { analytics } from "@/lib/analytics";
+import { useSubscription } from "@/lib/auth";
 
 // Revert to original signature without variant
 export function FreeSampleCapture({ source = "free_sample_homepage" }: { source?: string }) {
+  const { isSubscriber } = useSubscription();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // Validation state
   const [error, setError] = useState<string | null>(null);
+
+  // Don't show for subscribers - they already have access
+  if (isSubscriber) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
