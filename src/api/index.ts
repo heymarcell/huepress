@@ -46,4 +46,38 @@ app.route("/api/webhooks", webhooksRoute); // /api/webhooks/clerk
 app.route("/api/reviews", reviewsRoute); // /api/reviews/:assetId
 app.route("/api/tags", tagsRoute);   // /api/tags
 
+// Serve public R2 assets directly (bypasses need for custom R2 domain)
+app.get("/cdn/*", async (c) => {
+  const key = c.req.path.replace("/cdn/", "");
+  
+  if (!key) {
+    return c.json({ error: "No key provided" }, 400);
+  }
+  
+  try {
+    const object = await c.env.ASSETS_PUBLIC.get(key);
+    
+    if (!object) {
+      return c.json({ error: "Not found" }, 404);
+    }
+    
+    // Determine content type from key
+    let contentType = "application/octet-stream";
+    if (key.endsWith(".webp")) contentType = "image/webp";
+    else if (key.endsWith(".png")) contentType = "image/png";
+    else if (key.endsWith(".jpg") || key.endsWith(".jpeg")) contentType = "image/jpeg";
+    else if (key.endsWith(".svg")) contentType = "image/svg+xml";
+    
+    return new Response(object.body, {
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  } catch (error) {
+    console.error("R2 fetch error:", error);
+    return c.json({ error: "Failed to fetch asset" }, 500);
+  }
+});
+
 export default app;
