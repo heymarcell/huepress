@@ -214,7 +214,7 @@ app.post("/assets", async (c) => {
         await c.env.DB.prepare(`
           UPDATE assets SET 
             slug = ?, title = ?, description = ?, category = ?, skill = ?, 
-            image_url = ?, r2_key_private = ?, status = ?, tags = ?, 
+            r2_key_public = ?, r2_key_private = ?, status = ?, tags = ?, 
             extended_description = ?, fun_facts = ?, suggested_activities = ?, 
             coloring_tips = ?, therapeutic_benefits = ?, meta_keywords = ?
           WHERE asset_id = ?
@@ -231,7 +231,7 @@ app.post("/assets", async (c) => {
          await c.env.DB.prepare(`
           INSERT INTO assets (
             id, asset_id, slug, title, description, category, skill, 
-            image_url, r2_key_private, status, tags, 
+            r2_key_public, r2_key_private, status, tags, 
             extended_description, fun_facts, suggested_activities, 
             coloring_tips, therapeutic_benefits, meta_keywords,
             created_at
@@ -248,7 +248,7 @@ app.post("/assets", async (c) => {
       await c.env.DB.prepare(`
         INSERT INTO assets (
           id, asset_id, slug, title, description, category, skill, 
-          image_url, r2_key_private, status, tags, 
+          r2_key_public, r2_key_private, status, tags, 
           extended_description, fun_facts, suggested_activities, 
           coloring_tips, therapeutic_benefits, meta_keywords,
           created_at
