@@ -37,7 +37,7 @@ export default function RequestDesign() {
     setErrorMessage("");
 
     try {
-      const response = await fetch("/api/requests", {
+      const response = await fetch("/api/requests/submit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

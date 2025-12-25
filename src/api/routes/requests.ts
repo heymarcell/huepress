@@ -5,7 +5,7 @@ import { getAuth } from "@hono/clerk-auth";
 const app = new Hono<{ Bindings: Bindings }>();
 
 // Create a design request
-app.post("/", async (c) => {
+app.post("/submit", async (c) => {
   try {
     const auth = getAuth(c);
     const body = await c.req.json();
