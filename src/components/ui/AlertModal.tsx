@@ -7,10 +7,14 @@ interface AlertModalProps {
   title: string;
   message: string;
   variant?: 'success' | 'error' | 'info';
+  confirmText?: string;
+  onConfirm?: () => void;
 }
 
-export function AlertModal({ isOpen, onClose, title, message, variant = 'info' }: AlertModalProps) {
+export function AlertModal({ isOpen, onClose, title, message, variant = 'info', confirmText, onConfirm }: AlertModalProps) {
   if (!isOpen) return null;
+
+  const isConfirmMode = Boolean(onConfirm);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -34,15 +38,36 @@ export function AlertModal({ isOpen, onClose, title, message, variant = 'info' }
           </p>
         </div>
 
-        {/* Action */}
-        <Button
-          onClick={onClose}
-          variant="primary"
-          size="lg"
-          className="w-full"
-        >
-          Okay
-        </Button>
+        {/* Actions */}
+        {isConfirmMode ? (
+          <div className="flex gap-3">
+            <Button
+              onClick={onClose}
+              variant="outline"
+              size="lg"
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={onConfirm}
+              variant={variant === 'error' ? 'primary' : 'primary'}
+              size="lg"
+              className={`flex-1 ${variant === 'error' ? 'bg-red-600 hover:bg-red-700' : ''}`}
+            >
+              {confirmText || 'Confirm'}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            onClick={onClose}
+            variant="primary"
+            size="lg"
+            className="w-full"
+          >
+            Okay
+          </Button>
+        )}
       </div>
     </div>
   );

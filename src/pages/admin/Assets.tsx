@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useUser } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
+import { AlertModal } from "@/components/ui/AlertModal";
 
 interface AdminAsset {
   id: string;
@@ -20,6 +21,12 @@ export default function AdminAssets() {
   const [assets, setAssets] = useState<AdminAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
+  
+  // Delete confirmation modal state
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; assetId: string | null }>({
+    isOpen: false,
+    assetId: null
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -55,14 +62,30 @@ export default function AdminAssets() {
     ));
   };
 
-  const deleteAsset = (id: string) => {
-    if (confirm("Are you sure you want to delete this asset?")) {
-      setAssets(assets.filter((asset) => asset.id !== id));
+  const confirmDelete = (id: string) => {
+    setDeleteModal({ isOpen: true, assetId: id });
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteModal.assetId) {
+      setAssets(assets.filter((asset) => asset.id !== deleteModal.assetId));
     }
+    setDeleteModal({ isOpen: false, assetId: null });
   };
 
   return (
-    <div>
+    <>
+      <AlertModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, assetId: null })}
+        title="Delete Asset"
+        message="Are you sure you want to delete this asset? This action cannot be undone."
+        variant="error"
+        confirmText="Delete"
+        onConfirm={handleDeleteConfirm}
+      />
+      
+      <div>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-serif text-h2 text-ink">Assets</h1>
@@ -146,7 +169,7 @@ export default function AdminAssets() {
                       <Pencil className="w-4 h-4" />
                     </Link>
                     <button
-                      onClick={() => deleteAsset(asset.id)}
+                      onClick={() => confirmDelete(asset.id)}
                       className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-white hover:shadow-sm transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -159,5 +182,6 @@ export default function AdminAssets() {
         </table>
       </div>
     </div>
+    </>
   );
 }
