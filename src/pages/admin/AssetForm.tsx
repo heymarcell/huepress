@@ -171,6 +171,208 @@ export default function AdminAssetForm() {
 
   const { user } = useUser();
 
+  /**
+   * Helper: Generate PDF and WebP from SVG file
+   * Reusable for initial upload and regeneration
+   */
+  const generateFilesFromSvg = async (
+    svgFile: File, 
+    assetId: string, 
+    slug: string, 
+    metadata: AssetFormData
+  ): Promise<{ pdfFile: File; webpFile: File; baseFilename: string }> => {
+    const baseFilename = `huepress-${assetId}-${slug}`;
+
+    // WebP Generation
+    const webpBlob = await new Promise<Blob>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const SIZE = 1024;
+        const canvas = document.createElement("canvas");
+        canvas.width = SIZE;
+        canvas.height = SIZE;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("No canvas context"));
+        
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, SIZE, SIZE);
+        
+        const scale = Math.min(SIZE / img.width, SIZE / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        const x = (SIZE - w) / 2;
+        const y = (SIZE - h) / 2;
+        
+        ctx.drawImage(img, x, y, w, h);
+        
+        canvas.toBlob(blob => {
+          if (blob) resolve(blob);
+          else reject(new Error("Canvas blob failed"));
+        }, "image/webp", 0.9);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(svgFile);
+    });
+    
+    const webpFile = new File([webpBlob], `${baseFilename}.webp`, { type: "image/webp" });
+
+    // PDF Generation
+    const svgText = await svgFile.text();
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
+    const svgElement = svgDoc.documentElement;
+
+    const getDim = (val: string | null) => {
+      if (!val) return 0;
+      return parseFloat(val.replace("px", ""));
+    };
+    
+    const viewBox = svgElement.getAttribute("viewBox")?.split(/[\s,]+/).map(parseFloat);
+    const svgW = getDim(svgElement.getAttribute("width")) || (viewBox ? viewBox[2] : 595);
+    const svgH = getDim(svgElement.getAttribute("height")) || (viewBox ? viewBox[3] : 842);
+
+    const A4_WIDTH = 210;
+    const A4_HEIGHT = 297;
+    const SAFE_WIDTH = 185; 
+    const SAFE_HEIGHT = 254;
+
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4" 
+    });
+
+    // Build dynamic keywords
+    const keywordsArray = [
+      metadata.category,
+      metadata.skill,
+      ...metadata.tags.split(",").map(t => t.trim()).filter(Boolean),
+      "coloring page", "huepress", "printable"
+    ];
+    const uniqueKeywords = [...new Set(keywordsArray)].join(", ");
+
+    doc.setProperties({
+      title: `HuePress - ${metadata.title} - ${assetId}`,
+      subject: `${metadata.description} | Website: huepress.co | Support: hello@huepress.co`,
+      author: "HuePress",
+      keywords: uniqueKeywords,
+      creator: "HuePress Automated Generator"
+    });
+
+    // Page 1: Artwork
+    const scale = Math.min(SAFE_WIDTH / svgW, SAFE_HEIGHT / svgH);
+    const artWidth = svgW * scale;
+    const artHeight = svgH * scale;
+    const artX = (A4_WIDTH - artWidth) / 2;
+    const artY = (A4_HEIGHT - artHeight) / 2;
+
+    await doc.svg(svgElement, { x: artX, y: artY, width: artWidth, height: artHeight });
+
+    doc.setFontSize(9);
+    doc.setTextColor(150);
+    doc.text(`© ${new Date().getFullYear()} HuePress | ID: ${assetId}`, A4_WIDTH / 2, A4_HEIGHT - 10, { align: "center" });
+
+    // Page 2: Marketing
+    doc.addPage();
+
+    const huepressLogoNode = new DOMParser().parseFromString(HUEPRESS_LOGO_SVG, "image/svg+xml").documentElement;
+    await doc.svg(huepressLogoNode, { x: 65, y: 15, width: 80, height: 20 });
+    
+    doc.setFontSize(18);
+    doc.setTextColor(60);
+    doc.setFont("helvetica", "bold");
+    doc.text("You're a Coloring Star!", 105, 55, { align: "center" });
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100);
+    doc.text("Great job completing this masterpiece!", 105, 65, { align: "center" });
+    doc.text("We hope you had as much fun coloring as we did creating it.", 105, 72, { align: "center" });
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(50);
+    doc.text("Want More Designs?", 105, 95, { align: "center" });
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100);
+    doc.text("Visit huepress.co and explore hundreds of unique coloring pages.", 105, 105, { align: "center" });
+    doc.text("New designs added weekly!", 105, 113, { align: "center" });
+
+    const websiteUrl = "https://huepress.co";
+    const qrSize = 30;
+    const qrX = (A4_WIDTH - qrSize) / 2;
+    const qrY = 125;
+    
+    const qrCanvas = document.createElement("canvas");
+    await QRCode.toCanvas(qrCanvas, websiteUrl, { width: 200, margin: 0 });
+    const qrDataUrl = qrCanvas.toDataURL("image/png");
+    doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
+
+    doc.setFontSize(10);
+    doc.text("Scan to visit huepress.co", A4_WIDTH / 2, qrY + qrSize + 8, { align: "center" });
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(50);
+    doc.text("Love HuePress? Leave Us a Review!", 105, 185, { align: "center" });
+    
+    const trustpilotUrl = "https://www.trustpilot.com/review/huepress.co";
+    const reviewQr = document.createElement("canvas");
+    await QRCode.toCanvas(reviewQr, trustpilotUrl, { width: 150, margin: 0 });
+    doc.addImage(reviewQr.toDataURL("image/png"), "PNG", 20, 195, 25, 25);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80);
+    doc.text("Help us grow by leaving a review on Trustpilot.", 70, 202);
+    doc.text("Scan the QR code or visit:", 70, 210);
+    
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text("huepress.co/review", 112, 210);
+
+    // Social Links with Text URLs
+    const startX = 20;
+    const iconY = 230;
+    const iconSize = 6;
+    const lineHeight = 5;
+    
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    
+    const fbNode = new DOMParser().parseFromString(SOCIAL_ICONS.FACEBOOK, "image/svg+xml").documentElement;
+    await doc.svg(fbNode, { x: startX, y: iconY, width: iconSize, height: iconSize });
+    doc.text("facebook.com/huepressco", startX + iconSize + 2, iconY + iconSize - 1);
+
+    const igNode = new DOMParser().parseFromString(SOCIAL_ICONS.INSTAGRAM, "image/svg+xml").documentElement;
+    await doc.svg(igNode, { x: startX, y: iconY + lineHeight * 2, width: iconSize, height: iconSize });
+    doc.text("instagram.com/huepressco", startX + iconSize + 2, iconY + lineHeight * 2 + iconSize - 1);
+
+    const pinNode = new DOMParser().parseFromString(SOCIAL_ICONS.PINTEREST, "image/svg+xml").documentElement;
+    await doc.svg(pinNode, { x: startX, y: iconY + lineHeight * 4, width: iconSize, height: iconSize });
+    doc.text("pinterest.com/huepressco", startX + iconSize + 2, iconY + lineHeight * 4 + iconSize - 1);
+
+    const webNode = new DOMParser().parseFromString(SOCIAL_ICONS.WEBSITE, "image/svg+xml").documentElement;
+    await doc.svg(webNode, { x: startX, y: iconY + lineHeight * 6, width: iconSize, height: iconSize });
+    doc.text("huepress.co", startX + iconSize + 2, iconY + lineHeight * 6 + iconSize - 1);
+
+    doc.setFontSize(9);
+    doc.setTextColor(80);
+    doc.text("Questions? Email us: hello@huepress.co", 105, 268, { align: "center" });
+
+    doc.setFontSize(9);
+    doc.setTextColor(150);
+    doc.text(`Copyright © ${new Date().getFullYear()} HuePress. All rights reserved.`, 105, 275, { align: "center" });
+    doc.text(`Asset ID: ${assetId}`, 105, 280, { align: "center" });
+
+    const pdfBlob = doc.output("blob");
+    const pdfFile = new File([pdfBlob], `${baseFilename}.pdf`, { type: "application/pdf" });
+
+    return { pdfFile, webpFile, baseFilename };
+  };
+
   /* 
    * Unified file processor that creates PDF and Thumbnail 
    * Accepted from: File Input OR Drop Zone
@@ -571,23 +773,50 @@ export default function AdminAssetForm() {
     setIsSubmitting(true);
 
     try {
-      // Check if PDF needs regeneration due to field changes
+      let currentThumbnail = thumbnailFile;
+      let currentPdf = pdfFile;
+      
+      // Auto-regenerate PDF if metadata fields changed
       if (pdfNeedsRegeneration && originalSvgFile && formData.asset_id) {
         setAlertState({
           isOpen: true,
           title: "Regenerating PDF...",
-          message: "Metadata changed - updating PDF with new information.",
+          message: "Updating PDF with new metadata.",
           variant: "info"
         });
         
-        // Re-process SVG with existing asset ID (don't create new draft)
-        // For now, we just warn user. Full regeneration would require refactoring.
-        // TODO: Extract PDF generation into reusable function
+        // Generate slug from title
+        const slug = formData.title.toLowerCase()
+          .trim()
+          .replace(/\s+/g, '-')
+          .replace(/[^\w-]+/g, '')
+          .replace(/--+/g, '-');
+        
+        // Regenerate files with updated metadata
+        const { pdfFile: newPdf, webpFile: newWebp } = await generateFilesFromSvg(
+          originalSvgFile,
+          formData.asset_id,
+          slug,
+          formData
+        );
+        
+        currentThumbnail = newWebp;
+        currentPdf = newPdf;
+        
+        // Update state with regenerated files
+        setPdfFile(newPdf);
+        setThumbnailFile(newWebp);
+        setPdfPreviewUrl(URL.createObjectURL(newPdf));
+        setThumbnailPreviewUrl(URL.createObjectURL(newWebp));
+        setPdfNeedsRegeneration(false);
+      }
+      
+      if (!currentThumbnail || !currentPdf) {
         setAlertState({
           isOpen: true,
-          title: "Please Re-upload SVG",
-          message: "You changed Title, Description, Category, Skill, or Tags. Please re-upload the SVG to regenerate the PDF with updated information.",
-          variant: "info"
+          title: "Missing Files",
+          message: "Please upload an SVG first.",
+          variant: "error"
         });
         setIsSubmitting(false);
         return;
@@ -621,8 +850,8 @@ export default function AdminAssetForm() {
       form.append("fun_facts", JSON.stringify(factsArray));
       form.append("suggested_activities", JSON.stringify(activitiesArray));
 
-      form.append("thumbnail", thumbnailFile);
-      form.append("pdf", pdfFile);
+      form.append("thumbnail", currentThumbnail);
+      form.append("pdf", currentPdf);
 
       // Use production API URL if in prod, else local
       // apiClient handles API_URL internally, but createAsset needs manualFormData
