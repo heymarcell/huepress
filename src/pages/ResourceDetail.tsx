@@ -272,6 +272,7 @@ export default function ResourceDetailPage() {
   const [relatedItems, setRelatedItems] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     const fetchAsset = async () => {
@@ -386,11 +387,12 @@ export default function ResourceDetailPage() {
             <div className="w-full lg:w-1/2">
                <div className="sticky top-32">
                  <div className="relative aspect-a4 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 group">
-                   {asset.image_url && !asset.image_url.includes("__draft__") ? (
+                   {asset.image_url && !asset.image_url.includes("__draft__") && !imageError ? (
                      <img 
                        src={asset.image_url} 
                        alt={asset.title}
                        className="w-full h-full object-contain p-4 group-hover:scale-[1.02] transition-transform duration-500"
+                       onError={() => setImageError(true)}
                      />
                    ) : (
                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">

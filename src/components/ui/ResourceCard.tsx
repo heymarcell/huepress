@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { ImageIcon } from "lucide-react";
+import { useState } from "react";
 
 export interface ResourceCardProps {
   id: string;
@@ -24,10 +25,14 @@ export function ResourceCard({
   isNew = false,
   isFree = false,
 }: ResourceCardProps) {
+  const [imageError, setImageError] = useState(false);
+  
   // Construct SEO-friendly URL if possible
   const link = assetId && slug 
     ? `/coloring-pages/${slug}-${assetId}`
     : `/vault/${id}`;
+
+  const showPlaceholder = !imageUrl || imageError;
 
   return (
     <article className="group relative">
@@ -37,11 +42,12 @@ export function ResourceCard({
           
           {/* Pure white paper - NO gradients, NO gray */}
           <div className="relative aspect-a4 bg-white overflow-hidden">
-            {imageUrl ? (
+            {!showPlaceholder ? (
               <img 
                 src={imageUrl} 
                 alt={title} 
-                className="object-contain w-full h-full p-3 transition-transform duration-300 ease-out group-hover:scale-105" 
+                className="object-contain w-full h-full p-3 transition-transform duration-300 ease-out group-hover:scale-105"
+                onError={() => setImageError(true)}
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
