@@ -283,108 +283,120 @@ app.post("/assets", async (c) => {
     }
 
     // 2. Handle File Uploads (Independent) using UUID for keys
+    // 2. Handle File Uploads (Optimistic Keys + Async Processing)
+    // Deterministic Keys based on UUID
+    const idPath = id; 
     let thumbnailKey: string | null = null;
     let pdfKey: string | null = null;
     let sourceKey: string | null = null;
     let ogKey: string | null = null;
-    
-    // Import Container helper - Moved to top level
 
-    // Process Thumbnail
-    // Process Thumbnail
-    let thumbnailBuffer: ArrayBuffer | null = null;
-    let thumbnailMime = 'image/webp';
+    // Detect what we have
+    const hasThumbnailUpload = thumbnailFile && thumbnailFile instanceof File;
+    const hasPdfUpload = pdfFile && pdfFile instanceof File;
+    const hasSourceUpload = sourceFile && sourceFile instanceof File;
 
-    if (thumbnailFile && thumbnailFile instanceof File) {
-      console.log(`Uploading provided thumbnail for ${assetId}...`);
-      thumbnailBuffer = await thumbnailFile.arrayBuffer();
-      thumbnailMime = thumbnailFile.type || "image/webp";
-    } else if (sourceFile && sourceFile instanceof File) {
-      console.log(`Auto-generating thumbnail from SVG for ${assetId}...`);
+    // Set keys optimistically if we have the file OR can generate it (Source available)
+    if (hasThumbnailUpload || hasSourceUpload) {
+      thumbnailKey = `thumbnails/${idPath}.webp`;
+      ogKey = `og-images/${idPath}.png`; // OG generated if thumbnail exists/generated
+    }
+    if (hasPdfUpload || hasSourceUpload) {
+      pdfKey = `pdfs/${idPath}.pdf`;
+    }
+    if (hasSourceUpload) {
+      sourceKey = `sources/${idPath}.svg`;
+    }
+
+    // A. Synchronous Uploads (Fast R2 PUTs)
+    if (hasThumbnailUpload) {
+       console.log(`Uploading provided thumbnail for ${assetId}...`);
+       await c.env.ASSETS_PUBLIC.put(thumbnailKey!, thumbnailFile as File);
+    }
+    if (hasPdfUpload) {
+       console.log(`Uploading provided PDF for ${assetId}...`);
+       await c.env.ASSETS_PRIVATE.put(pdfKey!, pdfFile as File);
+    }
+    if (hasSourceUpload) {
+       console.log(`Uploading Source SVG for ${assetId}...`);
+       await c.env.ASSETS_PRIVATE.put(sourceKey!, sourceFile as File);
+    }
+
+    // B. Background Processing (Slow Container Calls)
+    // We use c.executionCtx.waitUntil to ensure this runs after response is returned
+    c.executionCtx.waitUntil((async () => {
       try {
-        const svgContent = await sourceFile.text();
-        const { imageBase64 } = await generateThumbnailViaContainer(c.env, svgContent);
-        // Container returns WebP
-        thumbnailBuffer = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0)).buffer;
-        thumbnailMime = "image/webp";
-      } catch (thumbError) {
-        console.error(`Thumbnail generation failed for ${assetId}:`, thumbError);
+        console.log(`[Background] Starting processing for ${assetId} (UUID: ${idPath})...`);
+        
+        // 1. Get Source Content (if needed)
+        // Check R2 for source content to ensure consistency and avoid memory limits on request
+        let svgContent: string | null = null;
+        if (hasSourceUpload && sourceKey) {
+           const obj = await c.env.ASSETS_PRIVATE.get(sourceKey);
+           if (obj) svgContent = await obj.text();
+        }
+
+        let currentThumbnailBase64: string | null = null;
+        let currentThumbnailMime = "image/webp";
+
+        // 2. Generate Thumbnail (if missing and have source)
+        if (!hasThumbnailUpload && hasSourceUpload && svgContent && thumbnailKey) {
+           console.log(`[Background] Generating Thumbnail for ${assetId}...`);
+           const res = await generateThumbnailViaContainer(c.env, svgContent);
+           
+           const buf = Uint8Array.from(atob(res.imageBase64), x => x.charCodeAt(0));
+           await c.env.ASSETS_PUBLIC.put(thumbnailKey, buf, { 
+             httpMetadata: { contentType: res.mimeType } 
+           });
+           
+           currentThumbnailBase64 = res.imageBase64;
+           currentThumbnailMime = res.mimeType;
+        } else if (hasThumbnailUpload && thumbnailKey) {
+           // Read uploaded thumbnail for OG generation
+           const obj = await c.env.ASSETS_PUBLIC.get(thumbnailKey);
+           if (obj) {
+             const buf = await obj.arrayBuffer();
+             currentThumbnailBase64 = arrayBufferToBase64(buf);
+           }
+        }
+
+        // 3. Generate OG Image (needs thumbnail)
+        if (currentThumbnailBase64 && ogKey) {
+           console.log(`[Background] Generating OG for ${assetId}...`);
+           const { imageBase64 } = await generateOgImageViaContainer(c.env, title, currentThumbnailBase64, currentThumbnailMime);
+           const buf = Uint8Array.from(atob(imageBase64), x => x.charCodeAt(0));
+           await c.env.ASSETS_PUBLIC.put(ogKey, buf, { httpMetadata: { contentType: "image/png" } });
+        }
+
+        // 4. Generate PDF (if missing and have source)
+        if (!hasPdfUpload && hasSourceUpload && svgContent && pdfKey) {
+           console.log(`[Background] Generating PDF for ${assetId}...`);
+           const { pdfBase64 } = await generatePdfViaContainer(
+             c.env,
+             svgContent,
+             `${assetId}-${slug}`,
+             {
+               title: (title as string) || "",
+               assetId: idPath,
+               description: (description as string) || "",
+               qrCodeUrl: "https://huepress.co/review"
+             }
+           );
+           const buf = Uint8Array.from(atob(pdfBase64), x => x.charCodeAt(0));
+           await c.env.ASSETS_PRIVATE.put(pdfKey, buf, {
+             httpMetadata: {
+               contentType: "application/pdf",
+               contentDisposition: `attachment; filename="${assetId}-${slug}.pdf"`
+             }
+           });
+        }
+        
+        console.log(`[Background] Processing complete for ${assetId}`);
+
+      } catch (err) {
+        console.error(`[Background] Error processing ${assetId}:`, err);
       }
-    }
-
-    if (thumbnailBuffer) {
-      thumbnailKey = `thumbnails/${id}.webp`;
-      await c.env.ASSETS_PUBLIC.put(thumbnailKey, thumbnailBuffer, {
-         httpMetadata: { contentType: thumbnailMime }
-      });
-      
-      // Generate OG Image from thumbnail using Container
-      try {
-        console.log(`Generating OG image for ${assetId}...`);
-        const thumbnailBase64 = arrayBufferToBase64(thumbnailBuffer);
-        
-        // Call Container for OG generation
-        const { imageBase64 } = await generateOgImageViaContainer(c.env, title, thumbnailBase64, thumbnailMime);
-        
-        const ogPng = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
-        ogKey = `og-images/${id}.png`;
-        
-        await c.env.ASSETS_PUBLIC.put(ogKey, ogPng, {
-          httpMetadata: { contentType: "image/png" }
-        });
-        console.log(`OG image generated: ${ogKey}`);
-      } catch (ogError) {
-        console.error(`OG image generation failed for ${assetId}:`, ogError);
-      }
-    }
-
-    // Process PDF
-    if (pdfFile && pdfFile instanceof File) {
-       console.log(`Uploading PDF for ${assetId} (UUID: ${id})...`);
-       pdfKey = `pdfs/${id}.pdf`;
-       await c.env.ASSETS_PRIVATE.put(pdfKey, pdfFile);
-    }
-
-    // Process Source (SVG) - NEW
-    if (sourceFile && sourceFile instanceof File) {
-       console.log(`Uploading Source SVG for ${assetId} (UUID: ${id})...`);
-       sourceKey = `sources/${id}.svg`;
-       await c.env.ASSETS_PRIVATE.put(sourceKey, sourceFile);
-
-       // Auto-generate PDF from SVG if not provided manually
-       if (!pdfFile) {
-          try {
-            console.log(`Auto-generating PDF from SVG for ${assetId}...`);
-            const svgContent = await sourceFile.text();
-            
-            // Generate PDF via Container
-            // We give it a friendly filename for metadata, but store it by UUID
-            const { pdfBase64 } = await generatePdfViaContainer(
-                c.env, 
-                svgContent, 
-                `${assetId}-${slug}`,
-                {
-                   title: (title as string) || "",
-                   assetId: id,
-                   description: (description as string) || "",
-                   qrCodeUrl: "https://huepress.co/review"
-                }
-            );
-            const pdfBuffer = Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0));
-            
-            pdfKey = `pdfs/${id}.pdf`;
-            await c.env.ASSETS_PRIVATE.put(pdfKey, pdfBuffer, {
-              httpMetadata: {
-                contentType: "application/pdf",
-                contentDisposition: `attachment; filename="${assetId}-${slug}.pdf"`
-              }
-            });
-            console.log(`PDF auto-generated: ${pdfKey}`);
-          } catch (pdfGenError) {
-             console.error(`PDF auto-generation failed for ${assetId}:`, pdfGenError);
-          }
-       }
-    }
+    })());
     
     // 4. Insert or Update into D1
     const tagsArray = tags ? tags.split(",").map(t => t.trim()).filter(Boolean) : [];
