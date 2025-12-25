@@ -309,6 +309,8 @@ app.post("/assets", async (c) => {
     }
 
     // A. Synchronous Uploads (Fast R2 PUTs)
+    let sourceSvgContent: string | null = null;
+
     if (hasThumbnailUpload) {
        console.log(`Uploading provided thumbnail for ${assetId}...`);
        await c.env.ASSETS_PUBLIC.put(thumbnailKey!, thumbnailFile as File);
@@ -318,8 +320,10 @@ app.post("/assets", async (c) => {
        await c.env.ASSETS_PRIVATE.put(pdfKey!, pdfFile as File);
     }
     if (hasSourceUpload) {
-       console.log(`Uploading Source SVG for ${assetId}...`);
-       await c.env.ASSETS_PRIVATE.put(sourceKey!, sourceFile as File);
+       console.log(`[Sync] Reading & Uploading Source SVG for ${assetId}...`);
+       // Read content into memory to ensure availability for background task
+       sourceSvgContent = await (sourceFile as File).text();
+       await c.env.ASSETS_PRIVATE.put(sourceKey!, sourceSvgContent);
     }
 
     // B. Background Processing (Slow Container Calls)
@@ -328,12 +332,14 @@ app.post("/assets", async (c) => {
       try {
         console.log(`[Background] Starting processing for ${assetId} (UUID: ${idPath})...`);
         
-        // 1. Get Source Content (if needed)
-        // Check R2 for source content to ensure consistency and avoid memory limits on request
-        let svgContent: string | null = null;
-        if (hasSourceUpload && sourceKey) {
-           const obj = await c.env.ASSETS_PRIVATE.get(sourceKey);
-           if (obj) svgContent = await obj.text();
+        // 1. Get Source Content
+        // Use the content we already read synchronously
+        const svgContent = sourceSvgContent;
+        
+        if (hasSourceUpload && !svgContent) {
+           console.error(`[Background] Error: Has source upload but content is missing!`);
+        } else if (svgContent) {
+           console.log(`[Background] Source content available (${svgContent.length} chars).`);
         }
 
         let currentThumbnailBase64: string | null = null;
