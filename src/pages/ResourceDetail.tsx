@@ -379,19 +379,19 @@ export default function ResourceDetailPage() {
       )}
 
       {/* Hero Section */}
-      <div className="pt-24 lg:pt-32 pb-12 lg:pb-20">
+      <div className="pt-24 lg:pt-32 pb-8">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 items-start max-w-6xl mx-auto">
+          <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 items-start max-w-7xl mx-auto">
             
-            {/* Left Column: Preview */}
-            <div className="w-full lg:w-1/2">
+            {/* Left Column: Product Image */}
+            <div className="w-full lg:w-3/5">
                <div className="sticky top-32">
                  <div className="relative aspect-a4 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 group">
                    {asset.image_url && !asset.image_url.includes("__draft__") && !imageError ? (
                      <img 
                        src={asset.image_url} 
                        alt={asset.title}
-                       className="w-full h-full object-contain p-4 group-hover:scale-[1.02] transition-transform duration-500"
+                       className="w-full h-full object-contain p-8 group-hover:scale-[1.02] transition-transform duration-500"
                        onError={() => setImageError(true)}
                      />
                    ) : (
@@ -404,27 +404,15 @@ export default function ResourceDetailPage() {
                    {/* Capture Overlay */}
                    <FreeSampleCapture source={`ResourceDetail:${assetId}`} />
                  </div>
-
-                 {/* Trust Badges */}
-                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-                   {trustBadges.map((badge, idx) => (
-                     <div key={idx} className="flex flex-col items-center gap-2 text-center">
-                       <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-primary">
-                         <badge.icon className="w-5 h-5" />
-                       </div>
-                       <span className="text-xs font-medium text-gray-500">{badge.label}</span>
-                     </div>
-                   ))}
-                 </div>
                </div>
             </div>
 
-            {/* Right Column: Details */}
-            <div className="w-full lg:w-1/2">
+            {/* Right Column: Key Details & CTA */}
+            <div className="w-full lg:w-2/5">
               <div className="flex flex-wrap items-center gap-3 mb-6">
-                 <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider rounded-full">
+                 <Link to={`/vault?category=${asset.category}`} className="px-3 py-1 bg-primary/5 text-primary text-xs font-bold uppercase tracking-wider rounded-full hover:bg-primary/10 transition-colors">
                    {asset.category}
-                 </span>
+                 </Link>
                  <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold uppercase tracking-wider rounded-full">
                    {asset.skill} Level
                  </span>
@@ -434,19 +422,49 @@ export default function ResourceDetailPage() {
                 {asset.title}
               </h1>
 
+              <div className="flex items-center gap-2 mb-6 text-sm">
+                <div className="flex text-yellow-400">
+                  <Star className="w-4 h-4 fill-current" />
+                  <Star className="w-4 h-4 fill-current" />
+                  <Star className="w-4 h-4 fill-current" />
+                  <Star className="w-4 h-4 fill-current" />
+                  <Star className="w-4 h-4 fill-current" />
+                </div>
+                <span className="text-gray-500">(5.0)</span>
+              </div>
+
               <p className="text-lg text-gray-600 leading-relaxed mb-8">
                 {asset.description}
               </p>
 
               {/* Download/Unlock Section */}
-              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
+              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8 max-w-md">
                 <DownloadSection assetId={assetId} title={asset.title} />
               </div>
 
-              {/* Reviews Section */}
-              <ReviewsSection assetId={assetId} />
+              {/* Value Props / Trust Badges (Moved to Right Col) */}
+              <div className="grid grid-cols-2 gap-y-6 gap-x-4 mb-8">
+                {trustBadges.map((badge, idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center text-primary flex-shrink-0">
+                      <badge.icon className="w-4 h-4" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-600">{badge.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-              {/* About This Design - Rich Content Module */}
+      {/* Deep Dive Content Section */}
+      <div className="py-12 lg:py-16 bg-white border-t border-gray-100">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto space-y-16">
+            
+            {/* About This Design */}
+            <div className="scroll-mt-24" id="details">
               <AboutDesign
                 extendedDescription={asset.extended_description}
                 funFacts={asset.fun_facts}
@@ -456,31 +474,52 @@ export default function ResourceDetailPage() {
                 category={asset.category}
                 skill={asset.skill}
               />
-
-              {/* Related */}
-              <div className="mt-8">
-                <h3 className="font-serif text-h3 text-ink mb-4">You might also like</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  {relatedItems.map((item) => (
-                    <Link key={item.id} to={item.asset_id && item.slug ? `/coloring-pages/${item.slug}-${item.asset_id}` : `/vault/${item.id}`} className="group">
-                      <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                        <div className="aspect-a4 bg-white p-3">
-                          {item.image_url ? (
-                            <img src={item.image_url} alt={item.title} className="object-contain w-full h-full" />
-                          ) : (
-                            <FileText className="w-8 h-8 text-gray-200 mx-auto" />
-                          )}
-                        </div>
-                        <div className="px-5 pb-5">
-                          <h4 className="text-xs font-medium text-ink group-hover:text-primary transition-colors line-clamp-1">{item.title}</h4>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
             </div>
+
+            {/* Reviews */}
+            <div className="scroll-mt-24" id="reviews">
+              <ReviewsSection assetId={assetId} />
+            </div>
+
           </div>
+        </div>
+      </div>
+
+      {/* Related Items Section */}
+      <div className="py-16 bg-gray-50 border-t border-gray-200">
+        <div className="container mx-auto px-6">
+           <div className="max-w-6xl mx-auto">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="font-serif text-3xl text-ink">You might also like</h3>
+                <Link to="/vault" className="text-primary font-medium hover:text-primary-dark transition-colors">
+                  View all designs →
+                </Link>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {relatedItems.map((item) => (
+                  <Link key={item.id} to={item.asset_id && item.slug ? `/coloring-pages/${item.slug}-${item.asset_id}` : `/vault/${item.id}`} className="group">
+                    <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all transform hover:-translate-y-1 overflow-hidden duration-300">
+                      <div className="aspect-[3/4] bg-white p-4 relative">
+                        {item.image_url ? (
+                          <img src={item.image_url} alt={item.title} className="object-contain w-full h-full group-hover:scale-105 transition-transform duration-500" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300">
+                            <FileText className="w-8 h-8" />
+                          </div>
+                        )}
+                        {/* Hover Overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+                      </div>
+                      <div className="px-4 py-3 border-t border-gray-50">
+                        <h4 className="text-sm font-semibold text-gray-900 group-hover:text-primary transition-colors line-clamp-1">{item.title}</h4>
+                        <p className="text-xs text-gray-500 mt-1">{item.category}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+           </div>
         </div>
       </div>
     </div>
