@@ -382,10 +382,10 @@ export default function ResourceDetailPage() {
       {/* Hero Section */}
       <div className="pt-24 lg:pt-32 pb-8">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 items-start max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 max-w-7xl mx-auto">
             
             {/* Left Column: Product Image */}
-            <div className="w-full lg:w-3/5">
+            <div className="w-full lg:w-1/2 xl:w-3/5">
                <div className="sticky top-32">
                  <div className="relative aspect-a4 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 group">
                    {asset.image_url && !asset.image_url.includes("__draft__") && !imageError ? (
@@ -409,8 +409,8 @@ export default function ResourceDetailPage() {
             </div>
 
             {/* Right Column: Key Details & CTA */}
-            <div className="w-full lg:w-2/5">
-              <div className="flex flex-wrap items-center gap-3 mb-6">
+            <div className="w-full lg:w-1/2 xl:w-2/5 lg:py-8">
+              <div className="flex flex-wrap items-center gap-3 mb-4">
                  <Link to={`/vault?category=${asset.category}`} className="px-3 py-1 bg-primary/5 text-primary text-xs font-bold uppercase tracking-wider rounded-full hover:bg-primary/10 transition-colors">
                    {asset.category}
                  </Link>
@@ -419,11 +419,11 @@ export default function ResourceDetailPage() {
                  </span>
               </div>
 
-              <h1 className="font-serif text-4xl lg:text-5xl text-ink mb-6 leading-tight">
+              <h1 className="font-serif text-3xl lg:text-4xl text-ink mb-4 leading-tight">
                 {asset.title}
               </h1>
 
-              <div className="flex items-center gap-2 mb-6 text-sm">
+              <div className="flex items-center gap-2 mb-4 text-sm">
                 <div className="flex text-yellow-400">
                   <Star className="w-4 h-4 fill-current" />
                   <Star className="w-4 h-4 fill-current" />
@@ -434,26 +434,43 @@ export default function ResourceDetailPage() {
                 <span className="text-gray-500">(5.0)</span>
               </div>
 
-              <p className="text-lg text-gray-600 leading-relaxed mb-8">
+              <p className="text-gray-600 leading-relaxed mb-6">
                 {asset.description}
               </p>
 
               {/* Download/Unlock Section */}
-              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8 max-w-md">
+              <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 mb-6">
                 <DownloadSection assetId={assetId} title={asset.title} />
               </div>
 
-              {/* Value Props / Trust Badges (Moved to Right Col) */}
-              <div className="grid grid-cols-2 gap-y-6 gap-x-4 mb-8">
+              {/* Value Props / Trust Badges */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
                 {trustBadges.map((badge, idx) => (
-                  <div key={idx} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center text-primary flex-shrink-0">
-                      <badge.icon className="w-4 h-4" />
+                  <div key={idx} className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-primary/5 flex items-center justify-center text-primary flex-shrink-0">
+                      <badge.icon className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-sm font-medium text-gray-600">{badge.label}</span>
+                    <span className="text-sm text-gray-600">{badge.label}</span>
                   </div>
                 ))}
               </div>
+
+              {/* Tags */}
+              {asset.tags && asset.tags.length > 0 && (
+                <div className="pt-4 border-t border-gray-100">
+                  <div className="flex flex-wrap gap-2">
+                    {asset.tags.map((tag: string, idx: number) => (
+                      <Link 
+                        key={idx}
+                        to={`/vault?tag=${encodeURIComponent(tag)}`}
+                        className="px-3 py-1.5 bg-gray-50 text-gray-500 text-xs rounded-full hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                      >
+                        #{tag}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
