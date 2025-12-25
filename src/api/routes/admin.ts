@@ -426,8 +426,8 @@ app.delete("/assets/:id", async (c) => {
   try {
     // Get asset to find R2 keys
     const asset = await c.env.DB.prepare(
-      "SELECT r2_key_private, r2_key_public FROM assets WHERE id = ?"
-    ).bind(id).first<{ r2_key_private: string; r2_key_public: string }>();
+      "SELECT r2_key_private, r2_key_public, r2_key_source FROM assets WHERE id = ?"
+    ).bind(id).first<{ r2_key_private: string; r2_key_public: string; r2_key_source: string }>();
 
     if (!asset) {
       return c.json({ error: "Asset not found" }, 404);
@@ -440,18 +440,12 @@ app.delete("/assets/:id", async (c) => {
     if (asset.r2_key_public && !asset.r2_key_public.startsWith("__draft__")) {
       await c.env.ASSETS_PUBLIC.delete(asset.r2_key_public);
     }
-    // Delete source if exists
-    // We need to cast query result to proper type or just try to access it if we selected it.
-    // The previous SELECT only asked for private/public.
-    // Ideally we should select all or specifically source.
-    // But since this block is just delete, I'll trust the main bulk delete logic or update this SELECT to include source?
-    // Let's update the SELECT above first in a separate edit or just be lazy and ignore source delete for this specific single delete?
-    // NO, let's do it right. I'll update the SELECT in this replacement to include r2_key_source.
-    
-    // ... WAIT, I can't easily change previous lines in this contiguous block if they are outside my scope.
-    // The user instruction is "Add GET source".
-    // I will append the NEW endpoint before the delete endpoint, or after.
-    // Let's add it BEFORE delete.
+    if (asset.r2_key_source) {
+      await c.env.ASSETS_PRIVATE.delete(asset.r2_key_source);
+    }
+
+    // Delete from database
+    await c.env.DB.prepare("DELETE FROM assets WHERE id = ?").bind(id).run();
     
     return c.json({ success: true });
   } catch (error) {
@@ -496,8 +490,6 @@ app.get("/assets/:id/source", async (c) => {
   }
 });
 
-// ADMIN: Delete single asset
-
 // ADMIN: Bulk delete assets
 app.post("/assets/bulk-delete", async (c) => {
   const adminEmail = c.req.header("X-Admin-Email");
@@ -516,8 +508,8 @@ app.post("/assets/bulk-delete", async (c) => {
 
     for (const id of ids) {
       const asset = await c.env.DB.prepare(
-        "SELECT r2_key_private, r2_key_public FROM assets WHERE id = ?"
-      ).bind(id).first<{ r2_key_private: string; r2_key_public: string }>();
+        "SELECT r2_key_private, r2_key_public, r2_key_source FROM assets WHERE id = ?"
+      ).bind(id).first<{ r2_key_private: string; r2_key_public: string; r2_key_source: string }>();
 
       if (asset) {
         // Delete from R2
@@ -526,6 +518,9 @@ app.post("/assets/bulk-delete", async (c) => {
         }
         if (asset.r2_key_public && !asset.r2_key_public.startsWith("__draft__")) {
           await c.env.ASSETS_PUBLIC.delete(asset.r2_key_public);
+        }
+        if (asset.r2_key_source) {
+          await c.env.ASSETS_PRIVATE.delete(asset.r2_key_source);
         }
 
         // Delete from database
