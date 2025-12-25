@@ -10,19 +10,26 @@ function isAdmin(email: string | undefined, adminEmails: string): boolean {
   return allowedEmails.includes(email.toLowerCase());
 }
 
-// ADMIN: Reserve Next Asset ID
-app.post("/reserve-id", async (c) => {
+// ADMIN: Create Draft Asset (called on SVG upload)
+// Saves all current form data and returns the generated assetId & slug
+app.post("/create-draft", async (c) => {
   const adminEmail = c.req.header("X-Admin-Email");
   if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) return c.json({ error: "Unauthorized" }, 401);
 
-  const { category, title } = await c.req.parseBody() as { category: string; title: string };
+  const body = await c.req.parseBody() as Record<string, string>;
+  const { title, description, category, skill, tags } = body;
   
+  if (!title || !category) {
+    return c.json({ error: "Title and Category are required" }, 400);
+  }
+
   const CATEGORY_CODES: Record<string, string> = {
     "Animals": "ANM", "Nature": "NAT", "Vehicles": "VEH", "Fantasy": "FAN",
     "Holidays": "HOL", "Educational": "EDU", "Mandalas": "MAN",
     "Characters": "CHR", "Food": "FOD"
   };
 
+  // Generate Asset ID
   const code = CATEGORY_CODES[category] || "GEN";
   const prefix = `HP-${code}-`;
 
@@ -39,21 +46,39 @@ app.post("/reserve-id", async (c) => {
 
   const assetId = `${prefix}${sequence.toString().padStart(4, '0')}`;
   
-  // Create Reservation - use 'draft' status and placeholder R2 keys
-  // The actual keys will be updated when the asset is finalized
+  // Generate Slug
+  const slugify = (text: string) => text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-');
+  const slug = slugify(title);
+  
+  // Create Draft with placeholder R2 keys (will be updated on final save)
   const id = crypto.randomUUID();
-  const placeholderKey = `__reserved__/${assetId}`;
+  const placeholderKey = `__draft__/${assetId}-${slug}`;
+  
+  // Parse tags
+  const tagsArray = tags ? tags.split(",").map(t => t.trim()).filter(Boolean) : [];
+  const tagsJson = JSON.stringify(tagsArray);
   
   try {
     await c.env.DB.prepare(`
-      INSERT INTO assets (id, asset_id, title, category, status, r2_key_private, r2_key_public, created_at)
-      VALUES (?, ?, ?, ?, 'draft', ?, ?, datetime('now'))
-    `).bind(id, assetId, title, category, placeholderKey, placeholderKey).run();
+      INSERT INTO assets (
+        id, asset_id, slug, title, description, category, skill,
+        status, r2_key_private, r2_key_public, tags, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, datetime('now'))
+    `).bind(
+      id, assetId, slug, title, description || '', category, skill || '',
+      placeholderKey, placeholderKey, tagsJson
+    ).run();
     
-    return c.json({ assetId });
+    return c.json({ assetId, slug, id });
   } catch (err) {
-    console.error("Reservation failed", err);
-    return c.json({ error: "Failed to reserve ID" }, 500);
+    console.error("Draft creation failed", err);
+    return c.json({ error: "Failed to create draft" }, 500);
   }
 });
 

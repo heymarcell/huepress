@@ -177,17 +177,24 @@ export default function AdminAssetForm() {
 
     setIsProcessingSvg(true);
     try {
-      // 1. Reserve Asset ID
-      const response = await apiClient.admin.reserveAssetId(formData.category, formData.title, user?.emailAddresses[0].emailAddress || "");
-      const assetId = response.assetId;
+      // 1. Create Draft Asset (saves all form data, returns ID & slug)
+      const { assetId, slug } = await apiClient.admin.createDraft(
+        { 
+          title: formData.title, 
+          description: formData.description, 
+          category: formData.category, 
+          skill: formData.skill, 
+          tags: formData.tags 
+        }, 
+        user?.emailAddresses[0].emailAddress || ""
+      );
       
-      if (!assetId) {
-        throw new Error("Failed to reserve Asset ID. Please try again.");
+      if (!assetId || !slug) {
+        throw new Error("Failed to create draft. Please try again.");
       }
       
-      // 2. Generate Clean Filename (with Real ID)
-      const cleanName = formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-      const baseFilename = `huepress-${assetId}-${cleanName}`; 
+      // 2. Generate Filename (with Real ID and Slug)
+      const baseFilename = `huepress-${assetId}-${slug}`; 
 
       // 3. WebP Generation (Canvas) - Forced 1:1 Square - Forced 1:1 Square
       const webpBlob = await new Promise<Blob>((resolve, reject) => {
@@ -430,24 +437,52 @@ export default function AdminAssetForm() {
       const pdfBlob = doc.output("blob");
       const pdfFileObj = new File([pdfBlob], `${baseFilename}.pdf`, { type: "application/pdf" });
       
-      // Store the assetId in state so handleSubmit can use it if needed? 
-      // Actually we just put it in the blob. 
-      // But we should also pass it to backend so backend knows which ID we used? 
-      // We can add it to formData state `asset_id`? Or just trust backend to re-calc same ID?
-      // User requested "the asset id will be changed after upload? because it have to reflect the real asset id in the system".
-      // If we pass `asset_id` in create payload, backend uses it.
-      setFormData(prev => ({ ...prev, asset_id: assetId })); // Need to add to interface first if typescript complains, or just append to FormData manually
-
+      // Store assetId in form state
+      setFormData(prev => ({ ...prev, asset_id: assetId }));
       setPdfFile(pdfFileObj);
+      setThumbnailFile(webpFile);
+      setPdfPreviewUrl(URL.createObjectURL(pdfFileObj));
+      setThumbnailPreviewUrl(URL.createObjectURL(webpFile));
+
+      // 5. IMMEDIATE UPLOAD - Upload files to backend and finalize draft
+      setAlertState({
+        isOpen: true,
+        title: "Uploading...",
+        message: "Saving files to cloud storage...",
+        variant: "info"
+      });
+
+      const uploadForm = new FormData();
+      uploadForm.append("asset_id", assetId);
+      uploadForm.append("title", formData.title);
+      uploadForm.append("description", formData.description);
+      uploadForm.append("category", formData.category);
+      uploadForm.append("skill", formData.skill);
+      uploadForm.append("tags", formData.tags);
+      uploadForm.append("status", "draft"); // Keep as draft until explicitly published
+      uploadForm.append("extended_description", formData.extendedDescription);
+      uploadForm.append("coloring_tips", formData.coloringTips);
+      uploadForm.append("therapeutic_benefits", formData.therapeuticBenefits);
+      uploadForm.append("meta_keywords", formData.metaKeywords);
       
-      // Create Preview URL
-      const previewUrl = URL.createObjectURL(pdfFileObj);
-      setPdfPreviewUrl(previewUrl);
+      const factsArray = formData.funFacts.split("\\n").map((s: string) => s.trim()).filter(Boolean);
+      const activitiesArray = formData.suggestedActivities.split("\\n").map((s: string) => s.trim()).filter(Boolean);
+      uploadForm.append("fun_facts", JSON.stringify(factsArray));
+      uploadForm.append("suggested_activities", JSON.stringify(activitiesArray));
+      
+      uploadForm.append("thumbnail", webpFile);
+      uploadForm.append("pdf", pdfFileObj);
+
+      const uploadResult = await apiClient.admin.createAsset(uploadForm, user?.emailAddresses[0].emailAddress || "");
+      
+      if (uploadResult.error) {
+        throw new Error(uploadResult.error);
+      }
 
       setAlertState({
         isOpen: true,
-        title: "Magic Complete! ✨",
-        message: "Successfully generated safe-zone PDF and WebP.",
+        title: "Asset Created! ✨",
+        message: `Successfully created asset ${assetId}. You can now publish it or continue editing.`,
         variant: "success"
       });
 

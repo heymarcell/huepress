@@ -116,18 +116,26 @@ export const apiClient = {
         headers: { "X-Admin-Email": adminEmail }
       });
     },
-    reserveAssetId: async (category: string, title: string, adminEmail: string) => {
+    createDraft: async (formData: { title: string; description: string; category: string; skill: string; tags: string }, adminEmail: string) => {
       const form = new FormData();
-      form.append("category", category);
-      form.append("title", title);
+      form.append("title", formData.title);
+      form.append("description", formData.description);
+      form.append("category", formData.category);
+      form.append("skill", formData.skill);
+      form.append("tags", formData.tags);
       
       const cleanBase = API_URL.replace(/\/$/, "");
-      const response = await fetch(`${cleanBase}/api/admin/reserve-id`, {
+      const response = await fetch(`${cleanBase}/api/admin/create-draft`, {
         method: "POST",
         headers: { "X-Admin-Email": adminEmail },
         body: form
       });
-      return response.json() as Promise<{ assetId: string }>;
+      
+      const data = await response.json() as { assetId?: string; slug?: string; id?: string; error?: string };
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Failed to create draft");
+      }
+      return data as { assetId: string; slug: string; id: string };
     }
   },
   billing: {
