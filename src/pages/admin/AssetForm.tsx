@@ -838,7 +838,7 @@ export default function AdminAssetForm() {
                   <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white shadow-lg transition-transform ${isDragging ? "scale-110" : "group-hover:scale-110"}`}>
                     <Upload className="w-5 h-5" />
                   </div>
-                  <span className="text-sm font-medium text-ink">
+                  <span className="text-sm font-medium text-ink text-center">
                     {isProcessingSvg ? "Generating files..." : (isDragging ? "Drop SVG here!" : "Upload or Drop Master SVG")}
                   </span>
                 </label>
