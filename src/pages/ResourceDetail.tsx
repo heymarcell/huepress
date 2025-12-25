@@ -403,9 +403,6 @@ export default function ResourceDetailPage() {
                        <span className="text-sm text-gray-400 mt-3">Preview not available</span>
                      </div>
                    )}
-                   
-                   {/* Capture Overlay */}
-                   <FreeSampleCapture source={`ResourceDetail:${assetId}`} />
                  </div>
                </div>
             </div>
