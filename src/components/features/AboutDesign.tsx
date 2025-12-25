@@ -83,13 +83,12 @@ export function AboutDesign({
     iconColor: string;
   }>;
 
-  // Dynamic grid: 1 col on mobile, 2 cols if 2+ sections, max 4 cols
-  const gridCols = sections.length === 1 ? 'md:grid-cols-1' : 
-                   sections.length === 2 ? 'md:grid-cols-2' :
-                   sections.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-4';
+  // Dynamic grid: 1 col on mobile, 2 cols on desktop (always wide cards)
+  // this prevents the "tiny scattered boxes" look
+  const gridCols = 'md:grid-cols-2';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center gap-4">
         <h3 className="font-serif text-2xl text-ink">About This Design</h3>
@@ -98,35 +97,35 @@ export function AboutDesign({
 
       {/* Extended Description - Full Width */}
       {extendedDescription && (
-        <p className="text-gray-600 leading-relaxed max-w-3xl">
+        <p className="text-lg text-gray-700 leading-relaxed max-w-4xl">
           {extendedDescription}
         </p>
       )}
 
-      {/* Dynamic Grid of Info Cards */}
+      {/* Dynamic Grid of Info Cards - Wide Layout */}
       {sections.length > 0 && (
-        <div className={`grid grid-cols-1 ${gridCols} gap-4`}>
+        <div className={`grid grid-cols-1 ${gridCols} gap-6`}>
           {sections.map((section) => (
             <div 
               key={section.key}
-              className={`${section.bg} ${section.border} border rounded-xl p-5`}
+              className={`${section.bg} ${section.border} border rounded-2xl p-6 hover:shadow-sm transition-shadow`}
             >
-              <div className="flex items-center gap-2 mb-3">
-                <div className={`w-7 h-7 rounded-full ${section.iconBg} ${section.iconColor} flex items-center justify-center`}>
-                  <section.icon className="w-3.5 h-3.5" />
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`w-8 h-8 rounded-full ${section.iconBg} ${section.iconColor} flex items-center justify-center`}>
+                  <section.icon className="w-4 h-4" />
                 </div>
-                <h4 className="font-bold text-sm text-ink">{section.title}</h4>
+                <h4 className="font-serif text-lg font-medium text-ink">{section.title}</h4>
               </div>
               
               {section.type === 'text' && (
-                <p className="text-sm text-gray-700 leading-relaxed">{section.content as string}</p>
+                <p className="text-gray-700 leading-relaxed">{section.content as string}</p>
               )}
               
               {section.type === 'list' && (
-                <ul className="space-y-1.5">
+                <ul className="space-y-2">
                   {(section.content as string[]).map((item, i) => (
-                    <li key={i} className="text-sm text-gray-700 flex gap-2">
-                      <span className="text-amber-500">•</span>
+                    <li key={i} className="text-gray-700 flex gap-2">
+                      <span className="text-amber-500 mt-1.5">•</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -134,10 +133,10 @@ export function AboutDesign({
               )}
               
               {section.type === 'numbered' && (
-                <ul className="space-y-1.5">
+                <ul className="space-y-2">
                   {(section.content as string[]).map((item, i) => (
-                    <li key={i} className="text-sm text-gray-700 flex gap-2">
-                      <span className="font-bold text-blue-400">{i + 1}.</span>
+                    <li key={i} className="text-gray-700 flex gap-2">
+                      <span className="font-bold text-blue-400 mt-0.5">{i + 1}.</span>
                       <span>{item}</span>
                     </li>
                   ))}

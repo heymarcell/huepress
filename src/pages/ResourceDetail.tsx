@@ -496,9 +496,9 @@ export default function ResourceDetailPage() {
       )}
 
       {/* Reviews - Compact inline */}
-      <div className="py-8 bg-gray-50 border-t border-gray-100">
+      <div className="py-8 bg-white border-t border-gray-100">
         <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <ReviewsSection assetId={assetId} />
           </div>
         </div>
