@@ -533,6 +533,9 @@ app.post("/assets/bulk-delete", async (c) => {
   } catch (error) {
     console.error("Bulk delete error:", error);
     return c.json({ error: "Failed to delete assets" }, 500);
+  }
+});
+
 
 // ADMIN: Get Design Requests
 app.get("/requests", async (c) => {
