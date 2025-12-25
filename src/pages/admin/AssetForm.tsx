@@ -799,6 +799,7 @@ export default function AdminAssetForm() {
       
       uploadForm.append("thumbnail", webpFile);
       uploadForm.append("pdf", pdfFileObj);
+      uploadForm.append("has_new_files", "true"); // Tell backend to upload to R2
 
       const uploadResult = await apiClient.admin.createAsset(uploadForm, user?.emailAddresses[0].emailAddress || "");
       
