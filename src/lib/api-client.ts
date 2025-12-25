@@ -115,6 +115,19 @@ export const apiClient = {
       }>("/api/admin/stats", {
         headers: { "X-Admin-Email": adminEmail }
       });
+    },
+    reserveAssetId: async (category: string, title: string, adminEmail: string) => {
+      const form = new FormData();
+      form.append("category", category);
+      form.append("title", title);
+      
+      const cleanBase = API_URL.replace(/\/$/, "");
+      const response = await fetch(`${cleanBase}/api/admin/reserve-id`, {
+        method: "POST",
+        headers: { "X-Admin-Email": adminEmail },
+        body: form
+      });
+      return response.json() as Promise<{ assetId: string }>;
     }
   },
   billing: {

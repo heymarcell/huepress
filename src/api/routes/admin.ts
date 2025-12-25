@@ -10,6 +10,50 @@ function isAdmin(email: string | undefined, adminEmails: string): boolean {
   return allowedEmails.includes(email.toLowerCase());
 }
 
+// ADMIN: Reserve Next Asset ID
+app.post("/reserve-id", async (c) => {
+  const adminEmail = c.req.header("X-Admin-Email");
+  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) return c.json({ error: "Unauthorized" }, 401);
+
+  const { category, title } = await c.req.parseBody() as { category: string; title: string };
+  
+  const CATEGORY_CODES: Record<string, string> = {
+    "Animals": "ANM", "Nature": "NAT", "Vehicles": "VEH", "Fantasy": "FAN",
+    "Holidays": "HOL", "Educational": "EDU", "Mandalas": "MAN",
+    "Characters": "CHR", "Food": "FOD"
+  };
+
+  const code = CATEGORY_CODES[category] || "GEN";
+  const prefix = `HP-${code}-`;
+
+  const lastAsset = await c.env.DB.prepare(
+    "SELECT asset_id FROM assets WHERE asset_id LIKE ? ORDER BY asset_id DESC LIMIT 1"
+  ).bind(`${prefix}%`).first<{ asset_id: string }>();
+
+  let sequence = 1;
+  if (lastAsset?.asset_id) {
+    const parts = lastAsset.asset_id.split("-");
+    const lastSeq = parseInt(parts[parts.length - 1]);
+    if (!isNaN(lastSeq)) sequence = lastSeq + 1;
+  }
+
+  const assetId = `${prefix}${sequence.toString().padStart(4, '0')}`;
+  
+  // Create Reservation
+  const id = crypto.randomUUID();
+  try {
+    await c.env.DB.prepare(`
+      INSERT INTO assets (id, asset_id, title, category, status, created_at)
+      VALUES (?, ?, ?, ?, 'reserved', datetime('now'))
+    `).bind(id, assetId, title, category).run();
+    
+    return c.json({ assetId });
+  } catch (err) {
+    console.error("Reservation failed", err);
+    return c.json({ error: "Failed to reserve ID" }, 500);
+  }
+});
+
 // ADMIN: Get all assets (including drafts)
 app.get("/assets", async (c) => {
   const adminEmail = c.req.header("X-Admin-Email");
@@ -97,19 +141,26 @@ app.post("/assets", async (c) => {
     const code = CATEGORY_CODES[category] || "GEN";
     const prefix = `HP-${code}-`;
     
-    // Find last sequence for this category
-    const lastAsset = await c.env.DB.prepare(
-      "SELECT asset_id FROM assets WHERE asset_id LIKE ? ORDER BY asset_id DESC LIMIT 1"
-    ).bind(`${prefix}%`).first<{ asset_id: string }>();
+    const providedAssetId = body["asset_id"] as string; // Allow frontend to enforce the ID it put in the PDF
 
-    let sequence = 1;
-    if (lastAsset?.asset_id) {
-      const parts = lastAsset.asset_id.split("-");
-      const lastSeq = parseInt(parts[parts.length - 1]);
-      if (!isNaN(lastSeq)) sequence = lastSeq + 1;
+    let assetId = providedAssetId; 
+    
+    // If not provided, calculate it (fallback)
+    if (!assetId) {
+      // Find last sequence for this category
+      const lastAsset = await c.env.DB.prepare(
+        "SELECT asset_id FROM assets WHERE asset_id LIKE ? ORDER BY asset_id DESC LIMIT 1"
+      ).bind(`${prefix}%`).first<{ asset_id: string }>();
+
+      let sequence = 1;
+      if (lastAsset?.asset_id) {
+        const parts = lastAsset.asset_id.split("-");
+        const lastSeq = parseInt(parts[parts.length - 1]);
+        if (!isNaN(lastSeq)) sequence = lastSeq + 1;
+      }
+      assetId = `${prefix}${sequence.toString().padStart(4, '0')}`;
     }
 
-    const assetId = `${prefix}${sequence.toString().padStart(4, '0')}`;
     const slug = slugify(title);
 
     // 2. Upload Thumbnail to Public R2
@@ -121,27 +172,66 @@ app.post("/assets", async (c) => {
     const pdfKey = `pdfs/huepress-${assetId}-${slug}.pdf`;
     await c.env.ASSETS_PRIVATE.put(pdfKey, pdfFile);
 
-    // 4. Insert into D1
-    const id = crypto.randomUUID();
-    // Parse tags string into JSON array
+    // 4. Insert or Update into D1
     const tagsArray = tags.split(",").map(t => t.trim()).filter(Boolean);
+    const tagsJson = JSON.stringify(tagsArray);
+
+    let id: string = crypto.randomUUID();
     
-    await c.env.DB.prepare(`
-      INSERT INTO assets (
-        id, asset_id, slug, title, description, category, skill, 
-        image_url, r2_key_private, status, tags, 
-        extended_description, fun_facts, suggested_activities, 
-        coloring_tips, therapeutic_benefits, meta_keywords,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-    `)
-      .bind(
+    // Check if updating a reserved asset
+    if (providedAssetId) {
+      const existing = await c.env.DB.prepare("SELECT id FROM assets WHERE asset_id = ?").bind(providedAssetId).first<{ id: string }>();
+      if (existing) {
+        id = existing.id;
+        await c.env.DB.prepare(`
+          UPDATE assets SET 
+            slug = ?, title = ?, description = ?, category = ?, skill = ?, 
+            image_url = ?, r2_key_private = ?, status = ?, tags = ?, 
+            extended_description = ?, fun_facts = ?, suggested_activities = ?, 
+            coloring_tips = ?, therapeutic_benefits = ?, meta_keywords = ?
+          WHERE asset_id = ?
+        `).bind(
+          slug, title, description, category, skill, 
+          thumbnailUrl, pdfKey, status, tagsJson, 
+          extendedDescription, funFacts, suggestedActivities, 
+          coloringTips, therapeuticBenefits, metaKeywords,
+          providedAssetId
+        ).run();
+      } else {
+         // Provided ID but not found? Insert with that ID (should theoretically not happen if flow works, but safe fallback)
+         // Actually if we force an ID that violates sequence we might have issues, but let's assume valid.
+         await c.env.DB.prepare(`
+          INSERT INTO assets (
+            id, asset_id, slug, title, description, category, skill, 
+            image_url, r2_key_private, status, tags, 
+            extended_description, fun_facts, suggested_activities, 
+            coloring_tips, therapeutic_benefits, meta_keywords,
+            created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `).bind(
+          id, assetId, slug, title, description, category, skill,
+          thumbnailUrl, pdfKey, status, tagsJson,
+          extendedDescription, funFacts, suggestedActivities,
+          coloringTips, therapeuticBenefits, metaKeywords
+        ).run();
+      }
+    } else {
+      // Standard Insert (Legacy flow)
+      await c.env.DB.prepare(`
+        INSERT INTO assets (
+          id, asset_id, slug, title, description, category, skill, 
+          image_url, r2_key_private, status, tags, 
+          extended_description, fun_facts, suggested_activities, 
+          coloring_tips, therapeutic_benefits, meta_keywords,
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      `).bind(
         id, assetId, slug, title, description, category, skill,
-        thumbnailUrl, pdfKey, status, JSON.stringify(tagsArray),
+        thumbnailUrl, pdfKey, status, tagsJson,
         extendedDescription, funFacts, suggestedActivities,
         coloringTips, therapeuticBenefits, metaKeywords
-      )
-      .run();
+      ).run();
+    }
 
     return c.json({ success: true, id });
   } catch (error) {

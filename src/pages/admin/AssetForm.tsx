@@ -82,6 +82,7 @@ interface AssetFormData {
   coloringTips: string;
   therapeuticBenefits: string;
   metaKeywords: string;
+  asset_id?: string;
 }
 
 export default function AdminAssetForm() {
@@ -129,6 +130,7 @@ export default function AdminAssetForm() {
 
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(null);
+  const [isZoomOpen, setIsZoomOpen] = useState(false); // Zoom state
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -155,21 +157,34 @@ export default function AdminAssetForm() {
 
   const { user } = useUser();
 
-  const handleSvgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  /* 
+   * Unified file processor that creates PDF and Thumbnail 
+   * Accepted from: File Input OR Drop Zone
+   */
+  const processSvgFile = async (file: File) => {
     if (!file) return;
+
+    // 0. Enforce Prerequisites for Correct ID/Metadata
+    if (!formData.title || !formData.category || !formData.description || !formData.skill) {
+      setAlertState({
+        isOpen: true,
+        title: "Missing Info",
+        message: "Please enter a Title, Description, Category, and Skill Level first so we can generate the correct Asset ID and Metadata.",
+        variant: "info"
+      });
+      return;
+    }
 
     setIsProcessingSvg(true);
     try {
-      // 1. Generate Clean Filename (with ID if available)
-      const cleanName = formData.title 
-        ? formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
-        : file.name.replace(".svg", "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      // 1. Reserve  Asset ID
+      const { assetId } = await apiClient.admin.reserveAssetId(formData.category, formData.title, user?.emailAddresses[0].emailAddress || "");
       
-      const assetIdPrefix = id ? `${id}-` : "draft-";
-      const baseFilename = `huepress-${assetIdPrefix}${cleanName}`; 
+      // 2. Generate Clean Filename (with Real ID)
+      const cleanName = formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      const baseFilename = `huepress-${assetId}-${cleanName}`; 
 
-      // 2. WebP Generation (Canvas) - Forced 1:1 Square
+      // 3. WebP Generation (Canvas) - Forced 1:1 Square - Forced 1:1 Square
       const webpBlob = await new Promise<Blob>((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
@@ -245,7 +260,7 @@ export default function AdminAssetForm() {
 
       // Inject Metadata (Full Detail)
       doc.setProperties({
-        title: formData.title || file.name.replace(".svg", ""),
+        title: `HuePress - ${formData.title} - ${assetId}`,
         subject: formData.extendedDescription || formData.description || "Coloring Page",
         author: "HuePress",
         keywords: formData.metaKeywords || `${formData.category}, ${formData.skill}, coloring page, huepress`,
@@ -348,7 +363,7 @@ export default function AdminAssetForm() {
       
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 0, 0);
-      doc.text("huepress.co/review", 112, 210);
+      doc.text("huepress.co/review", 112, 210); // Redirects to Trustpilot
 
       // FOOTER - SOCIALS
       const startX = 65;
@@ -381,12 +396,20 @@ export default function AdminAssetForm() {
       doc.setTextColor(150);
       doc.text(`Copyright © ${new Date().getFullYear()} HuePress. All rights reserved.`, 105, 260, { align: "center" });
       
-      // Generate a short ID
-      const shortId = formData.title ? formData.title.substring(0, 15).replace(/\s/g, "") : "Asset";
-      doc.text(`Asset ID: ${shortId}-${new Date().getTime().toString().slice(-6)}`, 105, 265, { align: "center" });
+      // Asset ID
+      doc.text(`Asset ID: ${assetId}`, 105, 265, { align: "center" });
 
       const pdfBlob = doc.output("blob");
       const pdfFileObj = new File([pdfBlob], `${baseFilename}.pdf`, { type: "application/pdf" });
+      
+      // Store the assetId in state so handleSubmit can use it if needed? 
+      // Actually we just put it in the blob. 
+      // But we should also pass it to backend so backend knows which ID we used? 
+      // We can add it to formData state `asset_id`? Or just trust backend to re-calc same ID?
+      // User requested "the asset id will be changed after upload? because it have to reflect the real asset id in the system".
+      // If we pass `asset_id` in create payload, backend uses it.
+      setFormData(prev => ({ ...prev, asset_id: assetId })); // Need to add to interface first if typescript complains, or just append to FormData manually
+
       setPdfFile(pdfFileObj);
       
       // Create Preview URL
@@ -410,6 +433,44 @@ export default function AdminAssetForm() {
       });
     } finally {
       setIsProcessingSvg(false);
+    }
+  };
+
+  // Wrapper for input change
+  const handleSvgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+       processSvgFile(file);
+       e.target.value = ""; // Clear input to allow re-selection
+    }
+  };
+
+  // Drag and Drop State
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type === "image/svg+xml") {
+      processSvgFile(file);
+    } else if (file) {
+      setAlertState({
+        isOpen: true,
+        title: "Invalid File",
+        message: "Please upload a valid SVG file.",
+        variant: "error"
+      });
     }
   };
 
@@ -442,6 +503,12 @@ export default function AdminAssetForm() {
       form.append("coloring_tips", formData.coloringTips);
       form.append("therapeutic_benefits", formData.therapeuticBenefits);
       form.append("meta_keywords", formData.metaKeywords);
+      
+      // Forced Asset ID (from Magic gen)
+      // Forced Asset ID (from Magic gen)
+      if (formData.asset_id) {
+         form.append("asset_id", formData.asset_id);
+      }
       
       // JSON Arrays (split by newline)
       const factsArray = formData.funFacts.split("\n").map(s => s.trim()).filter(Boolean);
@@ -745,23 +812,32 @@ export default function AdminAssetForm() {
               <label className="block text-sm font-bold text-ink mb-1">✨ Magic Upload (SVG)</label>
               <p className="text-xs text-gray-500 mb-3">Upload an SVG to automatically generate the PDF and Thumbnail.</p>
               
-              <div className="relative">
+              <div 
+                className={`relative transition-all ${isDragging ? 'scale-[1.02]' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 <input
                   type="file"
                   accept="image/svg+xml"
-                  onChange={handleSvgUpload}
+                  onChange={handleSvgChange}
                   className="hidden"
                   id="svg-upload"
                 />
                 <label
                   htmlFor="svg-upload"
-                  className="flex flex-col items-center justify-center gap-2 w-full px-4 py-8 border-2 border-dashed border-primary/30 bg-white/50 rounded-lg cursor-pointer hover:border-primary hover:bg-white/80 transition-all group"
+                  className={`flex flex-col items-center justify-center gap-2 w-full px-4 py-8 border-2 border-dashed rounded-lg cursor-pointer transition-all group ${
+                     isDragging 
+                     ? "border-primary bg-primary/10" 
+                     : "border-primary/30 bg-white/50 hover:border-primary hover:bg-white/80"
+                  }`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white shadow-lg transition-transform ${isDragging ? "scale-110" : "group-hover:scale-110"}`}>
                     <Upload className="w-5 h-5" />
                   </div>
                   <span className="text-sm font-medium text-ink">
-                    {isProcessingSvg ? "Generating files..." : "Upload Master SVG"}
+                    {isProcessingSvg ? "Generating files..." : (isDragging ? "Drop SVG here!" : "Upload or Drop Master SVG")}
                   </span>
                 </label>
               </div>
@@ -777,13 +853,35 @@ export default function AdminAssetForm() {
               
               {/* Thumbnail Preview */}
               {thumbnailPreviewUrl && (
-                <div className="mb-3 relative group w-32 h-32 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden mx-auto">
-                  <img 
-                    src={thumbnailPreviewUrl} 
-                    alt="Thumbnail Preview" 
-                    className="w-full h-full object-contain"
-                  />
-                </div>
+                <>
+                  <div 
+                    className="mb-3 relative group w-32 h-32 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden mx-auto cursor-zoom-in"
+                    onClick={() => setIsZoomOpen(true)}
+                  >
+                    <img 
+                      src={thumbnailPreviewUrl} 
+                      alt="Thumbnail Preview" 
+                      className="w-full h-full object-contain"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                      <span className="opacity-0 group-hover:opacity-100 bg-white/90 text-xs px-2 py-1 rounded-full shadow-sm text-ink font-medium">Zoom</span>
+                    </div>
+                  </div>
+                  
+                  {/* Zoom Modal */}
+                  {isZoomOpen && (
+                    <div 
+                      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                      onClick={() => setIsZoomOpen(false)}
+                    >
+                      <img 
+                        src={thumbnailPreviewUrl} 
+                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                        alt="Zoomed Thumbnail"
+                      />
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="relative">
@@ -827,7 +925,7 @@ export default function AdminAssetForm() {
                      href={pdfPreviewUrl} 
                      target="_blank" 
                      rel="noreferrer"
-                     className="flex items-center justify-center gap-2 w-full py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors border border-red-100"
+                     className="flex items-center justify-center gap-2 w-full py-2 bg-teal-50 text-teal-700 rounded-lg text-sm font-medium hover:bg-teal-100 transition-colors border border-teal-100"
                    >
                      <Eye className="w-4 h-4" />
                      Preview Generated PDF
@@ -854,11 +952,11 @@ export default function AdminAssetForm() {
                 <label
                   htmlFor="pdf-upload"
                   className={`flex flex-col items-center justify-center gap-2 w-full px-4 py-4 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
-                    pdfFile ? "border-red-500 bg-red-50" : "border-gray-200 hover:border-red-500 hover:bg-red-50"
+                    pdfFile ? "border-teal-500 bg-teal-50" : "border-gray-200 hover:border-teal-500 hover:bg-teal-50"
                   }`}
                 >
-                  <Upload className={`w-4 h-4 ${pdfFile ? "text-red-500" : "text-gray-400"}`} />
-                  <span className={`text-xs ${pdfFile ? "text-red-600 font-medium" : "text-gray-500"}`}>
+                  <Upload className={`w-4 h-4 ${pdfFile ? "text-teal-500" : "text-gray-400"}`} />
+                  <span className={`text-xs ${pdfFile ? "text-teal-700 font-medium" : "text-gray-500"}`}>
                     {pdfFile ? pdfFile.name : "Upload PDF"}
                   </span>
                 </label>
