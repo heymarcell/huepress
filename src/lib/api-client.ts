@@ -176,6 +176,20 @@ export const apiClient = {
       }
       return data.asset;
     },
+    getAssetSource: async (id: string, adminEmail: string) => {
+      const cleanBase = API_URL.replace(/\/$/, "");
+      const response = await fetch(`${cleanBase}/api/admin/assets/${id}/source`, {
+        headers: { "X-Admin-Email": adminEmail }
+      });
+      if (!response.ok) {
+        // partial success (no source found) is common for old assets, don't throw, just return null?
+        // But for regeneration we need it. Let's throw if it's strictly not found when we expect it.
+        // Or return null to safe handle.
+        if (response.status === 404) return null;
+        throw new Error("Failed to fetch asset source");
+      }
+      return response.blob();
+    },
     updateStatus: async (id: string, status: 'published' | 'draft', adminEmail: string) => {
       const cleanBase = API_URL.replace(/\/$/, "");
       const response = await fetch(`${cleanBase}/api/admin/assets/${id}/status`, {

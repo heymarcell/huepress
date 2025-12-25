@@ -140,6 +140,18 @@ export default function AdminAssetForm() {
           if (asset.r2_key_private && !(asset.r2_key_private as string).startsWith("__draft__")) {
             setPdfPreviewUrl(`Preview available`);
           }
+
+          // Fetch Source SVG for Regeneration
+          // We try to fetch it. If it exists, we load it into state to enable live editing.
+          try {
+            const sourceBlob = await apiClient.admin.getAssetSource(id, email);
+            if (sourceBlob) {
+              const sourceFile = new File([sourceBlob], "original.svg", { type: "image/svg+xml" });
+              setOriginalSvgFile(sourceFile);
+            }
+          } catch (e) {
+             console.warn("Could not fetch source SVG", e);
+          }
         }
       } catch (err) {
         console.error("Failed to load asset", err);
@@ -179,23 +191,25 @@ export default function AdminAssetForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasExistingFiles, setHasExistingFiles] = useState(false); // Track if editing asset has files
   const [isProcessingSvg, setIsProcessingSvg] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
   
   // Store original SVG for potential regeneration
   const [originalSvgFile, setOriginalSvgFile] = useState<File | null>(null);
-  
-  // Track if PDF needs regeneration (user changed metadata after upload)
+  const [isNewSourceFile, setIsNewSourceFile] = useState(false); // Track if source was just uploaded (needs upload)
   const [pdfNeedsRegeneration, setPdfNeedsRegeneration] = useState(false);
   
   // Fields that affect PDF content/metadata/filename
+  // We will watch these for changes
   const PDF_AFFECTING_FIELDS = ['title', 'description', 'category', 'skill', 'tags'];
 
   // Cleanup preview URLs
   useEffect(() => {
     return () => {
-      if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
-      if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl);
+      if (pdfPreviewUrl && pdfPreviewUrl.startsWith("blob:")) URL.revokeObjectURL(pdfPreviewUrl);
+      if (thumbnailPreviewUrl && thumbnailPreviewUrl.startsWith("blob:")) URL.revokeObjectURL(thumbnailPreviewUrl);
     };
   }, [pdfPreviewUrl, thumbnailPreviewUrl]);
+
   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
     isOpen: false,
     title: "",
@@ -206,13 +220,63 @@ export default function AdminAssetForm() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    
-    // If a PDF-affecting field changed and we have an SVG, mark for regeneration
-    if (originalSvgFile && PDF_AFFECTING_FIELDS.includes(name)) {
+    if (PDF_AFFECTING_FIELDS.includes(name)) {
       setPdfNeedsRegeneration(true);
     }
   };
 
+  // Auto-Regeneration Effect
+  useEffect(() => {
+    if (!originalSvgFile || !pdfNeedsRegeneration) return;
+    
+    // Only regenerate if we have the minimum required fields to generate a valid PDF/ID
+    if (!formData.title || !formData.category || !formData.skill) return;
+
+    const timer = setTimeout(async () => {
+      setIsRegenerating(true);
+      try {
+         // Create a temporary ID if one doesn't exist (for preview purposes)
+         // If we have a real asset_id, use it.
+         const assetId = formData.asset_id || "HP-PREVIEW-0000";
+         
+         const slug = formData.title.toLowerCase()
+          .trim()
+          .replace(/\s+/g, '-')
+          .replace(/[^\w-]+/g, '')
+          .replace(/--+/g, '-');
+
+         const { pdfFile: newPdf, webpFile: newWebp } = await generateFilesFromSvg(
+            originalSvgFile,
+            assetId,
+            slug,
+            formData
+         );
+         
+         setThumbnailFile(newWebp);
+         setPdfFile(newPdf);
+         
+         // Update previews
+         setThumbnailPreviewUrl(URL.createObjectURL(newWebp));
+         setPdfPreviewUrl(URL.createObjectURL(newPdf));
+         setPdfNeedsRegeneration(false); // Reset flag after regeneration
+         
+      } catch (err) {
+        console.error("Auto-regeneration failed", err);
+      } finally {
+        setIsRegenerating(false);
+      }
+    }, 1500); // 1.5s debounce to accept typing pauses
+
+    return () => clearTimeout(timer);
+  }, [
+    formData.title, 
+    formData.description, 
+    formData.category, 
+    formData.skill, 
+    formData.tags, 
+    originalSvgFile,
+    pdfNeedsRegeneration
+  ]);
 
 
   /**
@@ -501,7 +565,7 @@ export default function AdminAssetForm() {
     
     // Store SVG for potential regeneration if fields change
     setOriginalSvgFile(file);
-    setPdfNeedsRegeneration(false); // Fresh generation, no pending changes
+    setIsNewSourceFile(true); // Mark as new for upload
     
     try {
       // 1. Create Draft Asset (saves all form data, returns ID & slug)
@@ -520,214 +584,6 @@ export default function AdminAssetForm() {
         throw new Error("Failed to create draft. Please try again.");
       }
       
-      // 2. Generate Filename (with Real ID and Slug)
-      const baseFilename = `${assetId}-${slug}`; 
-
-      // 3. WebP Generation (Canvas) - Forced 1:1 Square - Forced 1:1 Square
-      const webpBlob = await new Promise<Blob>((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          const SIZE = 1024; // Standardize thumbnail size
-          const canvas = document.createElement("canvas");
-          canvas.width = SIZE;
-          canvas.height = SIZE;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return reject(new Error("No canvas context"));
-          
-          // White Background
-          ctx.fillStyle = "#FFFFFF";
-          ctx.fillRect(0, 0, SIZE, SIZE);
-          
-          // Calculate Scale (Contain)
-          const scale = Math.min(SIZE / img.width, SIZE / img.height);
-          const w = img.width * scale;
-          const h = img.height * scale;
-          const x = (SIZE - w) / 2;
-          const y = (SIZE - h) / 2;
-          
-          // Draw Centered
-          ctx.drawImage(img, x, y, w, h);
-          
-          canvas.toBlob(blob => {
-            if (blob) resolve(blob);
-            else reject(new Error("Canvas blob failed"));
-          }, "image/webp", 0.9);
-        };
-        img.onerror = reject;
-        img.src = URL.createObjectURL(file);
-      });
-      
-      const webpFile = new File([webpBlob], `${baseFilename}.webp`, { type: "image/webp" });
-      setThumbnailFile(webpFile);
-      setThumbnailPreviewUrl(URL.createObjectURL(webpFile));
-
-      // 3. Advanced PDF Generation (Safe Zone & Metadata)
-      const svgText = await file.text();
-      const parser = new DOMParser();
-      const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
-      const svgElement = svgDoc.documentElement;
-
-      // Helper to parse dimensions (handle px or unitless)
-      const getDim = (val: string | null) => {
-        if (!val) return 0;
-        return parseFloat(val.replace("px", ""));
-      };
-      
-      // Determine intrinsic size (width/height attr -> viewBox -> Default A4 pt)
-      const viewBox = svgElement.getAttribute("viewBox")?.split(/[\s,]+/).map(parseFloat);
-      const svgW = getDim(svgElement.getAttribute("width")) || (viewBox ? viewBox[2] : 595);
-      const svgH = getDim(svgElement.getAttribute("height")) || (viewBox ? viewBox[3] : 842);
-
-      // A4 Dimensions (mm)
-      const A4_WIDTH = 210;
-      const A4_HEIGHT = 297;
-      
-      // Safe Zone (mm) - Optimized for 8.5x11" (Letter) and A4 compatibility
-      // Letter is wider (216mm) but shorter (279mm) than A4.
-      // A4 is narrower (210mm) but taller (297mm).
-      // To fit BOTH, we must stay within the intersection minus margins.
-      // Width: Limited by A4 (210mm) - 25mm margin = 185mm
-      // Height: Limited by Letter (279mm) - 25mm margin = 254mm
-      const SAFE_WIDTH = 185; 
-      const SAFE_HEIGHT = 254;
-
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4" 
-      });
-
-      // Build dynamic keywords from tags and form data
-      const keywordsArray = [
-        formData.category,
-        formData.skill,
-        ...formData.tags.split(",").map(t => t.trim()).filter(Boolean),
-        "coloring page",
-        "huepress",
-        "printable"
-      ];
-      const uniqueKeywords = [...new Set(keywordsArray)].join(", ");
-
-      // Inject Metadata (Full Detail)
-      doc.setProperties({
-        title: `HuePress - ${formData.title} - ${assetId}`,
-        subject: `${formData.description} | Website: huepress.co | Support: hello@huepress.co`,
-        author: "HuePress",
-        keywords: uniqueKeywords,
-        creator: "HuePress Automated Generator"
-      });
-
-      // Calculate Scale to fit Safe Zone strictly
-      const scale = Math.min(SAFE_WIDTH / svgW, SAFE_HEIGHT / svgH);
-      const finalW = svgW * scale;
-      const finalH = svgH * scale;
-
-      // Center image on A4 page
-      const x = (A4_WIDTH - finalW) / 2;
-      const y = (A4_HEIGHT - finalH) / 2;
-
-      // Page 1: The Masterpiece
-      await doc.svg(svgElement, {
-        x,
-        y,
-        width: finalW,
-        height: finalH
-      });
-      
-      // Footer REMOVED per request (clean page for coloring)
-
-      // Page 2: The HuePress Guide (Stylish Marketing Page)
-      doc.addPage();
-      
-      // HEADER - Include Logo from SVG
-      const logoParser = new DOMParser();
-      const logoDoc = logoParser.parseFromString(HUEPRESS_LOGO_SVG, "image/svg+xml");
-      await doc.svg(logoDoc.documentElement, {
-        x: 60,
-        y: 20,
-        width: 90,
-        height: 25
-      });
-      
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
-      doc.setTextColor(100);
-      doc.text("Color Your World", 105, 52, { align: "center" });
-      
-      doc.setDrawColor(200);
-      doc.line(60, 58, 150, 58); // Separator
-
-      // SECTION 1: PRINTING GUIDE
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
-      doc.setTextColor(50);
-      doc.text("Printing Guide", 20, 75);
-
-      // Box
-      doc.setDrawColor(220);
-      doc.setFillColor(250, 250, 250);
-      doc.roundedRect(20, 80, 170, 35, 3, 3, "FD");
-
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(80);
-      doc.text("• Use 'Fit to Page' setting to ensure no edges are cut off.", 28, 92);
-      doc.text("• We recommend heavy cardstock or mixed media paper.", 28, 100);
-      doc.text("• Select 'High Quality' print mode for the crispest lines.", 28, 108);
-
-      // SECTION 2: SHARE & ENGAGE
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
-      doc.setTextColor(50);
-      doc.text("Show Off Your Masterpiece", 20, 135);
-      
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(80);
-      doc.text("We love seeing your creativity! Tag us to be featured:", 20, 145);
-      
-      doc.setFontSize(12);
-      doc.setTextColor(30);
-      doc.text("@huepressco  #HuePressColoring", 20, 155);
-
-      // SECTION 3: REVIEWS (Call to Action)
-      doc.setDrawColor(200); 
-      doc.setLineWidth(0.5);
-      doc.setFillColor(255, 255, 255);
-      doc.roundedRect(20, 175, 170, 45, 3, 3, "S");
-      
-      // QR Code Generation
-      const qrDataUrl = await QRCode.toDataURL("https://www.trustpilot.com/review/huepress.co", { margin: 0 });
-      doc.addImage(qrDataUrl, "PNG", 30, 182, 30, 30);
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(30);
-      doc.text("Enjoying this page?", 70, 192); // Left align text next to QR
-      
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(80);
-      doc.text("Help us grow by leaving a review on Trustpilot.", 70, 202);
-      doc.text("Scan the QR code or visit:", 70, 210);
-      
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(0, 0, 0);
-      doc.text("huepress.co/review", 112, 210); // Redirects to Trustpilot
-
-      // FOOTER - SOCIALS
-      const startX = 20;
-      const iconY = 230;
-      const iconSize = 6;
-      const lineHeight = 5;
-      
-      doc.setFontSize(8);
-      doc.setTextColor(100);
-      
-      // Facebook
-      const fbNode = new DOMParser().parseFromString(SOCIAL_ICONS.FACEBOOK, "image/svg+xml").documentElement;
-      await doc.svg(fbNode, { x: startX, y: iconY, width: iconSize, height: iconSize });
-      doc.link(startX, iconY, iconSize, iconSize, { url: "https://facebook.com/huepressco" });
       doc.text("facebook.com/huepressco", startX + iconSize + 2, iconY + iconSize - 1);
 
       // Instagram
