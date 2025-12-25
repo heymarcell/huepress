@@ -10,7 +10,7 @@ import stripeRoute from "./routes/stripe";
 import webhooksRoute from "./routes/webhooks";
 import reviewsRoute from "./routes/reviews";
 import tagsRoute from "./routes/tags";
-import requestsRoute from "./routes/requests";
+// import requestsRoute from "./routes/requests";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
