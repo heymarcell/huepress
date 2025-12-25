@@ -9,7 +9,7 @@ app.post("/", async (c) => {
   try {
     const auth = getAuth(c);
     const body = await c.req.json();
-    const { title, description, email, category } = body;
+    const { title, description, email } = body;
     
     // Simple validation
     if (!title || !description || !email) {

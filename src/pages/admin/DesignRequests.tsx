@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Check, Clock, X, AlertCircle } from "lucide-react";
+import { Check, Clock, X } from "lucide-react";
 
 interface DesignRequest {
   id: string;
@@ -27,7 +27,7 @@ export default function AdminDesignRequests() {
       });
       if (response.ok) {
         const data = await response.json();
-        setRequests(data);
+        setRequests(data as DesignRequest[]);
       }
     } catch (error) {
       console.error(error);
