@@ -2,7 +2,7 @@ import { useState, FormEvent, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Sparkles } from "lucide-react";
 import { useUser } from "@clerk/clerk-react";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSubscription } from "@/lib/auth";
 
 export default function RequestDesign() {
   const { user, isLoaded } = useUser();

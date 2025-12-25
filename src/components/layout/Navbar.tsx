@@ -68,7 +68,7 @@ function MenuButton({
   );
 }
 
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSubscription } from "@/lib/auth";
 
 // Navigation Links
 const publicNavLinks = [
