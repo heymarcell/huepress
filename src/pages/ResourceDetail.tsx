@@ -512,17 +512,10 @@ export default function ResourceDetailPage() {
                   </div>
                 </div>
               )}
-                  <div>
-                    <h4 className="font-serif text-lg text-ink mb-1">Unlock All 500+ Designs</h4>
-                    <p className="text-sm text-gray-600 mb-3">
-                      Get unlimited access to the entire HuePress library, including premium collections and exclusive PDFs.
-                    </p>
-                    <Link to="/pricing" className="text-sm font-bold text-primary hover:text-primary-dark transition-colors flex items-center gap-1 group">
-                      Get All Access <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
+            </div>
+          </div>
+        </div>
+      </div>
             </div>
           </div>
         </div>
