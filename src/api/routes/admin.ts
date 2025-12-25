@@ -264,12 +264,12 @@ app.post("/assets", async (c) => {
     let pdfKey: string | null = null;
     
     if (hasNewFiles && thumbnailFile && pdfFile) {
-      // 2. Upload Thumbnail to Public R2
-      thumbnailKey = `thumbnails/${assetId}_${thumbnailFile.name}`;
+      // 2. Upload Thumbnail to Public R2 (filename already includes assetId from frontend)
+      thumbnailKey = `thumbnails/${thumbnailFile.name}`;
       await c.env.ASSETS_PUBLIC.put(thumbnailKey, thumbnailFile);
 
-      // 3. Upload PDF to Private R2
-      pdfKey = `pdfs/huepress-${assetId}-${slug}.pdf`;
+      // 3. Upload PDF to Private R2 (filename already includes assetId from frontend)
+      pdfKey = `pdfs/${pdfFile.name}`;
       await c.env.ASSETS_PRIVATE.put(pdfKey, pdfFile);
     }
 
