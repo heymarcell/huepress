@@ -136,6 +136,34 @@ export const apiClient = {
         throw new Error(data.error || "Failed to create draft");
       }
       return data as { assetId: string; slug: string; id: string };
+    },
+    deleteAsset: async (id: string, adminEmail: string) => {
+      const cleanBase = API_URL.replace(/\/$/, "");
+      const response = await fetch(`${cleanBase}/api/admin/assets/${id}`, {
+        method: "DELETE",
+        headers: { "X-Admin-Email": adminEmail }
+      });
+      const data = await response.json() as { success?: boolean; error?: string };
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Failed to delete asset");
+      }
+      return data;
+    },
+    bulkDeleteAssets: async (ids: string[], adminEmail: string) => {
+      const cleanBase = API_URL.replace(/\/$/, "");
+      const response = await fetch(`${cleanBase}/api/admin/assets/bulk-delete`, {
+        method: "POST",
+        headers: { 
+          "X-Admin-Email": adminEmail,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ ids })
+      });
+      const data = await response.json() as { success?: boolean; deletedCount?: number; error?: string };
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Failed to delete assets");
+      }
+      return data;
     }
   },
   billing: {

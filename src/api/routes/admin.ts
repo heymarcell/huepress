@@ -307,4 +307,85 @@ app.get("/stats", async (c) => {
   }
 });
 
+// ADMIN: Delete single asset
+app.delete("/assets/:id", async (c) => {
+  const adminEmail = c.req.header("X-Admin-Email");
+  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const { id } = c.req.param();
+
+  try {
+    // Get asset to find R2 keys
+    const asset = await c.env.DB.prepare(
+      "SELECT r2_key_private, r2_key_public FROM assets WHERE id = ?"
+    ).bind(id).first<{ r2_key_private: string; r2_key_public: string }>();
+
+    if (!asset) {
+      return c.json({ error: "Asset not found" }, 404);
+    }
+
+    // Delete from R2
+    if (asset.r2_key_private && !asset.r2_key_private.startsWith("__draft__")) {
+      await c.env.ASSETS_PRIVATE.delete(asset.r2_key_private);
+    }
+    if (asset.r2_key_public && !asset.r2_key_public.startsWith("__draft__")) {
+      await c.env.ASSETS_PUBLIC.delete(asset.r2_key_public);
+    }
+
+    // Delete from database
+    await c.env.DB.prepare("DELETE FROM assets WHERE id = ?").bind(id).run();
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error("Delete error:", error);
+    return c.json({ error: "Failed to delete asset" }, 500);
+  }
+});
+
+// ADMIN: Bulk delete assets
+app.post("/assets/bulk-delete", async (c) => {
+  const adminEmail = c.req.header("X-Admin-Email");
+  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  try {
+    const { ids } = await c.req.json<{ ids: string[] }>();
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return c.json({ error: "No IDs provided" }, 400);
+    }
+
+    let deletedCount = 0;
+
+    for (const id of ids) {
+      const asset = await c.env.DB.prepare(
+        "SELECT r2_key_private, r2_key_public FROM assets WHERE id = ?"
+      ).bind(id).first<{ r2_key_private: string; r2_key_public: string }>();
+
+      if (asset) {
+        // Delete from R2
+        if (asset.r2_key_private && !asset.r2_key_private.startsWith("__draft__")) {
+          await c.env.ASSETS_PRIVATE.delete(asset.r2_key_private);
+        }
+        if (asset.r2_key_public && !asset.r2_key_public.startsWith("__draft__")) {
+          await c.env.ASSETS_PUBLIC.delete(asset.r2_key_public);
+        }
+
+        // Delete from database
+        await c.env.DB.prepare("DELETE FROM assets WHERE id = ?").bind(id).run();
+        deletedCount++;
+      }
+    }
+
+    return c.json({ success: true, deletedCount });
+  } catch (error) {
+    console.error("Bulk delete error:", error);
+    return c.json({ error: "Failed to delete assets" }, 500);
+  }
+});
+
 export default app;
+

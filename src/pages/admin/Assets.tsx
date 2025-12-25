@@ -21,11 +21,18 @@ export default function AdminAssets() {
   const [assets, setAssets] = useState<AdminAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Delete confirmation modal state
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; assetId: string | null }>({
+  const [deleteModal, setDeleteModal] = useState<{ 
+    isOpen: boolean; 
+    assetId: string | null;
+    isBulk: boolean;
+  }>({
     isOpen: false,
-    assetId: null
+    assetId: null,
+    isBulk: false
   });
 
   useEffect(() => {
@@ -62,26 +69,66 @@ export default function AdminAssets() {
     ));
   };
 
-  const confirmDelete = (id: string) => {
-    setDeleteModal({ isOpen: true, assetId: id });
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
-  const handleDeleteConfirm = () => {
-    if (deleteModal.assetId) {
-      setAssets(assets.filter((asset) => asset.id !== deleteModal.assetId));
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredAssets.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredAssets.map(a => a.id)));
     }
-    setDeleteModal({ isOpen: false, assetId: null });
+  };
+
+  const confirmDelete = (id: string) => {
+    setDeleteModal({ isOpen: true, assetId: id, isBulk: false });
+  };
+
+  const confirmBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    setDeleteModal({ isOpen: true, assetId: null, isBulk: true });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!user) return;
+    const email = user.primaryEmailAddress?.emailAddress || "";
+    
+    setIsDeleting(true);
+    try {
+      if (deleteModal.isBulk) {
+        await apiClient.admin.bulkDeleteAssets(Array.from(selectedIds), email);
+        setAssets(assets.filter(a => !selectedIds.has(a.id)));
+        setSelectedIds(new Set());
+      } else if (deleteModal.assetId) {
+        await apiClient.admin.deleteAsset(deleteModal.assetId, email);
+        setAssets(assets.filter(a => a.id !== deleteModal.assetId));
+      }
+    } catch (error) {
+      console.error("Delete failed:", error);
+    } finally {
+      setIsDeleting(false);
+      setDeleteModal({ isOpen: false, assetId: null, isBulk: false });
+    }
   };
 
   return (
     <>
       <AlertModal
         isOpen={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ isOpen: false, assetId: null })}
-        title="Delete Asset"
-        message="Are you sure you want to delete this asset? This action cannot be undone."
+        onClose={() => setDeleteModal({ isOpen: false, assetId: null, isBulk: false })}
+        title={deleteModal.isBulk ? `Delete ${selectedIds.size} Assets` : "Delete Asset"}
+        message={deleteModal.isBulk 
+          ? `Are you sure you want to delete ${selectedIds.size} selected assets? This action cannot be undone.`
+          : "Are you sure you want to delete this asset? This action cannot be undone."
+        }
         variant="error"
-        confirmText="Delete"
+        confirmText={isDeleting ? "Deleting..." : "Delete"}
         onConfirm={handleDeleteConfirm}
       />
       
@@ -91,12 +138,20 @@ export default function AdminAssets() {
           <h1 className="font-serif text-h2 text-ink">Assets</h1>
           <p className="text-gray-500">Manage your coloring page library</p>
         </div>
-        <Link to="/admin/assets/new">
-          <Button variant="primary">
-            <Plus className="w-4 h-4" />
-            Add Asset
-          </Button>
-        </Link>
+        <div className="flex gap-3">
+          {selectedIds.size > 0 && (
+            <Button variant="outline" onClick={confirmBulkDelete} className="text-red-600 border-red-200 hover:bg-red-50">
+              <Trash2 className="w-4 h-4" />
+              Delete ({selectedIds.size})
+            </Button>
+          )}
+          <Link to="/admin/assets/new">
+            <Button variant="primary">
+              <Plus className="w-4 h-4" />
+              Add Asset
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -124,6 +179,14 @@ export default function AdminAssets() {
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
+              <th className="text-left px-6 py-3 w-12">
+                <input 
+                  type="checkbox" 
+                  checked={selectedIds.size === filteredAssets.length && filteredAssets.length > 0}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+              </th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Skill</th>
@@ -134,7 +197,15 @@ export default function AdminAssets() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filteredAssets.map((asset) => (
-              <tr key={asset.id} className="hover:bg-white/60 transition-colors group">
+              <tr key={asset.id} className={`hover:bg-white/60 transition-colors group ${selectedIds.has(asset.id) ? 'bg-primary/5' : ''}`}>
+                <td className="px-6 py-4">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedIds.has(asset.id)}
+                    onChange={() => toggleSelect(asset.id)}
+                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                </td>
                 <td className="px-6 py-4">
                   <p className="font-medium text-ink group-hover:text-primary transition-colors">{asset.title}</p>
                   <p className="text-xs text-gray-400">Created {asset.createdAt}</p>
