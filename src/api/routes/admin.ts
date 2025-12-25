@@ -168,6 +168,7 @@ app.patch("/assets/:id/status", async (c) => {
 });
 
 // ADMIN: Create new asset
+// ADMIN: Create or Update asset
 app.post("/assets", async (c) => {
   const adminEmail = c.req.header("X-Admin-Email");
   
@@ -199,9 +200,9 @@ app.post("/assets", async (c) => {
     const tags = body["tags"] as string;
     const status = body["status"] as string;
     
-    // Extract files
-    const thumbnailFile = body["thumbnail"] as File;
-    const pdfFile = body["pdf"] as File;
+    // Extract files (safely check types)
+    const thumbnailFile = body["thumbnail"];
+    const pdfFile = body["pdf"];
 
     const slugify = (text: string) => text
       .toString()
@@ -218,21 +219,18 @@ app.post("/assets", async (c) => {
     const metaKeywords = body["meta_keywords"] as string || null;
     
     // JSON fields (ensure they are arrays)
-    const funFacts = body["fun_facts"] as string || "[]"; // Expecting JSON string
-    const suggestedActivities = body["suggested_activities"] as string || "[]"; // Expecting JSON string
+    const funFacts = body["fun_facts"] as string || "[]";
+    const suggestedActivities = body["suggested_activities"] as string || "[]";
     
     // Check if this is an update vs new create
-    const hasNewFiles = body["has_new_files"] === "true";
     const providedAssetId = body["asset_id"] as string;
-    const isUpdate = Boolean(providedAssetId);
     
-    // For new assets, require files. For updates, files are optional.
-    if (!isUpdate && (!title || !category || !skill || !thumbnailFile || !pdfFile)) {
-      return c.json({ error: "Missing required fields" }, 400);
-    }
-    
-    if (isUpdate && (!title || !category || !skill)) {
-      return c.json({ error: "Missing required fields" }, 400);
+    // Validation
+    // For NEW assets, we generally require files, unless it's a draft being saved?
+    // Let's be lenient: checks are better done on frontend. Backend should just save what it gets.
+    // However, for a functionality asset, title/category are essential.
+    if (!title || !category) {
+       return c.json({ error: "Title and Category are required" }, 400);
     }
 
     // 1. Generate SEO ID and Slug
@@ -259,24 +257,26 @@ app.post("/assets", async (c) => {
 
     const slug = slugify(title);
 
-    // Handle files - only upload if new files provided
+    // 2. Handle File Uploads (Independent)
     let thumbnailKey: string | null = null;
     let pdfKey: string | null = null;
     
-    if (hasNewFiles && thumbnailFile && pdfFile) {
-      // 2. Upload Thumbnail to Public R2
-      // STRICT NAMING: Ignore uploaded filename, enforce standard naming
+    // Process Thumbnail
+    if (thumbnailFile && thumbnailFile instanceof File) {
+      console.log(`Uploading thumbnail for ${assetId}...`);
       thumbnailKey = `thumbnails/${assetId}-${slug}.webp`;
       await c.env.ASSETS_PUBLIC.put(thumbnailKey, thumbnailFile);
-
-      // 3. Upload PDF to Private R2
-      // STRICT NAMING: Ignore uploaded filename, enforce standard naming
-      pdfKey = `pdfs/${assetId}-${slug}.pdf`;
-      await c.env.ASSETS_PRIVATE.put(pdfKey, pdfFile);
     }
 
-    // 4. Insert or Update into D1
-    const tagsArray = tags.split(",").map(t => t.trim()).filter(Boolean);
+    // Process PDF
+    if (pdfFile && pdfFile instanceof File) {
+       console.log(`Uploading PDF for ${assetId}...`);
+       pdfKey = `pdfs/${assetId}-${slug}.pdf`;
+       await c.env.ASSETS_PRIVATE.put(pdfKey, pdfFile);
+    }
+    
+    // 3. Insert or Update into D1
+    const tagsArray = tags ? tags.split(",").map(t => t.trim()).filter(Boolean) : [];
     const tagsJson = JSON.stringify(tagsArray);
 
     let id: string = crypto.randomUUID();
@@ -284,45 +284,52 @@ app.post("/assets", async (c) => {
     // Check if updating a reserved asset
     if (providedAssetId) {
       const existing = await c.env.DB.prepare("SELECT id FROM assets WHERE asset_id = ?").bind(providedAssetId).first<{ id: string }>();
+      
       if (existing) {
         id = existing.id;
         
-        // Conditionally update R2 keys only if new files were uploaded
-        if (thumbnailKey && pdfKey) {
-          // Update with new files
-          await c.env.DB.prepare(`
-            UPDATE assets SET 
-              slug = ?, title = ?, description = ?, category = ?, skill = ?, 
-              r2_key_public = ?, r2_key_private = ?, status = ?, tags = ?, 
-              extended_description = ?, fun_facts = ?, suggested_activities = ?, 
-              coloring_tips = ?, therapeutic_benefits = ?, meta_keywords = ?
-            WHERE asset_id = ?
-          `).bind(
-            slug, title, description, category, skill, 
-            thumbnailKey, pdfKey, status, tagsJson, 
-            extendedDescription, funFacts, suggestedActivities, 
-            coloringTips, therapeuticBenefits, metaKeywords,
-            providedAssetId
-          ).run();
-        } else {
-          // Update metadata only, keep existing files
-          await c.env.DB.prepare(`
-            UPDATE assets SET 
-              slug = ?, title = ?, description = ?, category = ?, skill = ?, 
-              status = ?, tags = ?, 
-              extended_description = ?, fun_facts = ?, suggested_activities = ?, 
-              coloring_tips = ?, therapeutic_benefits = ?, meta_keywords = ?
-            WHERE asset_id = ?
-          `).bind(
-            slug, title, description, category, skill, 
-            status, tagsJson, 
-            extendedDescription, funFacts, suggestedActivities, 
-            coloringTips, therapeuticBenefits, metaKeywords,
-            providedAssetId
-          ).run();
+        // Build Dynamic Update Query
+        // We only update R2 keys if new files were uploaded
+        const fields: string[] = [];
+        const values: unknown[] = [];
+
+        // Always update metadata
+        fields.push("slug = ?");
+        values.push(slug);
+        
+        fields.push("title = ?"); values.push(title);
+        fields.push("description = ?"); values.push(description);
+        fields.push("category = ?"); values.push(category);
+        fields.push("skill = ?"); values.push(skill);
+        fields.push("status = ?"); values.push(status);
+        fields.push("tags = ?"); values.push(tagsJson);
+        fields.push("extended_description = ?"); values.push(extendedDescription);
+        fields.push("fun_facts = ?"); values.push(funFacts);
+        fields.push("suggested_activities = ?"); values.push(suggestedActivities);
+        fields.push("coloring_tips = ?"); values.push(coloringTips);
+        fields.push("therapeutic_benefits = ?"); values.push(therapeuticBenefits);
+        fields.push("meta_keywords = ?"); values.push(metaKeywords);
+
+        if (thumbnailKey) {
+          fields.push("r2_key_public = ?");
+          values.push(thumbnailKey);
         }
+
+        if (pdfKey) {
+          fields.push("r2_key_private = ?");
+          values.push(pdfKey);
+        }
+
+        // Add WHERE clause ID
+        values.push(providedAssetId);
+
+        const query = `UPDATE assets SET ${fields.join(", ")} WHERE asset_id = ?`;
+        
+        await c.env.DB.prepare(query).bind(...values).run();
+
       } else {
-         // Provided ID but not found? Insert with that ID
+         // Provided ID but not found in DB? Insert it.
+         // This happens if a Draft was "created" in memory but DB failed, or just a new manual entry with ID.
          await c.env.DB.prepare(`
           INSERT INTO assets (
             id, asset_id, slug, title, description, category, skill, 
@@ -339,7 +346,7 @@ app.post("/assets", async (c) => {
         ).run();
       }
     } else {
-      // Standard Insert (New asset flow)
+      // Standard Insert (New asset flow without ID)
       await c.env.DB.prepare(`
         INSERT INTO assets (
           id, asset_id, slug, title, description, category, skill, 
@@ -350,16 +357,18 @@ app.post("/assets", async (c) => {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `).bind(
         id, assetId, slug, title, description, category, skill,
-        thumbnailKey, pdfKey, status, tagsJson,
+        thumbnailKey || "__draft__", pdfKey || "__draft__", status, tagsJson,
         extendedDescription, funFacts, suggestedActivities,
         coloringTips, therapeuticBenefits, metaKeywords
       ).run();
     }
 
-    return c.json({ success: true, id });
+    return c.json({ success: true, id, assetId });
   } catch (error) {
     console.error("Asset creation error:", error);
-    return c.json({ error: "Failed to create asset" }, 500);
+    // Be verbose on error for debugging
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return c.json({ error: `Failed to create/update asset: ${errorMessage}` }, 500);
   }
 });
 

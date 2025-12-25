@@ -799,7 +799,6 @@ export default function AdminAssetForm() {
       
       uploadForm.append("thumbnail", webpFile);
       uploadForm.append("pdf", pdfFileObj);
-      uploadForm.append("has_new_files", "true"); // Tell backend to upload to R2
 
       const uploadResult = await apiClient.admin.createAsset(uploadForm, user?.emailAddresses[0].emailAddress || "");
       
@@ -963,15 +962,13 @@ export default function AdminAssetForm() {
       form.append("suggested_activities", JSON.stringify(activitiesArray));
 
       // Only append files if they exist (new uploads or regenerated)
+      // The backend detects if they are File objects and updates R2 accordingly
       if (currentThumbnail) {
         form.append("thumbnail", currentThumbnail);
       }
       if (currentPdf) {
         form.append("pdf", currentPdf);
       }
-      
-      // Flag for backend: are we providing new files?
-      form.append("has_new_files", String(!!(currentThumbnail && currentPdf)));
 
       // Use production API URL if in prod, else local
       // apiClient handles API_URL internally, but createAsset needs manualFormData
