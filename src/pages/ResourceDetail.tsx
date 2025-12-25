@@ -387,18 +387,18 @@ export default function ResourceDetailPage() {
           <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 max-w-7xl mx-auto">
             
             {/* Left Column: Product Image */}
-            <div className="w-full lg:w-1/2 xl:w-3/5">
+            <div className="w-full lg:w-1/2">
                <div className="sticky top-32">
-                 <div className="relative aspect-a4 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 group">
+                 <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 group">
                    {asset.image_url && !asset.image_url.includes("__draft__") && !imageError ? (
                      <img 
                        src={asset.image_url} 
                        alt={asset.title}
-                       className="w-full h-full object-contain p-8 group-hover:scale-[1.02] transition-transform duration-500"
+                       className="w-full h-auto object-contain p-4 group-hover:scale-[1.02] transition-transform duration-500"
                        onError={() => setImageError(true)}
                      />
                    ) : (
-                     <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
+                     <div className="w-full aspect-square flex flex-col items-center justify-center bg-gray-50">
                        <ImageIcon className="w-20 h-20 text-gray-300" strokeWidth={1} />
                        <span className="text-sm text-gray-400 mt-3">Preview not available</span>
                      </div>
@@ -411,7 +411,7 @@ export default function ResourceDetailPage() {
             </div>
 
             {/* Right Column: Key Details & CTA */}
-            <div className="w-full lg:w-1/2 xl:w-2/5 lg:py-8">
+            <div className="w-full lg:w-1/2 lg:py-8">
               <div className="flex flex-wrap items-center gap-3 mb-4">
                  <Link to={`/vault?category=${asset.category}`} className="px-3 py-1 bg-primary/5 text-primary text-xs font-bold uppercase tracking-wider rounded-full hover:bg-primary/10 transition-colors">
                    {asset.category}
