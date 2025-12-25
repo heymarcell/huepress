@@ -376,9 +376,9 @@ export default function AdminAssetForm() {
     doc.setFillColor(250, 250, 250);
     doc.roundedRect(20, 200, 170, 28, 2, 2, "FD");
     
-    const trustpilotUrl = "https://www.trustpilot.com/review/huepress.co";
+    const reviewUrl = "https://huepress.co/review";
     const reviewQr = document.createElement("canvas");
-    await QRCode.toCanvas(reviewQr, trustpilotUrl, { width: 120, margin: 0 });
+    await QRCode.toCanvas(reviewQr, reviewUrl, { width: 120, margin: 0 });
     doc.addImage(reviewQr.toDataURL("image/png"), "PNG", 25, 203, 22, 22);
 
     doc.setFont("helvetica", "bold");
@@ -389,7 +389,7 @@ export default function AdminAssetForm() {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(80);
-    doc.text("Your review helps us reach more families. Visit huepress.co/review", 52, 220);
+    doc.text("Your feedback helps us create even better designs. Visit huepress.co/review", 52, 220);
 
     // Social Links - 2x2 Grid Layout
     const leftX = 25;           // Left column
