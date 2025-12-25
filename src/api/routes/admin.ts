@@ -23,16 +23,17 @@ app.post("/create-draft", async (c) => {
     return c.json({ error: "Title and Category are required" }, 400);
   }
 
-  // Generate Asset ID: Sequential 5-digit number (e.g., 00001)
-  const lastAsset = await c.env.DB.prepare(
-    "SELECT asset_id FROM assets WHERE length(asset_id) = 5 ORDER BY asset_id DESC LIMIT 1"
-  ).first<{ asset_id: string }>();
-
-  let sequence = 1;
-  if (lastAsset?.asset_id && /^\d+$/.test(lastAsset.asset_id)) {
-    sequence = parseInt(lastAsset.asset_id, 10) + 1;
-  }
-
+  // Generate Asset ID: Use sequences table for guaranteed unique, never-reused IDs
+  // Atomic increment: ensures no duplicates even with concurrent requests
+  await c.env.DB.prepare(
+    "INSERT OR IGNORE INTO sequences (name, value) VALUES ('asset_id', 0)"
+  ).run();
+  
+  const result = await c.env.DB.prepare(
+    "UPDATE sequences SET value = value + 1 WHERE name = 'asset_id' RETURNING value"
+  ).first<{ value: number }>();
+  
+  const sequence = result?.value || 1;
   const assetId = sequence.toString().padStart(5, '0');
   
   // Generate Slug

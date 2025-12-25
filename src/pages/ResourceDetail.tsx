@@ -63,7 +63,7 @@ function ReviewsSection({ assetId }: { assetId: string }) {
   );
 }
 
-function DownloadSection({ assetId, title }: { assetId: string; title: string }) {
+function DownloadSection({ assetId, formattedAssetId, title }: { assetId: string; formattedAssetId: string; title: string }) {
   const { isSubscriber, isLoaded, isSignedIn } = useSubscription();
   const { getToken } = useAuth();
   const [showEmailCapture, setShowEmailCapture] = useState(false);
@@ -102,9 +102,9 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      // Generate clean filename: huepress-{slug}-{assetId}.pdf
+      // Generate clean filename: huepress-{slug}-{formattedAssetId}.pdf
       const cleanSlug = title.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/--+/g, '-');
-      a.download = `huepress-${cleanSlug}-${assetId}.pdf`;
+      a.download = `huepress-${cleanSlug}-${formattedAssetId}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -441,7 +441,7 @@ export default function ResourceDetailPage() {
 
               {/* Download/Unlock Section */}
               <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 mb-6">
-                <DownloadSection assetId={assetId} title={asset.title} />
+                <DownloadSection assetId={assetId} formattedAssetId={asset.asset_id as string} title={asset.title} />
               </div>
 
               {/* Value Props / Trust Badges */}
