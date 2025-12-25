@@ -138,16 +138,21 @@ export default function AdminAssetForm() {
             setHasExistingFiles(true);
           }
           if (asset.r2_key_private && !(asset.r2_key_private as string).startsWith("__draft__")) {
-            setPdfPreviewUrl(`Preview available`);
+            // Use the public API download URL for preview if authenticated
+            // Or just a placeholder if we can't get a direct link. 
+            // Better: use the apiClient to get a signed URL or worker URL
+            const previewLink = apiClient.assets.getDownloadUrl(asset.id);
+            setPdfPreviewUrl(previewLink);
           }
 
           // Fetch Source SVG for Regeneration
-          // We try to fetch it. If it exists, we load it into state to enable live editing.
           try {
             const sourceBlob = await apiClient.admin.getAssetSource(id, email);
             if (sourceBlob) {
               const sourceFile = new File([sourceBlob], "original.svg", { type: "image/svg+xml" });
               setOriginalSvgFile(sourceFile);
+            } else {
+               console.warn("No source file found for this asset.");
             }
           } catch (e) {
              console.warn("Could not fetch source SVG", e);
@@ -199,7 +204,6 @@ export default function AdminAssetForm() {
   const [pdfNeedsRegeneration, setPdfNeedsRegeneration] = useState(false);
   
   // Fields that affect PDF content/metadata/filename
-  // We will watch these for changes
   const PDF_AFFECTING_FIELDS = ['title', 'description', 'category', 'skill', 'tags'];
 
   // Cleanup preview URLs
@@ -227,16 +231,15 @@ export default function AdminAssetForm() {
 
   // Auto-Regeneration Effect
   useEffect(() => {
+    // If no source file, we can't regenerate.
     if (!originalSvgFile || !pdfNeedsRegeneration) return;
     
-    // Only regenerate if we have the minimum required fields to generate a valid PDF/ID
+    // Only regenerate if we have the minimum required fields
     if (!formData.title || !formData.category || !formData.skill) return;
 
     const timer = setTimeout(async () => {
       setIsRegenerating(true);
       try {
-         // Create a temporary ID if one doesn't exist (for preview purposes)
-         // If we have a real asset_id, use it.
          const assetId = formData.asset_id || "HP-PREVIEW-0000";
          
          const slug = formData.title.toLowerCase()
@@ -244,6 +247,8 @@ export default function AdminAssetForm() {
           .replace(/\s+/g, '-')
           .replace(/[^\w-]+/g, '')
           .replace(/--+/g, '-');
+
+         console.log("Regenerating Asset...", { assetId, slug });
 
          const { pdfFile: newPdf, webpFile: newWebp } = await generateFilesFromSvg(
             originalSvgFile,
@@ -258,14 +263,14 @@ export default function AdminAssetForm() {
          // Update previews
          setThumbnailPreviewUrl(URL.createObjectURL(newWebp));
          setPdfPreviewUrl(URL.createObjectURL(newPdf));
-         setPdfNeedsRegeneration(false); // Reset flag after regeneration
+         setPdfNeedsRegeneration(false); // Reset flag
          
       } catch (err) {
         console.error("Auto-regeneration failed", err);
       } finally {
         setIsRegenerating(false);
       }
-    }, 1500); // 1.5s debounce to accept typing pauses
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [
@@ -277,6 +282,7 @@ export default function AdminAssetForm() {
     originalSvgFile,
     pdfNeedsRegeneration
   ]);
+
 
 
   /**
@@ -1120,6 +1126,20 @@ export default function AdminAssetForm() {
               <label className="block text-sm font-bold text-ink mb-1">✨ Magic Upload (SVG)</label>
               <p className="text-xs text-gray-500 mb-3">Upload an SVG to automatically generate the PDF and Thumbnail.</p>
               
+              {/* Warning for existing assets without source */}
+              {isEditing && !originalSvgFile && (
+                <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                  <div className="mt-0.5 text-amber-500">
+                    <AlertModal isOpen={false} onClose={() => {}} title="" message="" variant="error" /> {/* Dummy to import type if needed, or just use icon */}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-amber-800">Source Missing</p>
+                    <p className="text-[10px] text-amber-700">Live regeneration is disabled. Please upload the original SVG to enable auto-updates.</p>
+                  </div>
+                </div>
+              )}
+
               <div 
                 className={`relative transition-all ${isDragging ? 'scale-[1.02]' : ''}`}
                 onDragOver={handleDragOver}
