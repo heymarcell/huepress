@@ -43,9 +43,13 @@ app.get("/assets", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(query).bind(...params).all();
     
+    const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
     const assets = results?.map((asset: Record<string, unknown>) => ({
       ...asset,
       tags: asset.tags ? JSON.parse(asset.tags as string) : [],
+      image_url: asset.r2_key_public && !(asset.r2_key_public as string).startsWith("__draft__")
+        ? `${cdnUrl}/${asset.r2_key_public}`
+        : null,
     }));
 
     return c.json({ assets, count: assets?.length || 0 });
@@ -70,11 +74,15 @@ app.get("/assets/:id", async (c) => {
       return c.json({ error: "Asset not found" }, 404);
     }
 
+    const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
     return c.json({
       ...asset,
       tags: asset.tags ? JSON.parse(asset.tags as string) : [],
       fun_facts: asset.fun_facts ? JSON.parse(asset.fun_facts as string) : [],
       suggested_activities: asset.suggested_activities ? JSON.parse(asset.suggested_activities as string) : [],
+      image_url: asset.r2_key_public && !(asset.r2_key_public as string).startsWith("__draft__")
+        ? `${cdnUrl}/${asset.r2_key_public}`
+        : null,
     });
   } catch (error) {
     console.error("Database error:", error);
