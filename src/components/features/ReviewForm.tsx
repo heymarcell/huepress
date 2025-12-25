@@ -30,7 +30,7 @@ export function ReviewForm({ assetId, onReviewSubmitted }: ReviewFormProps) {
 
     try {
       const token = await getToken();
-      const response = await fetch(`${API_URL}/reviews`, {
+      const response = await fetch(`${API_URL}/api/reviews`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
