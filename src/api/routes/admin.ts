@@ -545,7 +545,7 @@ app.get("/requests", async (c) => {
   const { status } = c.req.query();
   
   let query = "SELECT * FROM design_requests";
-  let params: any[] = [];
+  const params: string[] = [];
   
   if (status) {
     query += " WHERE status = ?";
@@ -567,8 +567,8 @@ app.patch("/requests/:id", async (c) => {
   const { status, admin_notes } = await c.req.json<{ status?: string, admin_notes?: string }>();
   
   // Dynamic update
-  let updates: string[] = [];
-  let params: any[] = [];
+  const updates: string[] = [];
+  const params: string[] = [];
   
   if (status) {
     updates.push("status = ?");
