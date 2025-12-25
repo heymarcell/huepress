@@ -141,7 +141,7 @@ app.post('/pdf', async (req, res) => {
     console.log(`[PDF] Generating: ${filename || 'document.pdf'}`, metadata ? `for ${metadata.assetId}` : '(no metadata)');
 
     const browser = await puppeteer.launch({
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
       headless: 'new',
       args: [
         '--no-sandbox',
