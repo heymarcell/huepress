@@ -274,6 +274,7 @@ export default function ResourceDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [imageError, setImageError] = useState(false);
+  const { isSubscriber } = useSubscription();
 
   useEffect(() => {
     const fetchAsset = async () => {
@@ -465,6 +466,7 @@ export default function ResourceDetailPage() {
                         key={idx}
                         to={`/vault?tag=${encodeURIComponent(tag)}`}
                         className="px-3 py-1.5 bg-gray-50 text-gray-500 text-xs rounded-full hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                      >
                         #{tag}
                       </Link>
                     ))}
@@ -472,12 +474,44 @@ export default function ResourceDetailPage() {
                 </div>
               )}
 
-              {/* Marketing Card - Fills empty space with purpose */}
-              <div className="mt-8 p-5 bg-gradient-to-br from-primary/5 to-purple-500/5 rounded-2xl border border-primary/10">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
-                    <Sparkles className="w-5 h-5" />
+              {/* Dynamic Right Column Card */}
+              {isSubscriber ? (
+                // Subscriber View: "Request a Design" or Value Reinforcement
+                <div className="mt-8 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
+                  <div className="flex items-start gap-4">
+                     <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shadow-sm flex-shrink-0">
+                        <Sparkles className="w-5 h-5" />
+                     </div>
+                     <div>
+                        <h4 className="font-serif text-lg text-ink mb-1">Premium Member</h4>
+                        <p className="text-sm text-gray-600 mb-3">
+                           Enjoying this design? As a member, you get priority access to new releases every week.
+                        </p>
+                        <Link to="/contact" className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-1 group">
+                           Request a Design <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                     </div>
                   </div>
+                </div>
+              ) : (
+                // Non-Subscriber View: Upsell
+                <div className="mt-8 p-5 bg-gradient-to-br from-primary/5 to-purple-500/5 rounded-2xl border border-primary/10">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-serif text-lg text-ink mb-1">Unlock All 500+ Designs</h4>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Get unlimited access to the entire HuePress library, including premium collections and exclusive PDFs.
+                      </p>
+                      <Link to="/pricing" className="text-sm font-bold text-primary hover:text-primary-dark transition-colors flex items-center gap-1 group">
+                        Get All Access <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
                   <div>
                     <h4 className="font-serif text-lg text-ink mb-1">Unlock All 500+ Designs</h4>
                     <p className="text-sm text-gray-600 mb-3">
