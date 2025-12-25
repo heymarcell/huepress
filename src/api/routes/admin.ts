@@ -220,16 +220,24 @@ app.post("/assets", async (c) => {
     // JSON fields (ensure they are arrays)
     const funFacts = body["fun_facts"] as string || "[]"; // Expecting JSON string
     const suggestedActivities = body["suggested_activities"] as string || "[]"; // Expecting JSON string
-
-    if (!title || !category || !skill || !thumbnailFile || !pdfFile) {
+    
+    // Check if this is an update vs new create
+    const hasNewFiles = body["has_new_files"] === "true";
+    const providedAssetId = body["asset_id"] as string;
+    const isUpdate = Boolean(providedAssetId);
+    
+    // For new assets, require files. For updates, files are optional.
+    if (!isUpdate && (!title || !category || !skill || !thumbnailFile || !pdfFile)) {
+      return c.json({ error: "Missing required fields" }, 400);
+    }
+    
+    if (isUpdate && (!title || !category || !skill)) {
       return c.json({ error: "Missing required fields" }, 400);
     }
 
     // 1. Generate SEO ID and Slug
     const code = CATEGORY_CODES[category] || "GEN";
     const prefix = `HP-${code}-`;
-    
-    const providedAssetId = body["asset_id"] as string; // Allow frontend to enforce the ID it put in the PDF
 
     let assetId = providedAssetId; 
     
@@ -251,14 +259,19 @@ app.post("/assets", async (c) => {
 
     const slug = slugify(title);
 
-    // 2. Upload Thumbnail to Public R2
-    const thumbnailKey = `thumbnails/${assetId}_${thumbnailFile.name}`;
-    await c.env.ASSETS_PUBLIC.put(thumbnailKey, thumbnailFile);
-    const thumbnailUrl = `${c.env.ASSETS_CDN_URL}/${thumbnailKey}`;
+    // Handle files - only upload if new files provided
+    let thumbnailKey: string | null = null;
+    let pdfKey: string | null = null;
+    
+    if (hasNewFiles && thumbnailFile && pdfFile) {
+      // 2. Upload Thumbnail to Public R2
+      thumbnailKey = `thumbnails/${assetId}_${thumbnailFile.name}`;
+      await c.env.ASSETS_PUBLIC.put(thumbnailKey, thumbnailFile);
 
-    // 3. Upload PDF to Private R2
-    const pdfKey = `pdfs/huepress-${assetId}-${slug}.pdf`;
-    await c.env.ASSETS_PRIVATE.put(pdfKey, pdfFile);
+      // 3. Upload PDF to Private R2
+      pdfKey = `pdfs/huepress-${assetId}-${slug}.pdf`;
+      await c.env.ASSETS_PRIVATE.put(pdfKey, pdfFile);
+    }
 
     // 4. Insert or Update into D1
     const tagsArray = tags.split(",").map(t => t.trim()).filter(Boolean);
@@ -271,23 +284,43 @@ app.post("/assets", async (c) => {
       const existing = await c.env.DB.prepare("SELECT id FROM assets WHERE asset_id = ?").bind(providedAssetId).first<{ id: string }>();
       if (existing) {
         id = existing.id;
-        await c.env.DB.prepare(`
-          UPDATE assets SET 
-            slug = ?, title = ?, description = ?, category = ?, skill = ?, 
-            r2_key_public = ?, r2_key_private = ?, status = ?, tags = ?, 
-            extended_description = ?, fun_facts = ?, suggested_activities = ?, 
-            coloring_tips = ?, therapeutic_benefits = ?, meta_keywords = ?
-          WHERE asset_id = ?
-        `).bind(
-          slug, title, description, category, skill, 
-          thumbnailUrl, pdfKey, status, tagsJson, 
-          extendedDescription, funFacts, suggestedActivities, 
-          coloringTips, therapeuticBenefits, metaKeywords,
-          providedAssetId
-        ).run();
+        
+        // Conditionally update R2 keys only if new files were uploaded
+        if (thumbnailKey && pdfKey) {
+          // Update with new files
+          await c.env.DB.prepare(`
+            UPDATE assets SET 
+              slug = ?, title = ?, description = ?, category = ?, skill = ?, 
+              r2_key_public = ?, r2_key_private = ?, status = ?, tags = ?, 
+              extended_description = ?, fun_facts = ?, suggested_activities = ?, 
+              coloring_tips = ?, therapeutic_benefits = ?, meta_keywords = ?
+            WHERE asset_id = ?
+          `).bind(
+            slug, title, description, category, skill, 
+            thumbnailKey, pdfKey, status, tagsJson, 
+            extendedDescription, funFacts, suggestedActivities, 
+            coloringTips, therapeuticBenefits, metaKeywords,
+            providedAssetId
+          ).run();
+        } else {
+          // Update metadata only, keep existing files
+          await c.env.DB.prepare(`
+            UPDATE assets SET 
+              slug = ?, title = ?, description = ?, category = ?, skill = ?, 
+              status = ?, tags = ?, 
+              extended_description = ?, fun_facts = ?, suggested_activities = ?, 
+              coloring_tips = ?, therapeutic_benefits = ?, meta_keywords = ?
+            WHERE asset_id = ?
+          `).bind(
+            slug, title, description, category, skill, 
+            status, tagsJson, 
+            extendedDescription, funFacts, suggestedActivities, 
+            coloringTips, therapeuticBenefits, metaKeywords,
+            providedAssetId
+          ).run();
+        }
       } else {
-         // Provided ID but not found? Insert with that ID (should theoretically not happen if flow works, but safe fallback)
-         // Actually if we force an ID that violates sequence we might have issues, but let's assume valid.
+         // Provided ID but not found? Insert with that ID
          await c.env.DB.prepare(`
           INSERT INTO assets (
             id, asset_id, slug, title, description, category, skill, 
@@ -298,13 +331,13 @@ app.post("/assets", async (c) => {
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
         `).bind(
           id, assetId, slug, title, description, category, skill,
-          thumbnailUrl, pdfKey, status, tagsJson,
+          thumbnailKey || "__draft__", pdfKey || "__draft__", status, tagsJson,
           extendedDescription, funFacts, suggestedActivities,
           coloringTips, therapeuticBenefits, metaKeywords
         ).run();
       }
     } else {
-      // Standard Insert (Legacy flow)
+      // Standard Insert (New asset flow)
       await c.env.DB.prepare(`
         INSERT INTO assets (
           id, asset_id, slug, title, description, category, skill, 
@@ -315,7 +348,7 @@ app.post("/assets", async (c) => {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `).bind(
         id, assetId, slug, title, description, category, skill,
-        thumbnailUrl, pdfKey, status, tagsJson,
+        thumbnailKey, pdfKey, status, tagsJson,
         extendedDescription, funFacts, suggestedActivities,
         coloringTips, therapeuticBenefits, metaKeywords
       ).run();
