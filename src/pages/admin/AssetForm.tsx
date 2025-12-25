@@ -228,8 +228,37 @@ export default function AdminAssetForm() {
     };
     
     const viewBox = svgElement.getAttribute("viewBox")?.split(/[\s,]+/).map(parseFloat);
-    const svgW = getDim(svgElement.getAttribute("width")) || (viewBox ? viewBox[2] : 595);
-    const svgH = getDim(svgElement.getAttribute("height")) || (viewBox ? viewBox[3] : 842);
+    let svgW = getDim(svgElement.getAttribute("width")) || (viewBox ? viewBox[2] : 595);
+    let svgH = getDim(svgElement.getAttribute("height")) || (viewBox ? viewBox[3] : 842);
+
+    // Intelligent rotation: if landscape (width > height), rotate for better portrait A4 fit
+    const isLandscape = svgW > svgH;
+    if (isLandscape) {
+      // Apply 90-degree rotation transform to SVG
+      const originalW = svgW;
+      const originalH = svgH;
+      svgW = originalH;
+      svgH = originalW;
+      
+      // Set viewBox if not present, then apply rotation transform
+      const currentViewBox = svgElement.getAttribute("viewBox") || `0 0 ${originalW} ${originalH}`;
+      svgElement.setAttribute("viewBox", currentViewBox);
+      
+      // Create a wrapper group with rotation
+      const gNode = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      gNode.setAttribute("transform", `rotate(90 ${originalW/2} ${originalH/2}) translate(${(originalW-originalH)/2} ${(originalH-originalW)/2})`);
+      
+      // Move all children into the group
+      while (svgElement.firstChild) {
+        gNode.appendChild(svgElement.firstChild);
+      }
+      svgElement.appendChild(gNode);
+      
+      // Update SVG dimensions
+      svgElement.setAttribute("width", String(svgW));
+      svgElement.setAttribute("height", String(svgH));
+      svgElement.setAttribute("viewBox", `0 0 ${svgW} ${svgH}`);
+    }
 
     const A4_WIDTH = 210;
     const A4_HEIGHT = 297;
