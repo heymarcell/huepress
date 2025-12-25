@@ -540,8 +540,9 @@ export default function AdminAssetForm() {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text("Need help? Email us anytime: hello@huepress.co", 105, footerY - 6, { align: "center" });
-    doc.text(`© ${new Date().getFullYear()} HuePress. All rights reserved.`, 105, footerY, { align: "center" });
+    doc.text("Need help? Email us anytime: hello@huepress.co", 105, footerY - 12, { align: "center" });
+    doc.text(`© ${new Date().getFullYear()} HuePress. All rights reserved.`, 105, footerY - 6, { align: "center" });
+    doc.text(`Asset ID: #${assetId}`, 105, footerY, { align: "center" });
 
     const pdfBlob = doc.output("blob");
     const pdfFile = new File([pdfBlob], `${baseFilename}.pdf`, { type: "application/pdf" });
