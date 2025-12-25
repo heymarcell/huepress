@@ -533,7 +533,60 @@ app.post("/assets/bulk-delete", async (c) => {
   } catch (error) {
     console.error("Bulk delete error:", error);
     return c.json({ error: "Failed to delete assets" }, 500);
+
+// ADMIN: Get Design Requests
+app.get("/requests", async (c) => {
+  const adminEmail = c.req.header("X-Admin-Email");
+  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) return c.json({ error: "Unauthorized" }, 401);
+
+  const { status } = c.req.query();
+  
+  let query = "SELECT * FROM design_requests";
+  let params: any[] = [];
+  
+  if (status) {
+    query += " WHERE status = ?";
+    params.push(status);
   }
+  
+  query += " ORDER BY created_at DESC";
+  
+  const { results } = await c.env.DB.prepare(query).bind(...params).all();
+  return c.json(results);
+});
+
+// ADMIN: Update Design Request
+app.patch("/requests/:id", async (c) => {
+  const adminEmail = c.req.header("X-Admin-Email");
+  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) return c.json({ error: "Unauthorized" }, 401);
+  
+  const id = c.req.param("id");
+  const { status, admin_notes } = await c.req.json<{ status?: string, admin_notes?: string }>();
+  
+  // Dynamic update
+  let updates: string[] = [];
+  let params: any[] = [];
+  
+  if (status) {
+    updates.push("status = ?");
+    params.push(status);
+  }
+  if (admin_notes !== undefined) {
+    updates.push("admin_notes = ?");
+    params.push(admin_notes);
+  }
+  
+  updates.push("updated_at = datetime('now')");
+  
+  if (updates.length > 1) { // 1 is just updated_at
+      params.push(id);
+      
+      await c.env.DB.prepare(
+        `UPDATE design_requests SET ${updates.join(", ")} WHERE id = ?`
+      ).bind(...params).run();
+  }
+  
+  return c.json({ success: true });
 });
 
 export default app;

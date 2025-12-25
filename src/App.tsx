@@ -15,11 +15,14 @@ const NotFoundPage = lazy(() => import("./pages/NotFound"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfService"));
 
+const RequestDesignPage = lazy(() => import("./pages/RequestDesign"));
+
 // Admin pages - lazy loaded
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
 const AdminAssets = lazy(() => import("./pages/admin/Assets"));
 const AdminAssetForm = lazy(() => import("./pages/admin/AssetForm"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
+const AdminDesignRequests = lazy(() => import("./pages/admin/DesignRequests"));
 
 import ScrollToTop from "./components/ScrollToTop";
 import { ConsentProvider } from "./context/ConsentContext";
@@ -53,6 +56,7 @@ export default function App() {
         <Route path="coloring-pages/:slug" element={<ResourceDetailPage />} />
         <Route path="pricing" element={<PricingPage />} />
         <Route path="about" element={<AboutPage />} />
+        <Route path="request-design" element={<RequestDesignPage />} />
         <Route path="privacy" element={<PrivacyPolicyPage />} />
         <Route path="terms" element={<TermsOfServicePage />} />
         <Route path="*" element={<NotFoundPage />} />
@@ -64,6 +68,7 @@ export default function App() {
         <Route path="assets" element={<AdminAssets />} />
         <Route path="assets/new" element={<AdminAssetForm />} />
         <Route path="assets/:id/edit" element={<AdminAssetForm />} />
+        <Route path="requests" element={<AdminDesignRequests />} />
         <Route path="settings" element={<AdminSettings />} />
       </Route>
       </Routes>

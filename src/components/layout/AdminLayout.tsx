@@ -1,7 +1,7 @@
 import { useUser, RedirectToSignIn } from "@clerk/clerk-react";
 import { Outlet } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Images, Plus, Settings } from "lucide-react";
+import { LayoutDashboard, Images, Plus, Settings, Sparkles } from "lucide-react";
 
 // Admin email whitelist - add your admin emails here
 const ADMIN_EMAILS = [
@@ -52,6 +52,7 @@ export function AdminLayout() {
 
   const navItems = [
     { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/admin/requests", label: "Requests", icon: Sparkles },
     { path: "/admin/assets", label: "Assets", icon: Images },
     { path: "/admin/assets/new", label: "Add Asset", icon: Plus },
   ];

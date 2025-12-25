@@ -10,6 +10,7 @@ import stripeRoute from "./routes/stripe";
 import webhooksRoute from "./routes/webhooks";
 import reviewsRoute from "./routes/reviews";
 import tagsRoute from "./routes/tags";
+import requestsRoute from "./routes/requests";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -22,7 +23,7 @@ app.get("/", (c) => {
   return c.json({ 
     name: "HuePress API", 
     version: "1.0.0",
-    endpoints: ["/api/health", "/api/assets", "/api/download/:id", "/api/reviews/:assetId", "/api/tags"]
+    endpoints: ["/api/health", "/api/assets", "/api/download/:id", "/api/reviews/:assetId", "/api/tags", "/api/requests"]
   });
 });
 
@@ -45,6 +46,7 @@ app.route("/api", stripeRoute);      // /api/checkout, /api/portal, /api/webhook
 app.route("/api/webhooks", webhooksRoute); // /api/webhooks/clerk
 app.route("/api/reviews", reviewsRoute); // /api/reviews/:assetId
 app.route("/api/tags", tagsRoute);   // /api/tags
+app.route("/api/requests", requestsRoute); // /api/requests
 
 // Serve public R2 assets directly (bypasses need for custom R2 domain)
 app.get("/cdn/*", async (c) => {
