@@ -476,13 +476,11 @@ export default function ResourceDetailPage() {
         </div>
       </div>
 
-      {/* Deep Dive Content Section */}
-      <div className="py-12 lg:py-16 bg-white border-t border-gray-100">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto space-y-16">
-            
-            {/* About This Design */}
-            <div className="scroll-mt-24" id="details">
+      {/* Content Section - Only show if there's actual content */}
+      {(asset.extended_description || asset.fun_facts?.length || asset.suggested_activities?.length || asset.coloring_tips || asset.therapeutic_benefits) && (
+        <div className="py-8 bg-white border-t border-gray-100">
+          <div className="container mx-auto px-6">
+            <div className="max-w-5xl mx-auto">
               <AboutDesign
                 extendedDescription={asset.extended_description}
                 funFacts={asset.fun_facts}
@@ -493,45 +491,45 @@ export default function ResourceDetailPage() {
                 skill={asset.skill}
               />
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* Reviews */}
-            <div className="scroll-mt-24" id="reviews">
-              <ReviewsSection assetId={assetId} />
-            </div>
-
+      {/* Reviews - Compact inline */}
+      <div className="py-8 bg-gray-50 border-t border-gray-100">
+        <div className="container mx-auto px-6">
+          <div className="max-w-3xl mx-auto">
+            <ReviewsSection assetId={assetId} />
           </div>
         </div>
       </div>
 
-      {/* Related Items Section */}
-      <div className="py-16 bg-gray-50 border-t border-gray-200">
+      {/* Related Items Section - Compact */}
+      <div className="py-10 bg-white border-t border-gray-200">
         <div className="container mx-auto px-6">
            <div className="max-w-6xl mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="font-serif text-3xl text-ink">You might also like</h3>
-                <Link to="/vault" className="text-primary font-medium hover:text-primary-dark transition-colors">
-                  View all designs →
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-serif text-2xl text-ink">You might also like</h3>
+                <Link to="/vault" className="text-primary text-sm font-medium hover:text-primary-dark transition-colors">
+                  View all →
                 </Link>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {relatedItems.map((item) => (
                   <Link key={item.id} to={item.asset_id && item.slug ? `/coloring-pages/${item.slug}-${item.asset_id}` : `/vault/${item.id}`} className="group">
-                    <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all transform hover:-translate-y-1 overflow-hidden duration-300">
-                      <div className="aspect-[3/4] bg-white p-4 relative">
+                    <div className="bg-gray-50 rounded-lg hover:shadow-md transition-all overflow-hidden">
+                      <div className="aspect-square bg-white p-3">
                         {item.image_url ? (
-                          <img src={item.image_url} alt={item.title} className="object-contain w-full h-full group-hover:scale-105 transition-transform duration-500" />
+                          <img src={item.image_url} alt={item.title} className="object-contain w-full h-full group-hover:scale-105 transition-transform duration-300" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300">
-                            <FileText className="w-8 h-8" />
+                            <FileText className="w-6 h-6" />
                           </div>
                         )}
-                        {/* Hover Overlay */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
                       </div>
-                      <div className="px-4 py-3 border-t border-gray-50">
-                        <h4 className="text-sm font-semibold text-gray-900 group-hover:text-primary transition-colors line-clamp-1">{item.title}</h4>
-                        <p className="text-xs text-gray-500 mt-1">{item.category}</p>
+                      <div className="px-3 py-2">
+                        <h4 className="text-xs font-semibold text-gray-800 group-hover:text-primary transition-colors line-clamp-1">{item.title}</h4>
                       </div>
                     </div>
                   </Link>
