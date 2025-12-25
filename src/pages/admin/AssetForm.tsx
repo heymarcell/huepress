@@ -384,6 +384,12 @@ export default function AdminAssetForm() {
       if (currentPdf) {
         form.append("pdf", currentPdf);
       }
+      
+      // Always append source if we have it (ensures background tasks have content for generation)
+      // This is critical for regeneration logic when clicking "Save"
+      if (originalSvgFile) {
+        form.append("source", originalSvgFile);
+      }
 
       // Use production API URL if in prod, else local
       // apiClient handles API_URL internally, but createAsset needs manualFormData
