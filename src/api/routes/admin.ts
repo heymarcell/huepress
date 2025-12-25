@@ -264,12 +264,14 @@ app.post("/assets", async (c) => {
     let pdfKey: string | null = null;
     
     if (hasNewFiles && thumbnailFile && pdfFile) {
-      // 2. Upload Thumbnail to Public R2 (filename already includes assetId from frontend)
-      thumbnailKey = `thumbnails/${thumbnailFile.name}`;
+      // 2. Upload Thumbnail to Public R2
+      // STRICT NAMING: Ignore uploaded filename, enforce standard naming
+      thumbnailKey = `thumbnails/${assetId}-${slug}.webp`;
       await c.env.ASSETS_PUBLIC.put(thumbnailKey, thumbnailFile);
 
-      // 3. Upload PDF to Private R2 (filename already includes assetId from frontend)
-      pdfKey = `pdfs/${pdfFile.name}`;
+      // 3. Upload PDF to Private R2
+      // STRICT NAMING: Ignore uploaded filename, enforce standard naming
+      pdfKey = `pdfs/${assetId}-${slug}.pdf`;
       await c.env.ASSETS_PRIVATE.put(pdfKey, pdfFile);
     }
 
