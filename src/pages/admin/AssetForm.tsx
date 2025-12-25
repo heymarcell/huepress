@@ -135,6 +135,15 @@ export default function AdminAssetForm() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessingSvg, setIsProcessingSvg] = useState(false);
+  
+  // Store original SVG for potential regeneration
+  const [originalSvgFile, setOriginalSvgFile] = useState<File | null>(null);
+  
+  // Track if PDF needs regeneration (user changed metadata after upload)
+  const [pdfNeedsRegeneration, setPdfNeedsRegeneration] = useState(false);
+  
+  // Fields that affect PDF content/metadata/filename
+  const PDF_AFFECTING_FIELDS = ['title', 'description', 'category', 'skill', 'tags'];
 
   // Cleanup preview URLs
   useEffect(() => {
@@ -153,6 +162,11 @@ export default function AdminAssetForm() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // If a PDF-affecting field changed and we have an SVG, mark for regeneration
+    if (originalSvgFile && PDF_AFFECTING_FIELDS.includes(name)) {
+      setPdfNeedsRegeneration(true);
+    }
   };
 
   const { user } = useUser();
@@ -176,6 +190,11 @@ export default function AdminAssetForm() {
     }
 
     setIsProcessingSvg(true);
+    
+    // Store SVG for potential regeneration if fields change
+    setOriginalSvgFile(file);
+    setPdfNeedsRegeneration(false); // Fresh generation, no pending changes
+    
     try {
       // 1. Create Draft Asset (saves all form data, returns ID & slug)
       const { assetId, slug } = await apiClient.admin.createDraft(
@@ -552,6 +571,28 @@ export default function AdminAssetForm() {
     setIsSubmitting(true);
 
     try {
+      // Check if PDF needs regeneration due to field changes
+      if (pdfNeedsRegeneration && originalSvgFile && formData.asset_id) {
+        setAlertState({
+          isOpen: true,
+          title: "Regenerating PDF...",
+          message: "Metadata changed - updating PDF with new information.",
+          variant: "info"
+        });
+        
+        // Re-process SVG with existing asset ID (don't create new draft)
+        // For now, we just warn user. Full regeneration would require refactoring.
+        // TODO: Extract PDF generation into reusable function
+        setAlertState({
+          isOpen: true,
+          title: "Please Re-upload SVG",
+          message: "You changed Title, Description, Category, Skill, or Tags. Please re-upload the SVG to regenerate the PDF with updated information.",
+          variant: "info"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
       const form = new FormData();
       // Basic Fields
       form.append("title", formData.title);
