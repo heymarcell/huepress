@@ -345,57 +345,74 @@ app.post("/assets", async (c) => {
         let currentThumbnailBase64: string | null = null;
         let currentThumbnailMime = "image/webp";
 
-        // 2. Generate Thumbnail (if missing and have source)
-        if (!hasThumbnailUpload && hasSourceUpload && svgContent && thumbnailKey) {
-           console.log(`[Background] Generating Thumbnail for ${assetId}...`);
-           const res = await generateThumbnailViaContainer(c.env, svgContent);
-           
-           const buf = Uint8Array.from(atob(res.imageBase64), x => x.charCodeAt(0));
-           await c.env.ASSETS_PUBLIC.put(thumbnailKey, buf, { 
-             httpMetadata: { contentType: res.mimeType } 
-           });
-           
-           currentThumbnailBase64 = res.imageBase64;
-           currentThumbnailMime = res.mimeType;
-        } else if (hasThumbnailUpload && thumbnailKey) {
-           // Read uploaded thumbnail for OG generation
-           const obj = await c.env.ASSETS_PUBLIC.get(thumbnailKey);
-           if (obj) {
-             const buf = await obj.arrayBuffer();
-             currentThumbnailBase64 = arrayBufferToBase64(buf);
-           }
-        }
+        // Define parallel tasks
+        const thumbnailAndOgTask = async () => {
+            try {
+                // 2. Generate Thumbnail (if missing and have source)
+                if (!hasThumbnailUpload && hasSourceUpload && svgContent && thumbnailKey) {
+                   console.log(`[Background] Generating Thumbnail for ${assetId}...`);
+                   // Use 600px width for better performance
+                   const res = await generateThumbnailViaContainer(c.env, svgContent, 600);
+                   
+                   const buf = Uint8Array.from(atob(res.imageBase64), x => x.charCodeAt(0));
+                   await c.env.ASSETS_PUBLIC.put(thumbnailKey, buf, { 
+                     httpMetadata: { contentType: res.mimeType } 
+                   });
+                   
+                   currentThumbnailBase64 = res.imageBase64;
+                   currentThumbnailMime = res.mimeType;
+                } else if (hasThumbnailUpload && thumbnailKey) {
+                   // Read uploaded thumbnail for OG generation
+                   const obj = await c.env.ASSETS_PUBLIC.get(thumbnailKey);
+                   if (obj) {
+                     const buf = await obj.arrayBuffer();
+                     currentThumbnailBase64 = arrayBufferToBase64(buf);
+                   }
+                }
 
-        // 3. Generate OG Image (needs thumbnail)
-        if (currentThumbnailBase64 && ogKey) {
-           console.log(`[Background] Generating OG for ${assetId}...`);
-           const { imageBase64 } = await generateOgImageViaContainer(c.env, title, currentThumbnailBase64, currentThumbnailMime);
-           const buf = Uint8Array.from(atob(imageBase64), x => x.charCodeAt(0));
-           await c.env.ASSETS_PUBLIC.put(ogKey, buf, { httpMetadata: { contentType: "image/png" } });
-        }
+                // 3. Generate OG Image (needs thumbnail)
+                if (currentThumbnailBase64 && ogKey) {
+                   console.log(`[Background] Generating OG for ${assetId}...`);
+                   const { imageBase64 } = await generateOgImageViaContainer(c.env, title, currentThumbnailBase64, currentThumbnailMime);
+                   const buf = Uint8Array.from(atob(imageBase64), x => x.charCodeAt(0));
+                   await c.env.ASSETS_PUBLIC.put(ogKey, buf, { httpMetadata: { contentType: "image/png" } });
+                }
+            } catch (err) {
+                console.error(`[Background] Thumbnail/OG Task failed:`, err);
+            }
+        };
 
-        // 4. Generate PDF (if missing and have source)
-        if (!hasPdfUpload && hasSourceUpload && svgContent && pdfKey) {
-           console.log(`[Background] Generating PDF for ${assetId}...`);
-           const { pdfBase64 } = await generatePdfViaContainer(
-             c.env,
-             svgContent,
-             `${assetId}-${slug}`,
-             {
-               title: (title as string) || "",
-               assetId: idPath,
-               description: (description as string) || "",
-               qrCodeUrl: "https://huepress.co/review"
-             }
-           );
-           const buf = Uint8Array.from(atob(pdfBase64), x => x.charCodeAt(0));
-           await c.env.ASSETS_PRIVATE.put(pdfKey, buf, {
-             httpMetadata: {
-               contentType: "application/pdf",
-               contentDisposition: `attachment; filename="${assetId}-${slug}.pdf"`
-             }
-           });
-        }
+        const pdfTask = async () => {
+            try {
+                // 4. Generate PDF (if missing and have source)
+                if (!hasPdfUpload && hasSourceUpload && svgContent && pdfKey) {
+                   console.log(`[Background] Generating PDF for ${assetId}...`);
+                   const { pdfBase64 } = await generatePdfViaContainer(
+                     c.env,
+                     svgContent,
+                     `${assetId}-${slug}`,
+                     {
+                       title: (title as string) || "",
+                       assetId: idPath,
+                       description: (description as string) || "",
+                       qrCodeUrl: "https://huepress.co/review"
+                     }
+                   );
+                   const buf = Uint8Array.from(atob(pdfBase64), x => x.charCodeAt(0));
+                   await c.env.ASSETS_PRIVATE.put(pdfKey, buf, {
+                     httpMetadata: {
+                       contentType: "application/pdf",
+                       contentDisposition: `attachment; filename="${assetId}-${slug}.pdf"`
+                     }
+                   });
+                }
+            } catch (err) {
+                 console.error(`[Background] PDF Task failed:`, err);
+            }
+        };
+
+        // Run tasks in parallel to avoid timeout
+        await Promise.allSettled([thumbnailAndOgTask(), pdfTask()]);
         
         console.log(`[Background] Processing complete for ${assetId}`);
 
