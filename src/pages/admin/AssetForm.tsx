@@ -592,7 +592,7 @@ export default function AdminAssetForm() {
       }
 
       // 2. Generate Files locally
-      const { pdfFile: pdfFileObj, webpFile, baseFilename } = await generateFilesFromSvg(
+      const { pdfFile: pdfFileObj, webpFile } = await generateFilesFromSvg(
         file,
         assetId,
         slug,
