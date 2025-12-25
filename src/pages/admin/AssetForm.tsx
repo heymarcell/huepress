@@ -57,6 +57,14 @@ const HUEPRESS_LOGO_SVG = `<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" 
   </g>
 </svg>`;
 
+// Social icons for PDF
+const SOCIAL_ICONS = {
+  INSTAGRAM: `<svg viewBox="0 0 24 24" fill="#303030"><path d="M12 2c2.717 0 3.056.01 4.122.06 1.065.05 1.79.217 2.428.465.66.254 1.216.598 1.772 1.153a4.908 4.908 0 0 1 1.153 1.772c.247.637.415 1.363.465 2.428.047 1.066.06 1.405.06 4.122 0 2.717-.01 3.056-.06 4.122-.05 1.065-.218 1.79-.465 2.428a4.883 4.883 0 0 1-1.153 1.772 4.915 4.915 0 0 1-1.772 1.153c-.637.247-1.363.415-2.428.465-1.066.047-1.405.06-4.122.06-2.717 0-3.056-.01-4.122-.06-1.065-.05-1.79-.218-2.428-.465a4.89 4.89 0 0 1-1.772-1.153 4.904 4.904 0 0 1-1.153-1.772c-.248-.637-.415-1.363-.465-2.428C2.013 15.056 2 14.717 2 12c0-2.717.01-3.056.06-4.122.05-1.066.217-1.79.465-2.428a4.88 4.88 0 0 1 1.153-1.772A4.897 4.897 0 0 1 5.45 2.525c.638-.248 1.362-.415 2.428-.465C8.944 2.013 9.283 2 12 2zm0 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm6.5-.25a1.25 1.25 0 0 0-2.5 0 1.25 1.25 0 0 0 2.5 0zM12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>`,
+  FACEBOOK: `<svg viewBox="0 0 24 24" fill="#303030"><path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.53-4.5-10.02-10-10.02z"/></svg>`,
+  PINTEREST: `<svg viewBox="0 0 24 24" fill="#303030"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.24 2.65 7.89 6.43 9.35-.09-.79-.16-2.01.03-2.87.17-.78 1.1-4.66 1.1-4.66s-.28-.56-.28-1.39c0-1.3.75-2.27 1.69-2.27.8 0 1.18.6 1.18 1.32 0 .8-.51 2.01-.77 3.12-.22.93.47 1.69 1.38 1.69 1.66 0 2.94-1.75 2.94-4.28 0-2.26-1.63-3.84-3.95-3.84-2.88 0-4.57 2.16-4.57 4.39 0 .87.33 1.8.75 2.3.08.1.09.19.07.29l-.28 1.14c-.04.18-.14.22-.33.13-1.22-.57-1.98-2.35-1.98-3.79 0-3.08 2.24-5.92 6.46-5.92 3.39 0 6.02 2.42 6.02 5.65 0 3.38-2.13 6.1-5.1 6.1-.99 0-1.92-.52-2.24-1.13l-.61 2.32c-.22.84-.81 1.9-1.21 2.54.91.28 1.88.43 2.88.43 5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>`,
+  WEBSITE: `<svg viewBox="0 0 24 24" fill="#303030"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>`
+};
+
 // Helper to parse comma-separated tags
 const parseTags = (tags: string) => tags.split(",").map(t => t.trim()).filter(Boolean);
 
@@ -410,98 +418,129 @@ export default function AdminAssetForm() {
 
     // === HEADER: Logo centered ===
     const huepressLogoNode = new DOMParser().parseFromString(HUEPRESS_LOGO_SVG, "image/svg+xml").documentElement;
-    await doc.svg(huepressLogoNode, { x: 62.5, y: 15, width: 85, height: 22 });
+    await doc.svg(huepressLogoNode, { x: 62.5, y: 12, width: 85, height: 22 });
     
     // Tagline
     doc.setFont("helvetica", "italic");
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(120);
-    doc.text("Therapy-Grade Coloring Pages", 105, 42, { align: "center" });
+    doc.text("Therapy-Grade Coloring Pages for Calm & Focus", 105, 38, { align: "center" });
     
     // Divider
     doc.setDrawColor(200);
-    doc.line(50, 48, 160, 48);
+    doc.line(40, 44, 170, 44);
 
     // === PRINTING TIPS SECTION ===
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setTextColor(50);
-    doc.text("Printing Tips", 20, 60);
+    doc.text("Printing Tips", 20, 54);
     
     doc.setDrawColor(230);
     doc.setFillColor(252, 252, 252);
-    doc.roundedRect(20, 65, 170, 28, 2, 2, "FD");
+    doc.roundedRect(20, 58, 170, 26, 2, 2, "FD");
     
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(80);
-    doc.text("• Select 'Fit to Page' in your printer settings", 28, 74);
-    doc.text("• We recommend thick cardstock for the best results", 28, 82);
-    doc.text("• Choose 'High Quality' print mode for crisp lines", 28, 90);
+    doc.text("• Select 'Fit to Page' in your printer settings", 28, 66);
+    doc.text("• We recommend thick cardstock for the best results", 28, 74);
+    doc.text("• Choose 'High Quality' print mode for crisp lines", 28, 82);
 
     // === REVIEW SECTION - Single QR ===
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setTextColor(50);
-    doc.text("Enjoyed This Design?", 20, 108);
+    doc.text("Love This Design? We'd Love to Hear!", 20, 96);
     
     doc.setDrawColor(220);
     doc.setFillColor(250, 250, 250);
-    doc.roundedRect(20, 113, 170, 35, 3, 3, "FD");
+    doc.roundedRect(20, 100, 170, 32, 3, 3, "FD");
     
     const reviewUrl = "https://huepress.co/review";
     const reviewQr = document.createElement("canvas");
     await QRCode.toCanvas(reviewQr, reviewUrl, { width: 180, margin: 0 });
-    doc.addImage(reviewQr.toDataURL("image/png"), "PNG", 28, 117, 27, 27);
+    doc.addImage(reviewQr.toDataURL("image/png"), "PNG", 26, 103, 26, 26);
     
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(40);
-    doc.text("Leave a quick review!", 62, 127);
+    doc.text("Leave a quick review — it means the world to us!", 58, 112);
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(80);
-    doc.text("Scan the QR or visit huepress.co/review", 62, 136);
-    doc.text("Your feedback helps us create even better designs.", 62, 144);
+    doc.text("Scan the QR or visit huepress.co/review", 58, 120);
+    doc.text("Your feedback shapes our future designs.", 58, 128);
 
     // === SHARE YOUR CREATION ===
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(50);
-    doc.text("Share Your Creation", 20, 163);
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(80);
-    doc.text("Finished coloring? Tag us and show off your masterpiece!", 20, 172);
-    
-    doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.setTextColor(40);
-    doc.text("@huepressco    #HuePressColoring", 20, 182);
-
-    // === SOCIAL LINKS ===
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
     doc.setTextColor(50);
-    doc.text("Find Us Online", 20, 200);
+    doc.text("Share Your Masterpiece!", 20, 145);
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(80);
-    doc.text("instagram.com/huepressco", 20, 210);
-    doc.text("pinterest.com/huepressco", 20, 218);
-    doc.text("facebook.com/huepressco", 110, 210);
-    doc.text("huepress.co", 110, 218);
+    doc.text("We love seeing your finished work! Tag us on social and inspire other parents & kids.", 20, 153);
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(40);
+    doc.text("@huepressco    #HuePressColoring", 20, 162);
+
+    // === CONNECT WITH US - Social Links with Icons ===
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(50);
+    doc.text("Connect With Us", 20, 178);
+    
+    const iconSize = 5;
+    const leftX = 20;
+    const rightX = 110;
+    const row1Y = 185;
+    const row2Y = 194;
+    
+    doc.setFontSize(9);
+    doc.setTextColor(80);
+    
+    // Row 1: Instagram (left) | Facebook (right)
+    const igNode = new DOMParser().parseFromString(SOCIAL_ICONS.INSTAGRAM, "image/svg+xml").documentElement;
+    await doc.svg(igNode, { x: leftX, y: row1Y - 3.5, width: iconSize, height: iconSize });
+    doc.text("instagram.com/huepressco", leftX + iconSize + 3, row1Y);
+
+    const fbNode = new DOMParser().parseFromString(SOCIAL_ICONS.FACEBOOK, "image/svg+xml").documentElement;
+    await doc.svg(fbNode, { x: rightX, y: row1Y - 3.5, width: iconSize, height: iconSize });
+    doc.text("facebook.com/huepressco", rightX + iconSize + 3, row1Y);
+
+    // Row 2: Pinterest (left) | Website (right)
+    const pinNode = new DOMParser().parseFromString(SOCIAL_ICONS.PINTEREST, "image/svg+xml").documentElement;
+    await doc.svg(pinNode, { x: leftX, y: row2Y - 3.5, width: iconSize, height: iconSize });
+    doc.text("pinterest.com/huepressco", leftX + iconSize + 3, row2Y);
+
+    const webNode = new DOMParser().parseFromString(SOCIAL_ICONS.WEBSITE, "image/svg+xml").documentElement;
+    await doc.svg(webNode, { x: rightX, y: row2Y - 3.5, width: iconSize, height: iconSize });
+    doc.text("huepress.co", rightX + iconSize + 3, row2Y);
+
+    // === DISCOVER MORE - Upsale ===
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(50);
+    doc.text("Discover 500+ More Designs", 20, 212);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(80);
+    doc.text("New therapy-grade coloring pages added every week. Visit huepress.co to explore", 20, 220);
+    doc.text("our full collection — animals, nature, holidays, and much more!", 20, 228);
 
     // === FOOTER: At actual bottom of page ===
-    const footerY = A4_HEIGHT - 20; // A4 height is 297mm, footer at bottom
+    const footerY = A4_HEIGHT - 15; // A4 height is 297mm, footer at bottom
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text("Questions? Email us: hello@huepress.co", 105, footerY - 8, { align: "center" });
+    doc.text("Need help? Email us anytime: hello@huepress.co", 105, footerY - 6, { align: "center" });
     doc.text(`© ${new Date().getFullYear()} HuePress. All rights reserved.`, 105, footerY, { align: "center" });
 
     const pdfBlob = doc.output("blob");
