@@ -22,7 +22,7 @@ export default function AdminDesignRequests() {
       const url = filter === "all" ? "/api/admin/requests" : "/api/admin/requests?status=pending";
       const response = await fetch(url, {
         headers: {
-            "X-Admin-Email": "marcell@huepress.com" // Identifying as admin (in a real app, this is handled by session/middleware)
+            "X-Admin-Email": "marcell@neongod.io" // Identifying as admin (in a real app, this is handled by session/middleware)
         }
       });
       if (response.ok) {
@@ -46,7 +46,7 @@ export default function AdminDesignRequests() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Email": "marcell@huepress.com"
+          "X-Admin-Email": "marcell@neongod.io"
         },
         body: JSON.stringify({ status: newStatus }),
       });
