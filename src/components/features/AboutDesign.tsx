@@ -25,96 +25,128 @@ export function AboutDesign({
     return null;
   }
 
+  // Collect available sections for smart layout
+  const sections = [
+    coloringTips && { 
+      key: 'tips', 
+      icon: Palette, 
+      title: 'Coloring Tips', 
+      content: coloringTips, 
+      type: 'text',
+      bg: 'bg-purple-50', 
+      border: 'border-purple-100', 
+      iconBg: 'bg-purple-100', 
+      iconColor: 'text-purple-600' 
+    },
+    funFacts?.length && { 
+      key: 'facts', 
+      icon: Lightbulb, 
+      title: 'Fun Facts', 
+      content: funFacts, 
+      type: 'list',
+      bg: 'bg-amber-50', 
+      border: 'border-amber-100', 
+      iconBg: 'bg-amber-100', 
+      iconColor: 'text-amber-600' 
+    },
+    suggestedActivities?.length && { 
+      key: 'activities', 
+      icon: BookOpen, 
+      title: 'Activities', 
+      content: suggestedActivities, 
+      type: 'numbered',
+      bg: 'bg-blue-50', 
+      border: 'border-blue-100', 
+      iconBg: 'bg-blue-100', 
+      iconColor: 'text-blue-600' 
+    },
+    therapeuticBenefits && { 
+      key: 'benefits', 
+      icon: Heart, 
+      title: 'Benefits', 
+      content: therapeuticBenefits, 
+      type: 'text',
+      bg: 'bg-teal-50', 
+      border: 'border-teal-100', 
+      iconBg: 'bg-teal-100', 
+      iconColor: 'text-teal-600' 
+    },
+  ].filter(Boolean) as Array<{
+    key: string;
+    icon: typeof Palette;
+    title: string;
+    content: string | string[];
+    type: 'text' | 'list' | 'numbered';
+    bg: string;
+    border: string;
+    iconBg: string;
+    iconColor: string;
+  }>;
+
+  // Dynamic grid: 1 col on mobile, 2 cols if 2+ sections, max 4 cols
+  const gridCols = sections.length === 1 ? 'md:grid-cols-1' : 
+                   sections.length === 2 ? 'md:grid-cols-2' :
+                   sections.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-4';
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-4">
-        <h3 className="font-serif text-3xl text-ink">About This Design</h3>
+        <h3 className="font-serif text-2xl text-ink">About This Design</h3>
         <div className="h-px bg-gray-200 flex-1" />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Main Content Column (2/3) */}
-        <div className="lg:col-span-2 space-y-8">
-           {/* Extended Description */}
-           {extendedDescription && (
-             <div className="prose prose-lg text-gray-600 leading-relaxed">
-               <p>{extendedDescription}</p>
-             </div>
-           )}
+      {/* Extended Description - Full Width */}
+      {extendedDescription && (
+        <p className="text-gray-600 leading-relaxed max-w-3xl">
+          {extendedDescription}
+        </p>
+      )}
 
-           {/* Two-column layout for tips and activities */}
-           <div className="grid md:grid-cols-2 gap-6">
-             {/* Coloring Tips */}
-             {coloringTips && (
-               <div className="bg-purple-50 rounded-2xl p-6 border border-purple-100">
-                 <div className="flex items-center gap-2 mb-4">
-                   <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
-                     <Palette className="w-4 h-4" />
-                   </div>
-                   <h4 className="font-bold text-ink">Coloring Tips</h4>
-                 </div>
-                 <p className="text-gray-700 text-sm leading-relaxed">{coloringTips}</p>
-               </div>
-             )}
- 
-             {/* Suggested Activities */}
-             {suggestedActivities && suggestedActivities.length > 0 && (
-               <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
-                 <div className="flex items-center gap-2 mb-4">
-                   <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                     <BookOpen className="w-4 h-4" />
-                   </div>
-                   <h4 className="font-bold text-ink">Activities</h4>
-                 </div>
-                 <ul className="space-y-2">
-                   {suggestedActivities.map((activity, index) => (
-                     <li key={index} className="text-sm text-gray-700 flex gap-2">
-                       <span className="font-bold text-blue-400 select-none">{index + 1}.</span>
-                       {activity}
-                     </li>
-                   ))}
-                 </ul>
-               </div>
-             )}
-           </div>
+      {/* Dynamic Grid of Info Cards */}
+      {sections.length > 0 && (
+        <div className={`grid grid-cols-1 ${gridCols} gap-4`}>
+          {sections.map((section) => (
+            <div 
+              key={section.key}
+              className={`${section.bg} ${section.border} border rounded-xl p-5`}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <div className={`w-7 h-7 rounded-full ${section.iconBg} ${section.iconColor} flex items-center justify-center`}>
+                  <section.icon className="w-3.5 h-3.5" />
+                </div>
+                <h4 className="font-bold text-sm text-ink">{section.title}</h4>
+              </div>
+              
+              {section.type === 'text' && (
+                <p className="text-sm text-gray-700 leading-relaxed">{section.content as string}</p>
+              )}
+              
+              {section.type === 'list' && (
+                <ul className="space-y-1.5">
+                  {(section.content as string[]).map((item, i) => (
+                    <li key={i} className="text-sm text-gray-700 flex gap-2">
+                      <span className="text-amber-500">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              
+              {section.type === 'numbered' && (
+                <ul className="space-y-1.5">
+                  {(section.content as string[]).map((item, i) => (
+                    <li key={i} className="text-sm text-gray-700 flex gap-2">
+                      <span className="font-bold text-blue-400">{i + 1}.</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
         </div>
-
-        {/* Sidebar Column (1/3) - Facts & Benefits */}
-        <div className="space-y-6">
-          {/* Fun Facts */}
-          {funFacts && funFacts.length > 0 && (
-             <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100">
-               <div className="flex items-center gap-2 mb-4">
-                 <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-                   <Lightbulb className="w-4 h-4" />
-                 </div>
-                 <h4 className="font-bold text-ink">Fun Facts</h4>
-               </div>
-               <ul className="space-y-3">
-                 {funFacts.map((fact, index) => (
-                   <li key={index} className="text-sm text-gray-700 flex gap-2">
-                     <span className="text-amber-500 mt-1">•</span>
-                     <span>{fact}</span>
-                   </li>
-                 ))}
-               </ul>
-             </div>
-           )}
- 
-           {/* Therapeutic Benefits */}
-           {therapeuticBenefits && (
-             <div className="bg-teal-50 rounded-2xl p-6 border border-teal-100">
-               <div className="flex items-center gap-2 mb-4">
-                 <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600">
-                   <Heart className="w-4 h-4" />
-                 </div>
-                 <h4 className="font-bold text-ink">Benefits</h4>
-               </div>
-               <p className="text-sm text-gray-700 leading-relaxed">{therapeuticBenefits}</p>
-             </div>
-           )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
