@@ -10,6 +10,7 @@ import {
   Printer, 
   PenTool, 
   Sparkles,
+  Star,
   Download,
   Unlock,
   ImageIcon,
@@ -35,6 +36,32 @@ const trustBadges = [
   { icon: PenTool, label: "Bold Lines" },
   { icon: Sparkles, label: "No Watermark" },
 ];
+
+const API_URL = import.meta.env.VITE_API_URL || "/api";
+
+// Compact rating display for header
+function RatingSummary({ assetId }: { assetId: string }) {
+  const [rating, setRating] = useState<{ avg: number | null; count: number }>({ avg: null, count: 0 });
+  
+  useEffect(() => {
+    fetch(`${API_URL}/api/reviews/${assetId}`)
+      .then(res => res.json() as Promise<{ averageRating: number | null; totalReviews: number }>)
+      .then(data => {
+        setRating({ avg: data.averageRating, count: data.totalReviews });
+      })
+      .catch(() => {});
+  }, [assetId]);
+  
+  if (!rating.count) return null;
+  
+  return (
+    <div className="flex items-center gap-1.5">
+      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+      <span className="font-medium text-ink">{rating.avg?.toFixed(1)}</span>
+      <span className="text-gray-400">({rating.count})</span>
+    </div>
+  );
+}
 
 // Reviews section component
 function ReviewsSection({ assetId }: { assetId: string }) {
@@ -423,9 +450,10 @@ export default function ResourceDetailPage() {
                 {asset.title}
               </h1>
 
-              {/* Asset ID badge instead of fake rating */}
-              <div className="flex items-center gap-2 mb-4 text-sm">
+              {/* Asset ID and Rating */}
+              <div className="flex items-center gap-3 mb-4 text-sm">
                 <span className="text-gray-400">#{asset.asset_id}</span>
+                <RatingSummary assetId={assetId} />
               </div>
 
               <p className="text-gray-600 leading-relaxed mb-6">
