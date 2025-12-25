@@ -130,17 +130,14 @@ app.post('/og-image', async (req, res) => {
  * Metadata: { title, assetId, description, qrCodeUrl }
  * Returns: PDF buffer as base64
  */
-app.post('/pdf', async (req, res) => {
-  try {
-    const { svgContent, filename, metadata } = req.body;
-    
-    if (!svgContent) {
-      return res.status(400).json({ error: 'Missing svgContent' });
-    }
+// Global browser instance
+let browserInstance = null;
 
-    console.log(`[PDF] Generating: ${filename || 'document.pdf'}`, metadata ? `for ${metadata.assetId}` : '(no metadata)');
+async function getBrowser() {
+  if (browserInstance) return browserInstance;
 
-    const browser = await puppeteer.launch({
+  console.log('[PDF] Launching new Browser instance...');
+  browserInstance = await puppeteer.launch({
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
       headless: 'new',
       args: [
@@ -151,9 +148,30 @@ app.post('/pdf', async (req, res) => {
         '--single-process',
         '--no-zygote'
       ]
-    });
+  });
+  
+  // Handle disconnection
+  browserInstance.on('disconnected', () => {
+    console.log('[PDF] Browser disconnected, clearing instance');
+    browserInstance = null;
+  });
 
-    const page = await browser.newPage();
+  return browserInstance;
+}
+
+app.post('/pdf', async (req, res) => {
+  let page = null;
+  try {
+    const { svgContent, filename, metadata } = req.body;
+    
+    if (!svgContent) {
+      return res.status(400).json({ error: 'Missing svgContent' });
+    }
+
+    console.log(`[PDF] Generating: ${filename || 'document.pdf'}`, metadata ? `for ${metadata.assetId}` : '(no metadata)');
+
+    const browser = await getBrowser();
+    page = await browser.newPage();
 
     // Generate QR Code if url provided
     let qrDataUri = '';
@@ -166,9 +184,6 @@ app.post('/pdf', async (req, res) => {
     }
     
     // HTML Template for 2-Page PDF
-    // Page 1: Artwork (Centered, Large)
-    // Page 2: Marketing / Info
-    
     const html = `
       <!DOCTYPE html>
       <html>
@@ -232,7 +247,7 @@ app.post('/pdf', async (req, res) => {
              height: 1px;
              background: #e5e7eb;
              margin: 20px 40px;
-          }
+           }
           
           .section {
             margin-bottom: 30px;
@@ -339,8 +354,6 @@ app.post('/pdf', async (req, res) => {
       margin: { top: 0, right: 0, bottom: 0, left: 0 }
     });
 
-    await browser.close();
-
     console.log(`[PDF] Generated successfully, size: ${pdfBuffer.length} bytes`);
 
     res.json({
@@ -352,7 +365,11 @@ app.post('/pdf', async (req, res) => {
 
   } catch (error) {
     console.error('[PDF] Error:', error);
+    // Force close browser on critical error to allow reset?
+    // Maybe better to keep it open unless crashed.
     res.status(500).json({ error: error.message });
+  } finally {
+    if (page) await page.close().catch(e => console.error('Error closing page', e));
   }
 });
 
