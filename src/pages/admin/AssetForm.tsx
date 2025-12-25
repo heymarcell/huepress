@@ -181,49 +181,7 @@ export default function AdminAssetForm() {
    * Helper: Generate WebP Thumbnail from SVG file
    * (PDF generation is handled by the server)
    */
-  const generateThumbnailFromSvg = async (
-    svgFile: File, 
-    assetId: string, 
-    slug: string
-  ): Promise<{ webpFile: File; baseFilename: string }> => {
-    // New Filename Format: huepress-robot-whatever-00001
-    const baseFilename = `huepress-${slug}-${assetId}`;
 
-    // WebP Generation
-    const webpBlob = await new Promise<Blob>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const SIZE = 1024;
-        const canvas = document.createElement("canvas");
-        canvas.width = SIZE;
-        canvas.height = SIZE;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return reject(new Error("No canvas context"));
-        
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(0, 0, SIZE, SIZE);
-        
-        const scale = Math.min(SIZE / img.width, SIZE / img.height);
-        const w = img.width * scale;
-        const h = img.height * scale;
-        const x = (SIZE - w) / 2;
-        const y = (SIZE - h) / 2;
-        
-        ctx.drawImage(img, x, y, w, h);
-        
-        canvas.toBlob(blob => {
-          if (blob) resolve(blob);
-          else reject(new Error("Canvas blob failed"));
-        }, "image/webp", 0.9);
-      };
-      img.onerror = reject;
-      img.src = URL.createObjectURL(svgFile);
-    });
-    
-    const webpFile = new File([webpBlob], `${baseFilename}.webp`, { type: "image/webp" });
-
-    return { webpFile, baseFilename };
-  };
 
   /* 
    * Unified file processor that creates PDF and Thumbnail 
@@ -266,19 +224,13 @@ export default function AdminAssetForm() {
         throw new Error("Failed to create draft. Please try again.");
       }
 
-      // 2. Generate Files locally
-      const { webpFile } = await generateThumbnailFromSvg(
-        file,
-        assetId,
-        slug
-      );
-      
-      // Store assetId in form state
+      // 2. Setup Local State (Backend generates files)
       setFormData(prev => ({ ...prev, asset_id: assetId }));
-      setPdfFile(null); // No local PDF
-      setThumbnailFile(webpFile);
+      setPdfFile(null); 
+      setThumbnailFile(null);
       setPdfPreviewUrl(null);
-      setThumbnailPreviewUrl(URL.createObjectURL(webpFile));
+      setThumbnailPreviewUrl(URL.createObjectURL(file)); // Use SVG as preview
+      setHasExistingFiles(true); // Files are being created on backend
 
       // 3. IMMEDIATE UPLOAD - Upload files to backend and finalize draft
       setAlertState({
@@ -295,7 +247,7 @@ export default function AdminAssetForm() {
       uploadForm.append("category", formData.category);
       uploadForm.append("skill", formData.skill);
       uploadForm.append("tags", formData.tags);
-      uploadForm.append("status", "draft"); // Keep as draft until explicitly published
+      uploadForm.append("status", "draft"); 
       uploadForm.append("extended_description", formData.extendedDescription);
       uploadForm.append("coloring_tips", formData.coloringTips);
       uploadForm.append("therapeutic_benefits", formData.therapeuticBenefits);
@@ -306,8 +258,7 @@ export default function AdminAssetForm() {
       uploadForm.append("fun_facts", JSON.stringify(factsArray));
       uploadForm.append("suggested_activities", JSON.stringify(activitiesArray));
       
-      uploadForm.append("thumbnail", webpFile);
-      // No PDF file appended - backend will generate it
+      // Do not append "thumbnail" (backend generates from source)
       // Append Source File
       uploadForm.append("source", file);
 
@@ -378,14 +329,16 @@ export default function AdminAssetForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Only require files for new assets, not when editing with existing files
-    const requiresNewFiles = !isEditing || !hasExistingFiles;
-    // Relaxed validation: PDF is optional (backend generates it), but Thumbnail is required
-    if (requiresNewFiles && !thumbnailFile) {
+    // Only require files for new assets if we don't have them
+    const requiresSource = !hasExistingFiles;
+    
+    // Check if we have a source file (SVG) - either newly uploaded or previously existing
+    // If requiresSource is true, we MUST have originalSvgFile
+    if (requiresSource && !originalSvgFile) {
       setAlertState({
         isOpen: true,
         title: "Missing Files",
-        message: "Please upload an SVG (or manually add a Thumbnail).",
+        message: "Please upload an SVG file.",
         variant: "error"
       });
       return;

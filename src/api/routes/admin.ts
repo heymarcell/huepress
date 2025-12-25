@@ -13,7 +13,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   }
   return btoa(binary);
 }
-import { generateOgImageViaContainer, generatePdfViaContainer } from "../../lib/processing-container";
+import { generateOgImageViaContainer, generatePdfViaContainer, generateThumbnailViaContainer } from "../../lib/processing-container";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -291,20 +291,40 @@ app.post("/assets", async (c) => {
     // Import Container helper - Moved to top level
 
     // Process Thumbnail
+    // Process Thumbnail
+    let thumbnailBuffer: ArrayBuffer | null = null;
+    let thumbnailMime = 'image/webp';
+
     if (thumbnailFile && thumbnailFile instanceof File) {
-      console.log(`Uploading thumbnail for ${assetId} (UUID: ${id})...`);
+      console.log(`Uploading provided thumbnail for ${assetId}...`);
+      thumbnailBuffer = await thumbnailFile.arrayBuffer();
+      thumbnailMime = thumbnailFile.type || "image/webp";
+    } else if (sourceFile && sourceFile instanceof File) {
+      console.log(`Auto-generating thumbnail from SVG for ${assetId}...`);
+      try {
+        const svgContent = await sourceFile.text();
+        const { imageBase64 } = await generateThumbnailViaContainer(c.env, svgContent);
+        // Container returns WebP
+        thumbnailBuffer = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0)).buffer;
+        thumbnailMime = "image/webp";
+      } catch (thumbError) {
+        console.error(`Thumbnail generation failed for ${assetId}:`, thumbError);
+      }
+    }
+
+    if (thumbnailBuffer) {
       thumbnailKey = `thumbnails/${id}.webp`;
-      await c.env.ASSETS_PUBLIC.put(thumbnailKey, thumbnailFile);
+      await c.env.ASSETS_PUBLIC.put(thumbnailKey, thumbnailBuffer, {
+         httpMetadata: { contentType: thumbnailMime }
+      });
       
       // Generate OG Image from thumbnail using Container
       try {
         console.log(`Generating OG image for ${assetId}...`);
-        const thumbnailBuffer = await thumbnailFile.arrayBuffer();
         const thumbnailBase64 = arrayBufferToBase64(thumbnailBuffer);
-        const mimeType = thumbnailFile.type || "image/webp";
         
         // Call Container for OG generation
-        const { imageBase64 } = await generateOgImageViaContainer(c.env, title, thumbnailBase64, mimeType);
+        const { imageBase64 } = await generateOgImageViaContainer(c.env, title, thumbnailBase64, thumbnailMime);
         
         const ogPng = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
         ogKey = `og-images/${id}.png`;
@@ -315,7 +335,6 @@ app.post("/assets", async (c) => {
         console.log(`OG image generated: ${ogKey}`);
       } catch (ogError) {
         console.error(`OG image generation failed for ${assetId}:`, ogError);
-        // Continue without OG image - fallback to thumbnail
       }
     }
 

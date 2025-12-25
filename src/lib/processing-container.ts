@@ -87,3 +87,24 @@ export async function generatePdfViaContainer(
   
   return await response.json() as { pdfBase64: string; mimeType: string; filename: string };
 }
+
+/**
+ * Generate WebP Thumbnail via container
+ */
+export async function generateThumbnailViaContainer(
+  env: Bindings,
+  svgContent: string,
+  width: number = 1024
+): Promise<{ imageBase64: string; mimeType: string }> {
+  const response = await callProcessingContainer(env, "/thumbnail", {
+    svgContent,
+    width
+  });
+  
+  if (!response.ok) {
+    const error = await response.json() as { error: string };
+    throw new Error(`Container Thumbnail generation failed: ${error.error}`);
+  }
+  
+  return await response.json() as { imageBase64: string; mimeType: string };
+}

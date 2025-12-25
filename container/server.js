@@ -355,6 +355,46 @@ app.post('/pdf', async (req, res) => {
 });
 
 /**
+ * Generate WebP Thumbnail from SVG
+ * POST /thumbnail
+ * Body: { svgContent, width }
+ * Returns: WebP buffer as base64
+ */
+app.post('/thumbnail', async (req, res) => {
+  try {
+    const { svgContent, width = 1024 } = req.body;
+
+    if (!svgContent) {
+      return res.status(400).json({ error: 'Missing svgContent' });
+    }
+
+    console.log(`[Thumbnail] Generating (width: ${width})...`);
+
+    const imageBuffer = await sharp(Buffer.from(svgContent))
+      .resize(width, null, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } }) // SVG usually transparent, but WebP supports transparency. 
+      // Actually standardizing on white background is often safer for previews unless specifically transparent.
+      // Let's keep it transparent or default. AssetForm canvas made it white filled?
+      // AssetForm: ctx.fillStyle = "#FFFFFF"; ctx.fillRect...
+      // So yes, flatten to white.
+      .flatten({ background: { r: 255, g: 255, b: 255 } })
+      .webp({ quality: 90 })
+      .toBuffer();
+
+    console.log(`[Thumbnail] Generated, size: ${imageBuffer.length} bytes`);
+
+    res.json({
+      success: true,
+      imageBase64: imageBuffer.toString('base64'),
+      mimeType: 'image/webp'
+    });
+
+  } catch (error) {
+    console.error('[Thumbnail] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * Future: AI Colorization endpoint
  * POST /colorize
  */
