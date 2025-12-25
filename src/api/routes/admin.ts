@@ -39,13 +39,16 @@ app.post("/reserve-id", async (c) => {
 
   const assetId = `${prefix}${sequence.toString().padStart(4, '0')}`;
   
-  // Create Reservation
+  // Create Reservation - use 'draft' status and placeholder R2 keys
+  // The actual keys will be updated when the asset is finalized
   const id = crypto.randomUUID();
+  const placeholderKey = `__reserved__/${assetId}`;
+  
   try {
     await c.env.DB.prepare(`
-      INSERT INTO assets (id, asset_id, title, category, status, created_at)
-      VALUES (?, ?, ?, ?, 'reserved', datetime('now'))
-    `).bind(id, assetId, title, category).run();
+      INSERT INTO assets (id, asset_id, title, category, status, r2_key_private, r2_key_public, created_at)
+      VALUES (?, ?, ?, ?, 'draft', ?, ?, datetime('now'))
+    `).bind(id, assetId, title, category, placeholderKey, placeholderKey).run();
     
     return c.json({ assetId });
   } catch (err) {
