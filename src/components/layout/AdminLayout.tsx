@@ -16,8 +16,18 @@ export function AdminLayout() {
   // Loading state
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="animate-pulse text-gray-500">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-primary/5 flex flex-col items-center justify-center">
+        <div className="relative mb-6">
+          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-secondary animate-pulse shadow-lg flex items-center justify-center">
+            <span className="text-white font-serif font-bold text-2xl">H</span>
+          </div>
+          <div className="absolute inset-0 w-14 h-14 rounded-xl border-2 border-primary/30 animate-ping" />
+        </div>
+        <div className="flex items-center justify-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+        </div>
       </div>
     );
   }
