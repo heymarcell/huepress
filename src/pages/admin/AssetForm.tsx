@@ -9,61 +9,7 @@ import { apiClient } from "@/lib/api-client";
 
 import { Tag } from "@/api/types";
 
-import { jsPDF } from "jspdf";
-import "svg2pdf.js";
-import QRCode from "qrcode";
-
-const HUEPRESS_LOGO_SVG = `<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 932 257.1">
-  <defs>
-    <style>
-      .st0 { fill: #231f20; }
-      .st1 { fill: #fff; }
-      .st2 { fill: #565656; }
-      .st3 { fill: #181818; }
-      .st4 { fill: #f2f2f2; }
-      .st5 { fill: #999; }
-    </style>
-  </defs>
-  <g>
-    <rect class="st2" x="27.9" y="44.2" width="144.4" height="197.5" rx="15.9" ry="15.9" transform="translate(-23.3 19.6) rotate(-10)"/>
-    <rect class="st5" x="48.4" y="26.2" width="144.4" height="197.5" rx="15.9" ry="15.9" transform="translate(-10.4 11) rotate(-5)"/>
-    <path class="st1" d="M205.3,53.9h-23.5c-8.4,0-15.3-6.8-15.3-15.3V15.3h-83.2c-1.8,0-3.5.5-5,1.4-.3.2-.5.3-.8.5-.5.4-.9.8-1.4,1.2-.1.1-.2.2-.3.3-.2.2-.4.5-.6.7-.3.4-.5.8-.7,1.2-.1.3-.3.6-.4.9-.4,1-.6,2.1-.6,3.3v165.5c0,1.2.2,2.3.6,3.3.1.3.2.6.4.9,0,.1.1.3.2.4.2.4.5.8.7,1.2,0,.1.2.2.3.4.3.4.6.7,1,1s.2.2.3.3c.4.3.7.6,1.1.8,1.5.9,3.2,1.4,5,1.4h112.4c1.2,0,2.3-.2,3.3-.6.1,0,.3-.1.4-.2.4-.2.8-.4,1.2-.6.4-.2.8-.5,1.1-.8.1,0,.2-.2.3-.3.3-.3.5-.5.8-.8.2-.2.3-.4.4-.5.2-.3.4-.6.6-.9.3-.5.5-1,.7-1.5.4-1,.6-2.1.6-3.3V53.9Z"/>
-    <path class="st4" d="M181.8,47.5h19.1l-26.4-26.2-1.7-1.7v19c0,4.9,4,8.9,8.9,8.9Z"/>
-    <path class="st3" d="M74.6,194.6c-.1-.3-.3-.6-.4-.9.1.3.2.6.4.9Z"/>
-    <path class="st3" d="M75.6,196.1c-.3-.4-.5-.8-.7-1.2.2.4.5.8.7,1.2Z"/>
-    <path class="st3" d="M74.3,21.6c.1-.3.2-.6.4-.9-.1.3-.3.6-.4.9Z"/>
-    <path class="st3" d="M204,195.2c-.2.3-.4.6-.6.9.2-.3.4-.6.6-.9Z"/>
-    <path class="st3" d="M201.8,197.8c-.4.3-.7.6-1.1.8.4-.2.8-.5,1.1-.8Z"/>
-    <path class="st3" d="M78.3,198.6c-.4-.2-.8-.5-1.1-.8.4.3.7.6,1.1.8Z"/>
-    <path class="st3" d="M166.5,15.3h-83.2c-1.8,0-3.5.5-5,1.4,1.5-.9,3.2-1.4,5-1.4h83.2Z"/>
-    <path class="st3" d="M75.3,19.5c.2-.3.4-.5.6-.7-.2.2-.4.5-.6.7Z"/>
-    <path class="st3" d="M75.9,196.5c.3.4.6.7,1,1-.3-.3-.7-.6-1-1Z"/>
-    <line class="st3" x1="177.5" y1="15.3" x2="177.5" y2="15.3"/>
-    <path class="st3" d="M202.2,197.5c.3-.3.5-.5.8-.8-.2.3-.5.6-.8.8Z"/>
-    <path class="st3" d="M73.7,24.9c0-1.2.2-2.3.6-3.3-.4,1-.6,2.1-.6,3.3v165.5c0,1.2.2,2.3.6,3.3-.4-1-.6-2.1-.6-3.3V24.9Z"/>
-    <path class="st3" d="M77.5,17.2c-.5.4-.9.8-1.4,1.2.4-.5.9-.9,1.4-1.2Z"/>
-    <path class="st3" d="M211.1,48.6l-5.7-5.7-27.9-27.6h0l-5.8-5.8c-.4-.4-.9-.6-1.5-.6h-86.9c-8.8,0-16,7.2-16,16v165.5c0,8.8,7.2,16,16,16h112.4c8.8,0,16-7.2,16-16V50.1c0-.6-.2-1.1-.6-1.5ZM200.9,47.5h-19.1c-4.9,0-8.9-4-8.9-8.9v-19l1.7,1.7,26.4,26.2ZM205.3,190.4c0,1.2-.2,2.3-.6,3.3-.2.5-.4,1-.7,1.5-.2.3-.4.6-.6.9-.1.2-.3.4-.4.5-.2.3-.5.6-.8.8-.1.1-.2.2-.3.3-.4.3-.7.6-1.1.8-.4.2-.8.5-1.2.6-.1,0-.3.1-.4.2-1,.4-2.1.6-3.3.6h-112.4c-1.8,0-3.5-.5-5-1.4-.4-.2-.8-.5-1.1-.8-.1,0-.2-.2-.3-.3-.3-.3-.7-.6-1-1,0-.1-.2-.2-.3-.4-.3-.4-.5-.8-.7-1.2,0-.1-.1-.3-.2-.4-.1-.3-.3-.6-.4-.9-.4-1-.6-2.1-.6-3.3V24.9c0-1.2.2-2.3.6-3.3.1-.3.2-.6.4-.9.2-.4.4-.8.7-1.2.2-.3.4-.5.6-.7,0-.1.2-.2.3-.3.4-.5.9-.9,1.4-1.2.2-.2.5-.4.8-.5,1.5-.9,3.2-1.4,5-1.4h83.2v23.3c0,8.4,6.8,15.3,15.3,15.3h23.5v136.5Z"/>
-    <path d="M137.6,165c-19.1,2.1-35.3-11.3-38.8-29.9-4-6-6.7-12.5-6.4-19.8.6-14.8,10.9-27.5,24.2-33.2,3.9-1.7,8-2.6,12.2-3.5,8.5-4.1,17.9-5.3,27.3-3.5,15.5,4.4,25.3,16.3,25.8,32.6,5.9,11.6,4.9,25.1-2.7,35.8s-15.2,13.7-25.3,15.7c-5.2,2.8-10.4,5.1-16.4,5.7ZM174.9,98.5c-3.7-11.9-16.4-19.9-28.5-18.8,4.1,1.3,7.7,3,11.3,5.2s5.4,4.4,8.3,6.6l8.9,7ZM151.6,88c-4.9-3.6-21.8-7-25.4-1.1,12.7-3.2,14.2-1.1,25.4,1.1ZM98.8,122c1.2-9,4.8-16.3,10.2-23,2.3-3.8,4.6-7.2,7.3-10.8-11.9,5.5-21.8,21.3-17.5,33.8ZM115.7,107c3.9-7.2,10-12.2,16.8-15.9-7,1.1-14.2,4.6-18.2,10.6-3.6,5.5-3.7,12.8-3.1,19.2,1-4.8,1.8-9.4,4.4-13.9ZM163.5,127.4c1.4-2,3.2-4.6,3-7-.8-10.6-8.5-23-18.7-26.9-11.3-.2-21.2,5.8-26.9,15.2s-5.4,15.9-2.7,24.2c1.5,4.7,4.7,7.9,9.8,8.9,12.5,2.5,27.9-4,35.5-14.6ZM161.5,96.6c2.3,2.9,4.3,5.8,6.3,8.9-.9-4-2-7.8-6.3-8.9ZM172.6,125.9c2.6-5.2,3.9-10.4,3.9-16.1s-1.5-3.4-2.7-4.6c1,5.7.9,11-1,16.5-.4,1.2-.3,3-.2,4.2ZM113,139.4c-5.1-7.2-7.4-14.8-7.5-22.9-1.8,5.1-2.2,10.2-1.7,15.5,2.7,2.9,5.4,5.9,9.2,7.4ZM164.5,149.7c9.6-4.3,17.4-18.1,15.8-28.6-2.4,7.6-6.9,13-10.5,19.5l-5.2,9.2ZM163.3,138.7c1.4-1.7,2.5-3.2,2.2-5.4-7.1,7.6-15.9,12.1-25.9,14,8.9.5,17.2-2.8,23.7-8.6ZM133.8,156.6c-4.1-2.1-7.8-4.4-11.4-7.1-5.7-1.6-10.8-4-15.9-7.6,5.8,13.2,20.5,20.9,34.5,16.8-2.4-.5-4.6-1.2-7.2-2.2ZM157.2,149.2c-5.5,2.3-10.7,3.6-16.7,3.5,5.9,1.7,13,3.1,16.7-3.5Z"/>
-  </g>
-  <g>
-    <path class="st0" d="M241.6,184l15.5-110.7h14.7l-6.8,49.3h55.3l6.8-49.3h14.7l-15.5,110.7h-14.7l6.8-48h-55.4l-6.7,48h-14.7Z"/>
-    <path class="st0" d="M380.9,185.8c-5.9,0-11.1-1.4-15.4-4.2-4.3-2.8-7.4-6.7-9.3-11.7-1.9-5.1-2.4-11-1.5-17.8l6.8-48.1h14l-7,48.7c-.5,4-.1,7.4,1,10.4,1.2,3,3.1,5.3,5.6,6.9,2.6,1.6,5.7,2.5,9.5,2.5s7.4-.9,10.6-2.6c3.2-1.7,5.8-4.2,8-7.4,2.1-3.2,3.5-6.9,4.2-11.3l6.5-47.3h14l-11.1,80.1h-13.5l2.1-15.6,2.1,1.8c-2.7,5.1-6.3,8.9-11,11.6-4.7,2.7-9.9,4-15.6,4Z"/>
-    <path class="st0" d="M479.6,185.8c-7.4,0-14-1.7-19.7-5.1-5.7-3.4-10.2-8-13.4-13.9-3.2-5.9-4.8-12.6-4.8-20.1s1-11.7,3.1-17.1c2.1-5.3,5-10.1,8.8-14.3,3.8-4.2,8.2-7.4,13.2-9.7,5.1-2.3,10.6-3.5,16.5-3.5s14.1,1.7,19.3,5.1c5.3,3.4,9.3,7.8,12,13.2,2.8,5.4,4.2,11.3,4.2,17.6s-.1,3.5-.4,5.4c-.3,1.9-.6,3.5-.9,4.9h-65.7l.7-12h57.8l-7.1,5.2c1.4-5,1.3-9.5-.1-13.5-1.5-4.1-4-7.3-7.5-9.7-3.5-2.4-7.7-3.6-12.4-3.6s-10.9,1.5-14.9,4.5-7,7-9.1,12.2c-2,5.2-3,11.1-3,17.8s1.1,9.3,3.2,12.9c2.1,3.7,5,6.5,8.5,8.4s7.5,2.9,11.9,2.9,10.1-1.3,14-3.8c3.9-2.5,7.1-5.7,9.6-9.6l11.4,6.4c-1.9,3.7-4.6,7-8,10-3.5,3-7.5,5.3-12.2,7.1-4.7,1.7-9.7,2.6-15,2.6Z"/>
-    <path class="st0" d="M539.1,184v-110.7h42.5c7.6,0,14.4,1.3,20.3,4,5.9,2.7,10.5,6.6,13.9,11.9,3.4,5.3,5.1,11.7,5.1,19.5s-1.7,13.9-5.1,19.2c-3.4,5.3-8.1,9.2-14,12-5.9,2.7-12.6,4.1-20.1,4.1h-19.5v40.1h-23ZM562.1,123.8h19.6c3.3,0,6.1-.6,8.5-1.9,2.4-1.3,4.2-3.1,5.6-5.4,1.3-2.3,2-4.9,2-7.9s-.7-5.7-2-8c-1.3-2.3-3.2-4.1-5.6-5.4-2.4-1.3-5.2-1.9-8.5-1.9h-19.6v30.5Z"/>
-    <path class="st0" d="M633.8,184v-81.1h20.8v19.5l-1.5-2.8c1.8-6.8,4.7-11.5,8.8-13.9,4.1-2.4,9-3.6,14.6-3.6h4.8v19.3h-7c-5.5,0-9.9,1.7-13.2,5-3.4,3.3-5.1,8-5.1,14v43.7h-22.3Z"/>
-    <path class="st0" d="M730.4,185.8c-8.6,0-16.1-1.9-22.4-5.7-6.3-3.8-11.2-8.9-14.7-15.4-3.5-6.4-5.2-13.6-5.2-21.4s1.8-15.4,5.4-21.7c3.6-6.3,8.5-11.3,14.6-15,6.1-3.7,13.1-5.5,20.8-5.5s12.1,1,17.1,3c5,2,9.1,4.9,12.6,8.5,3.4,3.7,6,7.9,7.8,12.7,1.8,4.8,2.7,10,2.7,15.7s0,3.1-.2,4.7c-.1,1.5-.4,2.8-.8,3.9h-60.8v-16.3h48.1l-10.6,7.7c1-4.3.9-8-.2-11.4-1.1-3.3-3-5.9-5.7-7.9-2.7-1.9-6.1-2.9-10-2.9s-7.2.9-10,2.8c-2.8,1.9-4.9,4.7-6.2,8.3-1.4,3.7-1.9,8.1-1.6,13.4-.4,4.6.1,8.6,1.6,12,1.5,3.5,3.8,6.2,6.8,8.1,3.1,1.9,6.8,2.9,11.1,2.9s7.4-.8,10.2-2.4c2.8-1.6,5-3.8,6.6-6.5l17.8,8.5c-1.6,4-4.1,7.4-7.5,10.4s-7.5,5.3-12.1,6.9c-4.7,1.6-9.8,2.5-15.3,2.5Z"/>
-    <path class="st0" d="M814.3,185.8c-8.9,0-16.7-2.1-23.3-6.3-6.6-4.2-11.1-9.9-13.4-17l16.3-7.7c2.1,4.4,4.9,7.8,8.5,10.3,3.6,2.5,7.5,3.7,11.9,3.7s5.6-.6,7.3-1.9c1.7-1.3,2.5-3.1,2.5-5.4s-.3-2.2-.9-3c-.6-.8-1.5-1.6-2.7-2.3-1.2-.7-2.7-1.3-4.5-1.8l-13.8-3.9c-6.6-1.9-11.7-4.9-15.3-9.1-3.6-4.2-5.3-9.2-5.3-14.9s1.3-9.5,3.9-13.2c2.6-3.8,6.2-6.7,10.8-8.8,4.7-2.1,10-3.2,16-3.2s14.9,1.9,20.9,5.6c6,3.7,10.2,8.9,12.7,15.7l-16.5,7.7c-1.2-3.4-3.3-6.1-6.5-8.1-3.1-2-6.7-3-10.6-3s-5.1.6-6.8,1.8c-1.6,1.2-2.5,2.8-2.5,4.9s.3,2.1.9,3,1.6,1.7,2.9,2.4c1.3.7,3,1.3,5,1.9l12.9,3.9c6.7,2,11.9,5,15.5,9s5.4,8.9,5.4,14.8-1.3,9.5-3.9,13.2c-2.6,3.8-6.3,6.7-10.9,8.8-4.7,2.1-10.2,3.2-16.5,3.2Z"/>
-    <path class="st0" d="M892.5,185.8c-8.9,0-16.7-2.1-23.3-6.3-6.6-4.2-11.1-9.9-13.4-17l16.3-7.7c2.1,4.4,4.9,7.8,8.5,10.3,3.6,2.5,7.5,3.7,11.9,3.7s5.6-.6,7.3-1.9c1.7-1.3,2.5-3.1,2.5-5.4s-.3-2.2-.9-3c-.6-.8-1.5-1.6-2.7-2.3-1.2-.7-2.7-1.3-4.5-1.8l-13.8-3.9c-6.6-1.9-11.7-4.9-15.3-9.1-3.6-4.2-5.3-9.2-5.3-14.9s1.3-9.5,3.9-13.2c2.6-3.8,6.2-6.7,10.8-8.8,4.7-2.1,10-3.2,16-3.2s14.9,1.9,20.9,5.6c6,3.7,10.2,8.9,12.7,15.7l-16.5,7.7c-1.2-3.4-3.3-6.1-6.5-8.1-3.1-2-6.7-3-10.6-3s-5.1.6-6.8,1.8c-1.6,1.2-2.5,2.8-2.5,4.9s.3,2.1.9,3,1.6,1.7,2.9,2.4c1.3.7,3,1.3,5,1.9l12.9,3.9c6.7,2,11.9,5,15.5,9s5.4,8.9,5.4,14.8-1.3,9.5-3.9,13.2c-2.6,3.8-6.3,6.7-10.9,8.8-4.7,2.1-10.2,3.2-16.5,3.2Z"/>
-  </g>
-</svg>`;
-
-// Social icons for PDF
-const SOCIAL_ICONS = {
-  INSTAGRAM: `<svg viewBox="0 0 24 24" fill="#303030"><path d="M12 2c2.717 0 3.056.01 4.122.06 1.065.05 1.79.217 2.428.465.66.254 1.216.598 1.772 1.153a4.908 4.908 0 0 1 1.153 1.772c.247.637.415 1.363.465 2.428.047 1.066.06 1.405.06 4.122 0 2.717-.01 3.056-.06 4.122-.05 1.065-.218 1.79-.465 2.428a4.883 4.883 0 0 1-1.153 1.772 4.915 4.915 0 0 1-1.772 1.153c-.637.247-1.363.415-2.428.465-1.066.047-1.405.06-4.122.06-2.717 0-3.056-.01-4.122-.06-1.065-.05-1.79-.218-2.428-.465a4.89 4.89 0 0 1-1.772-1.153 4.904 4.904 0 0 1-1.153-1.772c-.248-.637-.415-1.363-.465-2.428C2.013 15.056 2 14.717 2 12c0-2.717.01-3.056.06-4.122.05-1.066.217-1.79.465-2.428a4.88 4.88 0 0 1 1.153-1.772A4.897 4.897 0 0 1 5.45 2.525c.638-.248 1.362-.415 2.428-.465C8.944 2.013 9.283 2 12 2zm0 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm6.5-.25a1.25 1.25 0 0 0-2.5 0 1.25 1.25 0 0 0 2.5 0zM12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>`,
-  FACEBOOK: `<svg viewBox="0 0 24 24" fill="#303030"><path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.53-4.5-10.02-10-10.02z"/></svg>`,
-  PINTEREST: `<svg viewBox="0 0 24 24" fill="#303030"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.24 2.65 7.89 6.43 9.35-.09-.79-.16-2.01.03-2.87.17-.78 1.1-4.66 1.1-4.66s-.28-.56-.28-1.39c0-1.3.75-2.27 1.69-2.27.8 0 1.18.6 1.18 1.32 0 .8-.51 2.01-.77 3.12-.22.93.47 1.69 1.38 1.69 1.66 0 2.94-1.75 2.94-4.28 0-2.26-1.63-3.84-3.95-3.84-2.88 0-4.57 2.16-4.57 4.39 0 .87.33 1.8.75 2.3.08.1.09.19.07.29l-.28 1.14c-.04.18-.14.22-.33.13-1.22-.57-1.98-2.35-1.98-3.79 0-3.08 2.24-5.92 6.46-5.92 3.39 0 6.02 2.42 6.02 5.65 0 3.38-2.13 6.1-5.1 6.1-.99 0-1.92-.52-2.24-1.13l-.61 2.32c-.22.84-.81 1.9-1.21 2.54.91.28 1.88.43 2.88.43 5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>`,
-  WEBSITE: `<svg viewBox="0 0 24 24" fill="#303030"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>`
-};
+// Removed client-side PDF generation imports
 
 // Helper to parse comma-separated tags
 const parseTags = (tags: string) => tags.split(",").map(t => t.trim()).filter(Boolean);
@@ -197,16 +143,11 @@ export default function AdminAssetForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasExistingFiles, setHasExistingFiles] = useState(false); // Track if editing asset has files
   const [isProcessingSvg, setIsProcessingSvg] = useState(false);
-  const [_isRegenerating, setIsRegenerating] = useState(false);
+
   
   // Store original SVG for potential regeneration
   const [originalSvgFile, setOriginalSvgFile] = useState<File | null>(null);
   const [_isNewSourceFile, setIsNewSourceFile] = useState(false); // Track if source was just uploaded (needs upload)
-  const [pdfNeedsRegeneration, setPdfNeedsRegeneration] = useState(false);
-  
-  // Fields that affect PDF content/metadata/filename
-  const PDF_AFFECTING_FIELDS = ['title', 'description', 'category', 'skill', 'tags'];
-
   // Cleanup preview URLs
   useEffect(() => {
     return () => {
@@ -225,71 +166,10 @@ export default function AdminAssetForm() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (PDF_AFFECTING_FIELDS.includes(name)) {
-      setPdfNeedsRegeneration(true);
-    }
   };
 
-  // Auto-Regeneration Effect
-  useEffect(() => {
-    // If no source file, we can't regenerate.
-    if (!originalSvgFile || !pdfNeedsRegeneration) return;
-    
-    // Only regenerate if we have the minimum required fields
-    if (!formData.title || !formData.category || !formData.skill) return;
+  // Auto-Regeneration Effect removed - Backend handles PDF generation and Thumbnail only depends on SVG content
 
-    const timer = setTimeout(async () => {
-      setIsRegenerating(true);
-      try {
-         // Only regenerate if we have a real asset ID (not a preview)
-         const assetId = formData.asset_id;
-         if (!assetId || assetId.includes("PREVIEW")) {
-           console.log("Skipping regeneration - no valid asset ID yet");
-           setPdfNeedsRegeneration(false);
-           return;
-         }
-         
-         const slug = formData.title.toLowerCase()
-          .trim()
-          .replace(/\s+/g, '-')
-          .replace(/[^\w-]+/g, '')
-          .replace(/--+/g, '-');
-
-         console.log("Regenerating Asset...", { assetId, slug });
-
-         const { pdfFile: newPdf, webpFile: newWebp } = await generateFilesFromSvg(
-            originalSvgFile,
-            assetId,
-            slug,
-            formData
-         );
-         
-         setThumbnailFile(newWebp);
-         setPdfFile(newPdf);
-         
-         // Update previews
-         setThumbnailPreviewUrl(URL.createObjectURL(newWebp));
-         setPdfPreviewUrl(URL.createObjectURL(newPdf));
-         setPdfNeedsRegeneration(false); // Reset flag
-         
-      } catch (err) {
-        console.error("Auto-regeneration failed", err);
-      } finally {
-        setIsRegenerating(false);
-      }
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [
-    formData.title, 
-    formData.description, 
-    formData.category, 
-    formData.skill, 
-    formData.tags, 
-    formData.asset_id,
-    originalSvgFile,
-    pdfNeedsRegeneration
-  ]);
 
 
 
@@ -297,12 +177,15 @@ export default function AdminAssetForm() {
    * Helper: Generate PDF and WebP from SVG file
    * Reusable for initial upload and regeneration
    */
-  const generateFilesFromSvg = async (
+  /* 
+   * Helper: Generate WebP Thumbnail from SVG file
+   * (PDF generation is handled by the server)
+   */
+  const generateThumbnailFromSvg = async (
     svgFile: File, 
     assetId: string, 
-    slug: string, 
-    metadata: AssetFormData
-  ): Promise<{ pdfFile: File; webpFile: File; baseFilename: string }> => {
+    slug: string
+  ): Promise<{ webpFile: File; baseFilename: string }> => {
     // New Filename Format: huepress-robot-whatever-00001
     const baseFilename = `huepress-${slug}-${assetId}`;
 
@@ -339,222 +222,7 @@ export default function AdminAssetForm() {
     
     const webpFile = new File([webpBlob], `${baseFilename}.webp`, { type: "image/webp" });
 
-    // PDF Generation
-    const svgText = await svgFile.text();
-    const parser = new DOMParser();
-    const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
-    const svgElement = svgDoc.documentElement;
-
-    const getDim = (val: string | null) => {
-      if (!val) return 0;
-      return parseFloat(val.replace("px", ""));
-    };
-    
-    const viewBox = svgElement.getAttribute("viewBox")?.split(/[\s,]+/).map(parseFloat);
-    let svgW = getDim(svgElement.getAttribute("width")) || (viewBox ? viewBox[2] : 595);
-    let svgH = getDim(svgElement.getAttribute("height")) || (viewBox ? viewBox[3] : 842);
-
-    // Intelligent rotation: if landscape (width > height), rotate for better portrait A4 fit
-    const isLandscape = svgW > svgH;
-    if (isLandscape) {
-      // Apply 90-degree rotation transform to SVG
-      const originalW = svgW;
-      const originalH = svgH;
-      svgW = originalH;
-      svgH = originalW;
-      
-      // Set viewBox if not present, then apply rotation transform
-      const currentViewBox = svgElement.getAttribute("viewBox") || `0 0 ${originalW} ${originalH}`;
-      svgElement.setAttribute("viewBox", currentViewBox);
-      
-      // Create a wrapper group with rotation
-      const gNode = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      gNode.setAttribute("transform", `rotate(90 ${originalW/2} ${originalH/2}) translate(${(originalW-originalH)/2} ${(originalH-originalW)/2})`);
-      
-      // Move all children into the group
-      while (svgElement.firstChild) {
-        gNode.appendChild(svgElement.firstChild);
-      }
-      svgElement.appendChild(gNode);
-      
-      // Update SVG dimensions
-      svgElement.setAttribute("width", String(svgW));
-      svgElement.setAttribute("height", String(svgH));
-      svgElement.setAttribute("viewBox", `0 0 ${svgW} ${svgH}`);
-    }
-
-    const A4_WIDTH = 210;
-    const A4_HEIGHT = 297;
-    const SAFE_WIDTH = 185; 
-    const SAFE_HEIGHT = 254;
-
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4" 
-    });
-
-    // Build dynamic keywords
-    const keywordsArray = [
-      metadata.category,
-      metadata.skill,
-      ...metadata.tags.split(",").map(t => t.trim()).filter(Boolean),
-      "coloring page", "huepress", "printable"
-    ];
-    const uniqueKeywords = [...new Set(keywordsArray)].join(", ");
-
-    doc.setProperties({
-      title: `HuePress - ${metadata.title} - #${assetId}`,
-      subject: `${metadata.description} | Website: huepress.co | Support: hello@huepress.co`,
-      author: "HuePress",
-      keywords: uniqueKeywords,
-      creator: "HuePress Automated Generator"
-    });
-
-    // Page 1: Artwork ONLY - No text, no footer
-    const scale = Math.min(SAFE_WIDTH / svgW, SAFE_HEIGHT / svgH);
-    const artWidth = svgW * scale;
-    const artHeight = svgH * scale;
-    const artX = (A4_WIDTH - artWidth) / 2;
-    const artY = (A4_HEIGHT - artHeight) / 2;
-
-    await doc.svg(svgElement, { x: artX, y: artY, width: artWidth, height: artHeight });
-
-    // Page 2: Marketing Page - Complete but Clean
-    doc.addPage();
-
-    // === HEADER: Logo centered ===
-    const huepressLogoNode = new DOMParser().parseFromString(HUEPRESS_LOGO_SVG, "image/svg+xml").documentElement;
-    await doc.svg(huepressLogoNode, { x: 62.5, y: 12, width: 85, height: 22 });
-    
-    // Tagline
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(10);
-    doc.setTextColor(120);
-    doc.text("Therapy-Grade Coloring Pages for Calm & Focus", 105, 38, { align: "center" });
-    
-    // Divider
-    doc.setDrawColor(200);
-    doc.line(40, 44, 170, 44);
-
-    // === PRINTING TIPS SECTION ===
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(50);
-    doc.text("Printing Tips", 20, 54);
-    
-    doc.setDrawColor(230);
-    doc.setFillColor(252, 252, 252);
-    doc.roundedRect(20, 58, 170, 30, 2, 2, "FD");
-    
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(80);
-    doc.text("• Select 'Fit to Page' in your printer settings", 28, 66);
-    doc.text("• We recommend thick cardstock for the best results", 28, 74);
-    doc.text("• Choose 'High Quality' print mode for crisp lines", 28, 82);
-
-    // === REVIEW SECTION - Single QR ===
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(50);
-    doc.text("Love This Design? We'd Love to Hear!", 20, 96);
-    
-    doc.setDrawColor(220);
-    doc.setFillColor(250, 250, 250);
-    doc.roundedRect(20, 100, 170, 32, 3, 3, "FD");
-    
-    const reviewUrl = "https://huepress.co/review";
-    const reviewQr = document.createElement("canvas");
-    await QRCode.toCanvas(reviewQr, reviewUrl, { width: 180, margin: 0 });
-    doc.addImage(reviewQr.toDataURL("image/png"), "PNG", 26, 103, 26, 26);
-    
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(40);
-    doc.text("Leave a quick review — it means the world to us!", 58, 112);
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(80);
-    doc.text("Scan the QR or visit huepress.co/review", 58, 120);
-    doc.text("Your feedback shapes our future designs.", 58, 128);
-
-    // === SHARE YOUR CREATION ===
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(50);
-    doc.text("Share Your Masterpiece!", 20, 145);
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(80);
-    doc.text("We love seeing your finished work! Tag us on social and inspire other parents & kids.", 20, 153);
-    
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(40);
-    doc.text("@huepressco    #HuePressColoring", 20, 162);
-
-    // === CONNECT WITH US - Social Links with Icons ===
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(50);
-    doc.text("Connect With Us", 20, 178);
-    
-    const iconSize = 5;
-    const leftX = 20;
-    const rightX = 110;
-    const row1Y = 185;
-    const row2Y = 194;
-    
-    doc.setFontSize(9);
-    doc.setTextColor(80);
-    
-    // Row 1: Instagram (left) | Facebook (right)
-    const igNode = new DOMParser().parseFromString(SOCIAL_ICONS.INSTAGRAM, "image/svg+xml").documentElement;
-    await doc.svg(igNode, { x: leftX, y: row1Y - 3.5, width: iconSize, height: iconSize });
-    doc.text("instagram.com/huepressco", leftX + iconSize + 3, row1Y);
-
-    const fbNode = new DOMParser().parseFromString(SOCIAL_ICONS.FACEBOOK, "image/svg+xml").documentElement;
-    await doc.svg(fbNode, { x: rightX, y: row1Y - 3.5, width: iconSize, height: iconSize });
-    doc.text("facebook.com/huepressco", rightX + iconSize + 3, row1Y);
-
-    // Row 2: Pinterest (left) | Website (right)
-    const pinNode = new DOMParser().parseFromString(SOCIAL_ICONS.PINTEREST, "image/svg+xml").documentElement;
-    await doc.svg(pinNode, { x: leftX, y: row2Y - 3.5, width: iconSize, height: iconSize });
-    doc.text("pinterest.com/huepressco", leftX + iconSize + 3, row2Y);
-
-    const webNode = new DOMParser().parseFromString(SOCIAL_ICONS.WEBSITE, "image/svg+xml").documentElement;
-    await doc.svg(webNode, { x: rightX, y: row2Y - 3.5, width: iconSize, height: iconSize });
-    doc.text("huepress.co", rightX + iconSize + 3, row2Y);
-
-    // === DISCOVER MORE - Upsale ===
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(50);
-    doc.text("Discover 500+ More Designs", 20, 212);
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(80);
-    doc.text("New therapy-grade coloring pages added every week. Visit huepress.co to explore", 20, 220);
-    doc.text("our full collection — animals, nature, holidays, and much more!", 20, 226);
-
-    // === FOOTER: At actual bottom of page ===
-    const footerY = A4_HEIGHT - 15; // A4 height is 297mm, footer at bottom
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text("Need help? Email us anytime: hello@huepress.co", 105, footerY - 12, { align: "center" });
-    doc.text(`© ${new Date().getFullYear()} HuePress. All rights reserved.`, 105, footerY - 6, { align: "center" });
-    doc.text(`Asset ID: #${assetId}`, 105, footerY, { align: "center" });
-
-    const pdfBlob = doc.output("blob");
-    const pdfFile = new File([pdfBlob], `${baseFilename}.pdf`, { type: "application/pdf" });
-
-    return { pdfFile, webpFile, baseFilename };
+    return { webpFile, baseFilename };
   };
 
   /* 
@@ -599,18 +267,17 @@ export default function AdminAssetForm() {
       }
 
       // 2. Generate Files locally
-      const { pdfFile: pdfFileObj, webpFile } = await generateFilesFromSvg(
+      const { webpFile } = await generateThumbnailFromSvg(
         file,
         assetId,
-        slug,
-        formData
+        slug
       );
       
       // Store assetId in form state
       setFormData(prev => ({ ...prev, asset_id: assetId }));
-      setPdfFile(pdfFileObj);
+      setPdfFile(null); // No local PDF
       setThumbnailFile(webpFile);
-      setPdfPreviewUrl(URL.createObjectURL(pdfFileObj));
+      setPdfPreviewUrl(null);
       setThumbnailPreviewUrl(URL.createObjectURL(webpFile));
 
       // 3. IMMEDIATE UPLOAD - Upload files to backend and finalize draft
@@ -640,7 +307,7 @@ export default function AdminAssetForm() {
       uploadForm.append("suggested_activities", JSON.stringify(activitiesArray));
       
       uploadForm.append("thumbnail", webpFile);
-      uploadForm.append("pdf", pdfFileObj);
+      // No PDF file appended - backend will generate it
       // Append Source File
       uploadForm.append("source", file);
 
@@ -712,12 +379,13 @@ export default function AdminAssetForm() {
     e.preventDefault();
     
     // Only require files for new assets, not when editing with existing files
-    const needsFiles = !isEditing || !hasExistingFiles;
-    if (needsFiles && (!thumbnailFile || !pdfFile)) {
+    const requiresNewFiles = !isEditing || !hasExistingFiles;
+    // Relaxed validation: PDF is optional (backend generates it), but Thumbnail is required
+    if (requiresNewFiles && !thumbnailFile) {
       setAlertState({
         isOpen: true,
         title: "Missing Files",
-        message: "Please upload both a thumbnail image and a PDF file.",
+        message: "Please upload an SVG (or manually add a Thumbnail).",
         variant: "error"
       });
       return;
@@ -726,56 +394,8 @@ export default function AdminAssetForm() {
     setIsSubmitting(true);
 
     try {
-      let currentThumbnail = thumbnailFile;
-      let currentPdf = pdfFile;
-      
-      // Auto-regenerate PDF if metadata fields changed
-      if (pdfNeedsRegeneration && originalSvgFile && formData.asset_id) {
-        setAlertState({
-          isOpen: true,
-          title: "Regenerating PDF...",
-          message: "Updating PDF with new metadata.",
-          variant: "info"
-        });
-        
-        // Generate slug from title
-        const slug = formData.title.toLowerCase()
-          .trim()
-          .replace(/\s+/g, '-')
-          .replace(/[^\w-]+/g, '')
-          .replace(/--+/g, '-');
-        
-        // Regenerate files with updated metadata
-        const { pdfFile: newPdf, webpFile: newWebp } = await generateFilesFromSvg(
-          originalSvgFile,
-          formData.asset_id,
-          slug,
-          formData
-        );
-        
-        currentThumbnail = newWebp;
-        currentPdf = newPdf;
-        
-        // Update state with regenerated files
-        setPdfFile(newPdf);
-        setThumbnailFile(newWebp);
-        setPdfPreviewUrl(URL.createObjectURL(newPdf));
-        setThumbnailPreviewUrl(URL.createObjectURL(newWebp));
-        setPdfNeedsRegeneration(false);
-      }
-      
-      // Only require files for new assets or if regeneration was attempted but failed
-      const requiresNewFiles = !isEditing || !hasExistingFiles;
-      if (requiresNewFiles && (!currentThumbnail || !currentPdf)) {
-        setAlertState({
-          isOpen: true,
-          title: "Missing Files",
-          message: "Please upload an SVG first.",
-          variant: "error"
-        });
-        setIsSubmitting(false);
-        return;
-      }
+      const currentThumbnail = thumbnailFile;
+      const currentPdf = pdfFile;
       
       const form = new FormData();
       // Basic Fields
@@ -792,8 +412,6 @@ export default function AdminAssetForm() {
       form.append("therapeutic_benefits", formData.therapeuticBenefits);
       form.append("meta_keywords", formData.metaKeywords);
       
-      // Forced Asset ID (from Magic gen)
-      // Forced Asset ID (from Magic gen)
       if (formData.asset_id) {
          form.append("asset_id", formData.asset_id);
       }
@@ -806,10 +424,10 @@ export default function AdminAssetForm() {
       form.append("suggested_activities", JSON.stringify(activitiesArray));
 
       // Only append files if they exist (new uploads or regenerated)
-      // The backend detects if they are File objects and updates R2 accordingly
       if (currentThumbnail) {
         form.append("thumbnail", currentThumbnail);
       }
+      // If manual PDF provided, append it to override auto-generation
       if (currentPdf) {
         form.append("pdf", currentPdf);
       }

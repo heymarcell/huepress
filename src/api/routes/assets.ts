@@ -84,11 +84,17 @@ app.get("/assets/:id", async (c) => {
 
     const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
     const r2Key = asset.r2_key_public as string;
+    const ogKey = asset.r2_key_og as string | null;
     let imageUrl: string | null = null;
+    let ogImageUrl: string | null = null;
     
     if (r2Key && !r2Key.startsWith("__draft__")) {
       // If already a full URL, use as-is; otherwise prepend CDN
       imageUrl = r2Key.startsWith("http") ? r2Key : `${cdnUrl}/${r2Key}`;
+    }
+    
+    if (ogKey) {
+      ogImageUrl = ogKey.startsWith("http") ? ogKey : `${cdnUrl}/${ogKey}`;
     }
     
     return c.json({
@@ -97,6 +103,8 @@ app.get("/assets/:id", async (c) => {
       fun_facts: asset.fun_facts ? JSON.parse(asset.fun_facts as string) : [],
       suggested_activities: asset.suggested_activities ? JSON.parse(asset.suggested_activities as string) : [],
       image_url: imageUrl,
+      thumbnail_url: imageUrl, // Alias for backwards compatibility
+      og_image_url: ogImageUrl || imageUrl, // Fallback to thumbnail
     });
   } catch (error) {
     console.error("Database error:", error);

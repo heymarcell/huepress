@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { Bindings } from "../types";
+import { arrayBufferToBase64 } from "../../lib/og-generator";
+import { generateOgImageViaContainer, generatePdfViaContainer } from "../../lib/processing-container";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -248,46 +250,125 @@ app.post("/assets", async (c) => {
 
     const slug = slugify(title);
 
-    // 2. Handle File Uploads (Independent)
+    // 3. Resolve UUID (Moved up for immutable file naming)
+    let id: string;
+    
+    if (providedAssetId) {
+      // Create vs Update check
+      // Ideally we should check if it exists in DB
+      const existing = await c.env.DB.prepare("SELECT id FROM assets WHERE asset_id = ?").bind(providedAssetId).first<{ id: string }>();
+      
+      if (existing) {
+        id = existing.id;
+      } else {
+        // Fallback or error - if we have asset_id but no DB record, assume new but pre-assigned ID? 
+        // For safety, let's treat it as new if not found, but we should log this.
+        console.warn(`Asset ID ${providedAssetId} provided but not found in DB. Creating new UUID.`);
+        id = crypto.randomUUID();
+      }
+    } else {
+      id = crypto.randomUUID();
+    }
+
+    // 2. Handle File Uploads (Independent) using UUID for keys
     let thumbnailKey: string | null = null;
     let pdfKey: string | null = null;
     let sourceKey: string | null = null;
+    let ogKey: string | null = null;
     
+    // Import Container helper - Moved to top level
+
     // Process Thumbnail
     if (thumbnailFile && thumbnailFile instanceof File) {
-      console.log(`Uploading thumbnail for ${assetId}...`);
-      thumbnailKey = `thumbnails/${assetId}-${slug}.webp`;
+      console.log(`Uploading thumbnail for ${assetId} (UUID: ${id})...`);
+      thumbnailKey = `thumbnails/${id}.webp`;
       await c.env.ASSETS_PUBLIC.put(thumbnailKey, thumbnailFile);
+      
+      // Generate OG Image from thumbnail using Container
+      try {
+        console.log(`Generating OG image for ${assetId}...`);
+        const thumbnailBuffer = await thumbnailFile.arrayBuffer();
+        const thumbnailBase64 = arrayBufferToBase64(thumbnailBuffer);
+        const mimeType = thumbnailFile.type || "image/webp";
+        
+        // Call Container for OG generation
+        const { imageBase64 } = await generateOgImageViaContainer(c.env, title, thumbnailBase64, mimeType);
+        
+        const ogPng = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
+        ogKey = `og-images/${id}.png`;
+        
+        await c.env.ASSETS_PUBLIC.put(ogKey, ogPng, {
+          httpMetadata: { contentType: "image/png" }
+        });
+        console.log(`OG image generated: ${ogKey}`);
+      } catch (ogError) {
+        console.error(`OG image generation failed for ${assetId}:`, ogError);
+        // Continue without OG image - fallback to thumbnail
+      }
     }
 
     // Process PDF
     if (pdfFile && pdfFile instanceof File) {
-       console.log(`Uploading PDF for ${assetId}...`);
-       pdfKey = `pdfs/${assetId}-${slug}.pdf`;
+       console.log(`Uploading PDF for ${assetId} (UUID: ${id})...`);
+       pdfKey = `pdfs/${id}.pdf`;
        await c.env.ASSETS_PRIVATE.put(pdfKey, pdfFile);
     }
 
     // Process Source (SVG) - NEW
     if (sourceFile && sourceFile instanceof File) {
-       console.log(`Uploading Source SVG for ${assetId}...`);
-       sourceKey = `sources/${assetId}-${slug}.svg`;
+       console.log(`Uploading Source SVG for ${assetId} (UUID: ${id})...`);
+       sourceKey = `sources/${id}.svg`;
        await c.env.ASSETS_PRIVATE.put(sourceKey, sourceFile);
+
+       // Auto-generate PDF from SVG if not provided manually
+       if (!pdfFile) {
+          try {
+            console.log(`Auto-generating PDF from SVG for ${assetId}...`);
+            const svgContent = await sourceFile.text();
+            
+            // Generate PDF via Container
+            // We give it a friendly filename for metadata, but store it by UUID
+            const { pdfBase64 } = await generatePdfViaContainer(
+                c.env, 
+                svgContent, 
+                `${assetId}-${slug}`,
+                {
+                   title: (title as string) || "",
+                   assetId: id,
+                   description: (description as string) || "",
+                   qrCodeUrl: "https://huepress.co/review"
+                }
+            );
+            const pdfBuffer = Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0));
+            
+            pdfKey = `pdfs/${id}.pdf`;
+            await c.env.ASSETS_PRIVATE.put(pdfKey, pdfBuffer, {
+              httpMetadata: {
+                contentType: "application/pdf",
+                contentDisposition: `attachment; filename="${assetId}-${slug}.pdf"`
+              }
+            });
+            console.log(`PDF auto-generated: ${pdfKey}`);
+          } catch (pdfGenError) {
+             console.error(`PDF auto-generation failed for ${assetId}:`, pdfGenError);
+          }
+       }
     }
     
-    // 3. Insert or Update into D1
+    // 4. Insert or Update into D1
     const tagsArray = tags ? tags.split(",").map(t => t.trim()).filter(Boolean) : [];
     const tagsJson = JSON.stringify(tagsArray);
 
-    let id: string = crypto.randomUUID();
+    // ID is already resolved above
     
-    // Check if updating a reserved asset
+    // Check if updating a reserved asset (re-using logic but simplified since we have ID)
     if (providedAssetId) {
-      const existing = await c.env.DB.prepare("SELECT id FROM assets WHERE asset_id = ?").bind(providedAssetId).first<{ id: string }>();
+      // We already resolved 'id'
+      const existing = await c.env.DB.prepare("SELECT id FROM assets WHERE id = ?").bind(id).first();
       
       if (existing) {
-        id = existing.id;
-        
         // Build Dynamic Update Query
+
         // We only update R2 keys if new files were uploaded
         const fields: string[] = [];
         const values: unknown[] = [];
@@ -324,6 +405,11 @@ app.post("/assets", async (c) => {
           values.push(sourceKey);
         }
 
+        if (ogKey) {
+          fields.push("r2_key_og = ?");
+          values.push(ogKey);
+        }
+
         // Add WHERE clause ID
         values.push(providedAssetId);
 
@@ -337,14 +423,14 @@ app.post("/assets", async (c) => {
          await c.env.DB.prepare(`
           INSERT INTO assets (
             id, asset_id, slug, title, description, category, skill, 
-            r2_key_public, r2_key_private, r2_key_source, status, tags, 
+            r2_key_public, r2_key_private, r2_key_source, r2_key_og, status, tags, 
             extended_description, fun_facts, suggested_activities, 
             coloring_tips, therapeutic_benefits, meta_keywords,
             created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
         `).bind(
           id, assetId, slug, title, description, category, skill,
-          thumbnailKey || "__draft__", pdfKey || "__draft__", sourceKey || null, status, tagsJson,
+          thumbnailKey || "__draft__", pdfKey || "__draft__", sourceKey || null, ogKey || null, status, tagsJson,
           extendedDescription, funFacts, suggestedActivities,
           coloringTips, therapeuticBenefits, metaKeywords
         ).run();
@@ -354,14 +440,14 @@ app.post("/assets", async (c) => {
       await c.env.DB.prepare(`
         INSERT INTO assets (
           id, asset_id, slug, title, description, category, skill, 
-          r2_key_public, r2_key_private, r2_key_source, status, tags, 
+          r2_key_public, r2_key_private, r2_key_source, r2_key_og, status, tags, 
           extended_description, fun_facts, suggested_activities, 
           coloring_tips, therapeutic_benefits, meta_keywords,
           created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `).bind(
         id, assetId, slug, title, description, category, skill,
-        thumbnailKey, pdfKey, sourceKey || null, status, tagsJson,
+        thumbnailKey, pdfKey, sourceKey || null, ogKey || null, status, tagsJson,
         extendedDescription, funFacts, suggestedActivities,
         coloringTips, therapeuticBenefits, metaKeywords
       ).run();

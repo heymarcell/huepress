@@ -28,6 +28,7 @@ bucket_name = "huepress-assets-public"
 
 [vars]
 ENVIRONMENT = "production"
+API_URL = "https://api.huepress.co"
 META_PIXEL_ID = "1588901548777498"
 ADMIN_EMAILS = "marcell@neongod.io"
 SITE_URL = "https://huepress.co"
@@ -37,3 +38,20 @@ GA4_MEASUREMENT_ID = "G-QTF6MPM5SQ"
 
 # Pages configuration
 pages_build_output_dir = "dist"
+
+
+# Cloudflare Container for resource-intensive processing
+[[containers]]
+class_name = "ProcessingContainer"
+image = "./container/Dockerfile"
+max_instances = 3
+
+# Container Durable Object binding
+[[durable_objects.bindings]]
+class_name = "ProcessingContainer"
+name = "PROCESSING"
+
+# Container migration
+[[migrations]]
+new_sqlite_classes = ["ProcessingContainer"]
+tag = "v1"

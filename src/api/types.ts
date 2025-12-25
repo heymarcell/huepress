@@ -1,7 +1,10 @@
+import type { Container } from "@cloudflare/containers";
+
 export type Bindings = {
   DB: D1Database;
   ASSETS_PRIVATE: R2Bucket;
   ASSETS_PUBLIC: R2Bucket;
+  PROCESSING: DurableObjectNamespace<Container>; // Container for processing
   CLERK_SECRET_KEY: string;
   CLERK_WEBHOOK_SECRET: string;
   STRIPE_SECRET_KEY: string;

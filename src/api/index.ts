@@ -120,3 +120,6 @@ app.get("/cdn/*", async (c) => {
 });
 
 export default app;
+
+// Export ProcessingContainer for Cloudflare Containers
+export { ProcessingContainer } from "../lib/processing-container";

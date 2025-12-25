@@ -4,8 +4,8 @@
  * Proxies to the API Worker which has D1 access
  */
 
-export async function onRequestPost(context: { request: Request }) {
-  const { request } = context;
+export async function onRequestPost(context: { request: Request; env?: { API_URL?: string } }) {
+  const { request, env } = context;
 
   // CORS headers
   const corsHeaders = {
@@ -14,9 +14,12 @@ export async function onRequestPost(context: { request: Request }) {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
 
+  // Use environment variable with fallback
+  const apiUrl = env?.API_URL || "https://api.huepress.co";
+
   try {
     // Proxy to the API Worker
-    const apiResponse = await fetch("https://huepress-api.neongod-llc.workers.dev/api/requests/submit", {
+    const apiResponse = await fetch(`${apiUrl}/api/requests/submit`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

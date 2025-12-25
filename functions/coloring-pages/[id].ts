@@ -8,15 +8,9 @@ export const onRequest: PagesFunction = async (context) => {
   const lastHyphenIndex = slugWithId.lastIndexOf("-");
   const id = lastHyphenIndex > 0 ? slugWithId.substring(lastHyphenIndex + 1) : slugWithId;
 
-  // 1. Fetch the asset data from your API
-  // In a real app, you might query D1 or a KV store directly for speed.
-  // For now, we'll fetch from the public API (assuming it's deployed).
-  // Strategy: If API fetch fails, we just fall back to the default HTML (Client Side Rendering)
-
+  // Fetch the asset data from API for OG tag injection
   let asset = null;
   try {
-    // Fetch real asset data from API
-    // Use environment variable or fallback to production API URL
     const apiUrl =
       (context.env as { API_URL?: string }).API_URL || "https://api.huepress.co";
     const res = await fetch(`${apiUrl}/api/assets/${id}`);
@@ -40,27 +34,26 @@ export const onRequest: PagesFunction = async (context) => {
     }
   } catch (e) {
     console.error("Failed to fetch asset for OG injection", e);
-    // Fall back gracefully - SPA will render with default meta tags
   }
 
-  // 2. Fetch the static HTML asset (the SPA shell)
+  // Fetch the static HTML asset (the SPA shell)
   const response = await next();
 
-  // If no asset found or not a page we want to touch, return original
+  // If no asset found or not HTML, return original
   if (!asset || !response.headers.get("content-type")?.includes("text/html")) {
     return response;
   }
 
-  // 3. Inject Metadata using HTMLRewriter
+  // Inject Metadata using HTMLRewriter
   return new HTMLRewriter()
     .on("title", {
       element(element) {
-        element.setInnerContent(`${asset.title} | HuePress`);
+        element.setInnerContent(`${asset.title} - Coloring Page | HuePress`);
       },
     })
     .on('meta[property="og:title"]', {
       element(element) {
-        element.setAttribute("content", `${asset.title} | HuePress`);
+        element.setAttribute("content", `${asset.title} - Coloring Page | HuePress`);
       },
     })
     .on('meta[property="og:description"]', {
@@ -70,7 +63,6 @@ export const onRequest: PagesFunction = async (context) => {
     })
     .on('meta[property="og:image"]', {
       element(element) {
-        // Ensure absolute URL
         const imageUrl = asset.imageUrl.startsWith("http")
           ? asset.imageUrl
           : `${url.origin}${asset.imageUrl}`;

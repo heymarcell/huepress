@@ -1,4 +1,11 @@
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
+
+// Mock the OG generator to avoid WASM loading in tests
+vi.mock("../../src/lib/og-generator", () => ({
+  generateOgImage: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
+  arrayBufferToBase64: vi.fn().mockReturnValue("base64data"),
+}));
+
 import app from "../../src/api/routes/admin";
 
 describe("Admin API", () => {
@@ -73,7 +80,7 @@ describe("Admin API", () => {
         }, mockEnv);
 
         expect(res.status).toBe(200);
-        expect(mockR2Put).toHaveBeenCalledTimes(2); // Thumb + PDF
+        expect(mockR2Put).toHaveBeenCalledTimes(3); // Thumb + OG + PDF
         expect(mockRun).toHaveBeenCalled(); // Insert
     });
 });
