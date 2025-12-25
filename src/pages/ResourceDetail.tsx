@@ -10,7 +10,6 @@ import {
   Printer, 
   PenTool, 
   Sparkles,
-  Star,
   Download,
   Unlock,
   ImageIcon,
@@ -206,10 +205,10 @@ function DownloadSection({ assetId, formattedAssetId, title }: { assetId: string
         </Button>
       </Link>
       
-      {/* Social Proof */}
+      {/* Value Prop */}
       <div className="flex items-center justify-center gap-1.5 mt-2 mb-1">
-        <Star className="w-3.5 h-3.5 text-yellow-400 fill-current" />
-        <span className="text-sm font-medium text-ink">4.9/5 from 500+ families</span>
+        <Sparkles className="w-3.5 h-3.5 text-primary" />
+        <span className="text-sm font-medium text-ink">Therapy-grade quality</span>
       </div>
       
       {/* 3-Step Reassurance Micro-row */}
@@ -420,19 +419,13 @@ export default function ResourceDetailPage() {
                  </span>
               </div>
 
-              <h1 className="font-serif text-3xl lg:text-4xl text-ink mb-4 leading-tight">
+              <h1 className="font-serif text-3xl lg:text-4xl text-ink mb-2 leading-tight">
                 {asset.title}
               </h1>
 
+              {/* Asset ID badge instead of fake rating */}
               <div className="flex items-center gap-2 mb-4 text-sm">
-                <div className="flex text-yellow-400">
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4 fill-current" />
-                </div>
-                <span className="text-gray-500">(5.0)</span>
+                <span className="text-gray-400">#{asset.asset_id}</span>
               </div>
 
               <p className="text-gray-600 leading-relaxed mb-6">
