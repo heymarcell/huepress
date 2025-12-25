@@ -177,8 +177,13 @@ export default function AdminAssetForm() {
 
     setIsProcessingSvg(true);
     try {
-      // 1. Reserve  Asset ID
-      const { assetId } = await apiClient.admin.reserveAssetId(formData.category, formData.title, user?.emailAddresses[0].emailAddress || "");
+      // 1. Reserve Asset ID
+      const response = await apiClient.admin.reserveAssetId(formData.category, formData.title, user?.emailAddresses[0].emailAddress || "");
+      const assetId = response.assetId;
+      
+      if (!assetId) {
+        throw new Error("Failed to reserve Asset ID. Please try again.");
+      }
       
       // 2. Generate Clean Filename (with Real ID)
       const cleanName = formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -258,12 +263,23 @@ export default function AdminAssetForm() {
         format: "a4" 
       });
 
+      // Build dynamic keywords from tags and form data
+      const keywordsArray = [
+        formData.category,
+        formData.skill,
+        ...formData.tags.split(",").map(t => t.trim()).filter(Boolean),
+        "coloring page",
+        "huepress",
+        "printable"
+      ];
+      const uniqueKeywords = [...new Set(keywordsArray)].join(", ");
+
       // Inject Metadata (Full Detail)
       doc.setProperties({
         title: `HuePress - ${formData.title} - ${assetId}`,
-        subject: formData.extendedDescription || formData.description || "Coloring Page",
+        subject: `${formData.description} | Website: huepress.co | Support: hello@huepress.co`,
         author: "HuePress",
-        keywords: formData.metaKeywords || `${formData.category}, ${formData.skill}, coloring page, huepress`,
+        keywords: uniqueKeywords,
         creator: "HuePress Automated Generator"
       });
 
@@ -366,38 +382,50 @@ export default function AdminAssetForm() {
       doc.text("huepress.co/review", 112, 210); // Redirects to Trustpilot
 
       // FOOTER - SOCIALS
-      const startX = 65;
-      const gap = 20;
-      const iconY = 240;
-      const iconSize = 8;
+      const startX = 20;
+      const iconY = 230;
+      const iconSize = 6;
+      const lineHeight = 5;
+      
+      doc.setFontSize(8);
+      doc.setTextColor(100);
       
       // Facebook
       const fbNode = new DOMParser().parseFromString(SOCIAL_ICONS.FACEBOOK, "image/svg+xml").documentElement;
       await doc.svg(fbNode, { x: startX, y: iconY, width: iconSize, height: iconSize });
       doc.link(startX, iconY, iconSize, iconSize, { url: "https://facebook.com/huepressco" });
+      doc.text("facebook.com/huepressco", startX + iconSize + 2, iconY + iconSize - 1);
 
       // Instagram
       const igNode = new DOMParser().parseFromString(SOCIAL_ICONS.INSTAGRAM, "image/svg+xml").documentElement;
-      await doc.svg(igNode, { x: startX + gap, y: iconY, width: iconSize, height: iconSize });
-      doc.link(startX + gap, iconY, iconSize, iconSize, { url: "https://instagram.com/huepressco" });
+      await doc.svg(igNode, { x: startX, y: iconY + lineHeight * 2, width: iconSize, height: iconSize });
+      doc.link(startX, iconY + lineHeight * 2, iconSize, iconSize, { url: "https://instagram.com/huepressco" });
+      doc.text("instagram.com/huepressco", startX + iconSize + 2, iconY + lineHeight * 2 + iconSize - 1);
 
       // Pinterest
       const pinNode = new DOMParser().parseFromString(SOCIAL_ICONS.PINTEREST, "image/svg+xml").documentElement;
-      await doc.svg(pinNode, { x: startX + gap * 2, y: iconY, width: iconSize, height: iconSize });
-      doc.link(startX + gap * 2, iconY, iconSize, iconSize, { url: "https://pinterest.com/huepressco" });
+      await doc.svg(pinNode, { x: startX, y: iconY + lineHeight * 4, width: iconSize, height: iconSize });
+      doc.link(startX, iconY + lineHeight * 4, iconSize, iconSize, { url: "https://pinterest.com/huepressco" });
+      doc.text("pinterest.com/huepressco", startX + iconSize + 2, iconY + lineHeight * 4 + iconSize - 1);
 
       // Website
       const webNode = new DOMParser().parseFromString(SOCIAL_ICONS.WEBSITE, "image/svg+xml").documentElement;
-      await doc.svg(webNode, { x: startX + gap * 3, y: iconY, width: iconSize, height: iconSize });
-      doc.link(startX + gap * 3, iconY, iconSize, iconSize, { url: "https://huepress.co" });
+      await doc.svg(webNode, { x: startX, y: iconY + lineHeight * 6, width: iconSize, height: iconSize });
+      doc.link(startX, iconY + lineHeight * 6, iconSize, iconSize, { url: "https://huepress.co" });
+      doc.text("huepress.co", startX + iconSize + 2, iconY + lineHeight * 6 + iconSize - 1);
+
+      // Support Email
+      doc.setFontSize(9);
+      doc.setTextColor(80);
+      doc.text("Questions? Email us: hello@huepress.co", 105, 268, { align: "center" });
 
       // Copyright
       doc.setFontSize(9);
       doc.setTextColor(150);
-      doc.text(`Copyright © ${new Date().getFullYear()} HuePress. All rights reserved.`, 105, 260, { align: "center" });
+      doc.text(`Copyright © ${new Date().getFullYear()} HuePress. All rights reserved.`, 105, 275, { align: "center" });
       
       // Asset ID
-      doc.text(`Asset ID: ${assetId}`, 105, 265, { align: "center" });
+      doc.text(`Asset ID: ${assetId}`, 105, 280, { align: "center" });
 
       const pdfBlob = doc.output("blob");
       const pdfFileObj = new File([pdfBlob], `${baseFilename}.pdf`, { type: "application/pdf" });
@@ -870,19 +898,7 @@ export default function AdminAssetForm() {
                     </div>
                   </div>
                   
-                  {/* Zoom Modal */}
-                  {isZoomOpen && (
-                    <div 
-                      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-                      onClick={() => setIsZoomOpen(false)}
-                    >
-                      <img 
-                        src={thumbnailPreviewUrl} 
-                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                        alt="Zoomed Thumbnail"
-                      />
-                    </div>
-                  )}
+                  {/* Zoom Modal is rendered at root level for proper z-index */}
                 </>
               )}
 
@@ -976,6 +992,26 @@ export default function AdminAssetForm() {
         message={alertState.message}
         variant={alertState.variant}
       />
+
+      {/* Thumbnail Zoom Modal - rendered at root level */}
+      {isZoomOpen && thumbnailPreviewUrl && (
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-8 cursor-zoom-out"
+          onClick={() => setIsZoomOpen(false)}
+        >
+          <img 
+            src={thumbnailPreviewUrl} 
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-xl shadow-2xl"
+            alt="Zoomed Thumbnail"
+          />
+          <button 
+            className="absolute top-6 right-6 text-white/80 hover:text-white text-3xl font-light"
+            onClick={() => setIsZoomOpen(false)}
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 }
