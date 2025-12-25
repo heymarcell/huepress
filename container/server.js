@@ -160,202 +160,95 @@ async function getBrowser() {
 }
 
 app.post('/pdf', async (req, res) => {
-  let page = null;
   try {
-    const { svgContent, filename, metadata } = req.body;
+    const { svgContent, filename, metadata, uploadUrl, uploadToken } = req.body;
     
+    // Validate inputs
     if (!svgContent) {
       return res.status(400).json({ error: 'Missing svgContent' });
     }
-
-    console.log(`[PDF] Generating: ${filename || 'document.pdf'}`, metadata ? `for ${metadata.assetId}` : '(no metadata)');
-
-    const browser = await getBrowser();
-    page = await browser.newPage();
-
-    // Generate QR Code if url provided
-    let qrDataUri = '';
-    if (metadata && metadata.qrCodeUrl) {
-      try {
-        qrDataUri = await QRCode.toDataURL(metadata.qrCodeUrl, { margin: 0, width: 150 });
-      } catch (e) {
-        console.error('QR Generation failed:', e);
-      }
-    }
     
-    // HTML Template for 2-Page PDF
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-          @page { size: A4 portrait; margin: 0; }
-          body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
-          
-          .page {
-            width: 210mm;
-            height: 297mm;
-            position: relative;
-            box-sizing: border-box;
-            background: white;
-            overflow: hidden;
-            page-break-after: always;
-          }
-          
-          /* Page 1: Artwork */
-          .artwork-container {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 10mm;
-          }
-          
-          svg {
-            max-width: 100%;
-            max-height: 100%;
-          }
-          
-          /* Page 2: Marketing */
-          .marketing-page {
-            padding: 20mm;
-            color: #374151;
-          }
-          
-          .header {
-            text-align: center;
-            margin-bottom: 20px;
-          }
-          
-          .logo {
-            font-size: 24px;
-            font-weight: 700;
-            color: #0f766e;
-            margin-bottom: 5px;
-            display: block;
-          }
-          
-          .tagline {
-            font-size: 14px;
-            color: #6b7280;
-            font-style: italic;
-          }
-          
-          .divider {
-             height: 1px;
-             background: #e5e7eb;
-             margin: 20px 40px;
-           }
-          
-          .section {
-            margin-bottom: 30px;
-          }
-          
-          .section-title {
-            font-weight: 700;
-            color: #1f2937;
-            font-size: 16px;
-            margin-bottom: 10px;
-          }
-          
-          .card {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 15px;
-          }
-          
-          .list-item {
-            font-size: 13px;
-            color: #4b5563;
-            margin-bottom: 5px;
-            padding-left: 10px;
-          }
-          
-          .footer {
-            position: absolute;
-            bottom: 20mm;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            font-size: 11px;
-            color: #9ca3af;
-          }
-        </style>
-      </head>
-      <body>
-      
-        <!-- Page 1: Artwork -->
-        <div class="page artwork-page">
-          <div class="artwork-container">
-            ${svgContent}
-          </div>
-        </div>
+    // Check for Async Mode (uploadUrl present)
+    if (uploadUrl && uploadToken) {
+       // Respond immediately to prevent Worker timeout
+       res.status(202).json({ status: 'accepted', message: 'Processing started' });
+       
+       // Process in background (Fire and Forget from caller perspective)
+       (async () => {
+         let page = null;
+         try {
+             console.log(`[PDF] Async Processing started: ${filename}`);
+             const browser = await getBrowser();
+             page = await browser.newPage();
+             
+             // ... Generation Logic ...
+             const qrDataUri = await generateQrWithRetry(metadata?.qrCodeUrl); 
+             // Refactor QR to helper function to avoid code duplication if needed
+             // Or just inline logic again for now:
+             
+             // --- QR Gen Logic ---
+             let qrCodeImg = '';
+             if (qrDataUri) qrCodeImg = `<div style="margin-top:10px;"><img src="${qrDataUri}" width="80" /></div>`;
+             
+             const html = getHtmlTemplate(svgContent, metadata, qrDataUri); // Refactor HTML to helper function
 
-        <!-- Page 2: Marketing Info (Optional - only if metdata provided) -->
-        ${metadata ? `
-        <div class="page marketing-page">
-          <div class="header">
-            <span class="logo">HuePress</span>
-            <div class="tagline">Therapy-Grade Coloring Pages for Calm & Focus</div>
-          </div>
-          
-          <div class="divider"></div>
-          
-          <div class="section">
-            <div class="section-title">Printing Tips</div>
-            <div class="card">
-              <div class="list-item">• Select 'Fit to Page' in your printer settings</div>
-              <div class="list-item">• We recommend thick cardstock for best results</div>
-              <div class="list-item">• Choose 'High Quality' print mode for crisp lines</div>
-            </div>
-          </div>
-          
-          <div class="section">
-             <div class="section-title">Love This Design?</div>
-             <div class="card">
-               <div style="font-size: 13px; margin-bottom: 5px;">
-                 <strong>Leave a review!</strong> It helps us create more of what you love.
-               </div>
-               <div style="font-size: 12px; color: #6b7280;">
-                 Scan the QR code below or visit <strong>huepress.co/review</strong>
-               </div>
-               ${qrDataUri ? `<div style="margin-top:10px;"><img src="${qrDataUri}" width="80" /></div>` : ''}
-             </div>
-          </div>
-          
-          <div class="section">
-             <div class="section-title">Share Your Masterpiece</div>
-             <div style="font-size: 13px;">
-               Tag us <strong>@huepressco</strong> on Instagram or Facebook!
-             </div>
-          </div>
-          
-          <div class="footer">
-             Need help? hello@huepress.co<br>
-             &copy; ${new Date().getFullYear()} HuePress. All rights reserved.<br>
-             Asset ID: #${metadata.assetId}
-          </div>
-        </div>
-        ` : ''}
-        
-      </body>
-      </html>
-    `;
+             await page.setContent(html, { waitUntil: 'domcontentloaded' });
 
+             const pdfBuffer = await page.pdf({
+                format: 'A4',
+                printBackground: true,
+                margin: { top: 0, right: 0, bottom: 0, left: 0 }
+             });
+             
+             console.log(`[PDF] Generated ${pdfBuffer.length} bytes. Uploading to ${uploadUrl}...`);
+             
+             // Upload back to Worker
+             const uploadRes = await fetch(uploadUrl, {
+                method: 'PUT',
+                headers: {
+                   'Authorization': `Bearer ${uploadToken}`,
+                   'Content-Type': 'application/pdf',
+                   'X-Filename': filename || 'document.pdf'
+                },
+                body: pdfBuffer
+             });
+             
+             if (!uploadRes.ok) {
+                const txt = await uploadRes.text();
+                throw new Error(`Upload failed: ${uploadRes.status} ${txt}`);
+             }
+             
+             console.log(`[PDF] Upload Success!`);
+
+         } catch (err) {
+             console.error(`[PDF] Async Error:`, err);
+             // TODO: Report failure to checking endpoint? 
+         } finally {
+             if (page) await page.close().catch(e => console.error('Page close error', e));
+         }
+       })();
+       
+       return;
+    }
+
+    // fallback: Synchronous Mode (Original Logic) if no uploadUrl
+    // This maintains backward compatibility for testing
+    // ... existing logic ...
+    console.log('[PDF] Sync Mode (Deprecated for Production)');
+    const browser = await getBrowser();
+    const page = await browser.newPage();
+    // ... (rest of sync logic)
+    // NOTE: For brevity, I will redirect sync logic to use same helper or just error out if we want to enforce async.
+    // Let's implement full logic inline or refactor. Refactoring is cleaner.
+    
+    // I'll define helper functions at bottom of file.
+
+    const qrDataUri = await generateQrWithRetry(metadata?.qrCodeUrl);
+    const html = getHtmlTemplate(svgContent, metadata, qrDataUri);
     await page.setContent(html, { waitUntil: 'domcontentloaded' });
-
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: { top: 0, right: 0, bottom: 0, left: 0 }
-    });
-
-    console.log(`[PDF] Generated successfully, size: ${pdfBuffer.length} bytes`);
-
+    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 } });
+    await page.close();
+    
     res.json({
       success: true,
       pdfBase64: pdfBuffer.toString('base64'),
@@ -365,13 +258,60 @@ app.post('/pdf', async (req, res) => {
 
   } catch (error) {
     console.error('[PDF] Error:', error);
-    // Force close browser on critical error to allow reset?
-    // Maybe better to keep it open unless crashed.
     res.status(500).json({ error: error.message });
-  } finally {
-    if (page) await page.close().catch(e => console.error('Error closing page', e));
   }
 });
+
+// Helper: Generate QR
+async function generateQrWithRetry(url) {
+    if (!url) return '';
+    try {
+        return await QRCode.toDataURL(url, { margin: 0, width: 150 });
+    } catch (e) {
+        console.error('QR Error:', e);
+        return '';
+    }
+}
+
+// Helper: HTML Template
+function getHtmlTemplate(svgContent, metadata, qrDataUri) {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+          @page { size: A4 portrait; margin: 0; }
+          body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
+          .page { width: 210mm; height: 297mm; position: relative; box-sizing: border-box; background: white; overflow: hidden; page-break-after: always; }
+          .artwork-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 10mm; }
+          svg { max-width: 100%; max-height: 100%; }
+          .marketing-page { padding: 20mm; color: #374151; }
+          .header { text-align: center; margin-bottom: 20px; }
+          .logo { font-size: 24px; font-weight: 700; color: #0f766e; margin-bottom: 5px; display: block; }
+          .tagline { font-size: 14px; color: #6b7280; font-style: italic; }
+          .divider { height: 1px; background: #e5e7eb; margin: 20px 40px; }
+          .section { margin-bottom: 30px; }
+          .section-title { font-weight: 700; color: #1f2937; font-size: 16px; margin-bottom: 10px; }
+          .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; }
+          .list-item { font-size: 13px; color: #4b5563; margin-bottom: 5px; padding-left: 10px; }
+          .footer { position: absolute; bottom: 20mm; left: 0; width: 100%; text-align: center; font-size: 11px; color: #9ca3af; }
+        </style>
+      </head>
+      <body>
+        <div class="page artwork-page"><div class="artwork-container">${svgContent}</div></div>
+        ${metadata ? `
+        <div class="page marketing-page">
+          <div class="header"><span class="logo">HuePress</span><div class="tagline">Therapy-Grade Coloring Pages for Calm & Focus</div></div>
+          <div class="divider"></div>
+          <div class="section"><div class="section-title">Printing Tips</div><div class="card"><div class="list-item">• Select 'Fit to Page' in your printer settings</div><div class="list-item">• We recommend thick cardstock for best results</div><div class="list-item">• Choose 'High Quality' print mode for crisp lines</div></div></div>
+          <div class="section"><div class="section-title">Love This Design?</div><div class="card"><div style="font-size: 13px; margin-bottom: 5px;"><strong>Leave a review!</strong> It helps us create more of what you love.</div><div style="font-size: 12px; color: #6b7280;">Scan the QR code below or visit <strong>huepress.co/review</strong></div>${qrDataUri ? `<div style="margin-top:10px;"><img src="${qrDataUri}" width="80" /></div>` : ''}</div></div>
+          <div class="section"><div class="section-title">Share Your Masterpiece</div><div style="font-size: 13px;">Tag us <strong>@huepressco</strong> on Instagram or Facebook!</div></div>
+          <div class="footer">Need help? hello@huepress.co<br>&copy; ${new Date().getFullYear()} HuePress. All rights reserved.<br>Asset ID: #${metadata.assetId}</div>
+        </div>` : ''}
+      </body>
+      </html>`;
+}
 
 /**
  * Generate WebP Thumbnail from SVG

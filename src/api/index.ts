@@ -10,6 +10,7 @@ import stripeRoute from "./routes/stripe";
 import webhooksRoute from "./routes/webhooks";
 import reviewsRoute from "./routes/reviews";
 import tagsRoute from "./routes/tags";
+import internalRoute from "./routes/internal";
 // import requestsRoute from "./routes/requests";
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -46,6 +47,7 @@ app.route("/api", stripeRoute);      // /api/checkout, /api/portal, /api/webhook
 app.route("/api/webhooks", webhooksRoute); // /api/webhooks/clerk
 app.route("/api/reviews", reviewsRoute); // /api/reviews/:assetId
 app.route("/api/tags", tagsRoute);   // /api/tags
+app.route("/api/internal", internalRoute); // /api/internal/upload-pdf
 // app.route("/api/requests", requestsRoute); // Moved to inline for debugging
 
 import { getAuth } from "@hono/clerk-auth";

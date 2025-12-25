@@ -72,13 +72,26 @@ export async function generatePdfViaContainer(
   env: Bindings,
   svgContent: string,
   filename: string,
-  metadata?: PdfMetadata
-): Promise<{ pdfBase64: string; mimeType: string; filename: string }> {
-  const response = await callProcessingContainer(env, "/pdf", {
+  metadata?: PdfMetadata,
+  asyncOptions?: { uploadUrl: string; uploadToken: string }
+): Promise<{ pdfBase64?: string; mimeType: string; filename: string } | void> {
+  const body: any = {
     svgContent,
     filename,
     metadata
-  });
+  };
+
+  if (asyncOptions) {
+     body.uploadUrl = asyncOptions.uploadUrl;
+     body.uploadToken = asyncOptions.uploadToken;
+  }
+
+  const response = await callProcessingContainer(env, "/pdf", body);
+
+  if (response.status === 202) {
+      // Async accepted
+      return;
+  }
   
   if (!response.ok) {
     const error = await response.json() as { error: string };

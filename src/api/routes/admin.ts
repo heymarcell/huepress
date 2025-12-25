@@ -386,8 +386,13 @@ app.post("/assets", async (c) => {
             try {
                 // 4. Generate PDF (if missing and have source)
                 if (!hasPdfUpload && hasSourceUpload && svgContent && pdfKey) {
-                   console.log(`[Background] Generating PDF for ${assetId}...`);
-                   const { pdfBase64 } = await generatePdfViaContainer(
+                   console.log(`[Background] Offloading PDF Generation for ${assetId}...`);
+                   
+                   const origin = new URL(c.req.url).origin;
+                   const uploadToken = c.env.INTERNAL_API_TOKEN;
+                   const uploadUrl = `${origin}/api/internal/upload-pdf/${encodeURIComponent(pdfKey)}`;
+
+                   await generatePdfViaContainer(
                      c.env,
                      svgContent,
                      `${assetId}-${slug}`,
@@ -396,15 +401,14 @@ app.post("/assets", async (c) => {
                        assetId: idPath,
                        description: (description as string) || "",
                        qrCodeUrl: "https://huepress.co/review"
+                     },
+                     {
+                        uploadUrl,
+                        uploadToken
                      }
                    );
-                   const buf = Uint8Array.from(atob(pdfBase64), x => x.charCodeAt(0));
-                   await c.env.ASSETS_PRIVATE.put(pdfKey, buf, {
-                     httpMetadata: {
-                       contentType: "application/pdf",
-                       contentDisposition: `attachment; filename="${assetId}-${slug}.pdf"`
-                     }
-                   });
+                   
+                   console.log(`[Background] PDF Generation task sent to container.`);
                 }
             } catch (err) {
                  console.error(`[Background] PDF Task failed:`, err);

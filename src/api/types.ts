@@ -21,6 +21,7 @@ export type Bindings = {
   PINTEREST_AD_ACCOUNT_ID: string; // e.g., 549769812316
   GA4_API_SECRET: string;
   GA4_MEASUREMENT_ID: string; // e.g., G-XXXXXXXX
+  INTERNAL_API_TOKEN: string; // Shared secret for internal container uploads
 };
 
 export interface Asset {
