@@ -516,10 +516,7 @@ export default function ResourceDetailPage() {
           </div>
         </div>
       </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Content Section - Only show if there's actual content */}
       {(asset.extended_description || asset.fun_facts?.length || asset.suggested_activities?.length || asset.coloring_tips || asset.therapeutic_benefits) && (
