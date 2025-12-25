@@ -225,7 +225,7 @@ export default function AdminAssetForm() {
     slug: string, 
     metadata: AssetFormData
   ): Promise<{ pdfFile: File; webpFile: File; baseFilename: string }> => {
-    const baseFilename = `huepress-${assetId}-${slug}`;
+    const baseFilename = `${assetId}-${slug}`;
 
     // WebP Generation
     const webpBlob = await new Promise<Blob>((resolve, reject) => {
@@ -521,7 +521,7 @@ export default function AdminAssetForm() {
       }
       
       // 2. Generate Filename (with Real ID and Slug)
-      const baseFilename = `huepress-${assetId}-${slug}`; 
+      const baseFilename = `${assetId}-${slug}`; 
 
       // 3. WebP Generation (Canvas) - Forced 1:1 Square - Forced 1:1 Square
       const webpBlob = await new Promise<Blob>((resolve, reject) => {
