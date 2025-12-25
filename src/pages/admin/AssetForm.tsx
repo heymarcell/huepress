@@ -165,11 +165,11 @@ export default function AdminAssetForm() {
     if (!file) return;
 
     // 0. Enforce Prerequisites for Correct ID/Metadata
-    if (!formData.title || !formData.category || !formData.description || !formData.skill) {
+    if (!formData.title || !formData.category || !formData.description || !formData.skill || !formData.tags) {
       setAlertState({
         isOpen: true,
         title: "Missing Info",
-        message: "Please enter a Title, Description, Category, and Skill Level first so we can generate the correct Asset ID and Metadata.",
+        message: "Please enter a Title, Description, Category, Skill Level, and Tags first so we can generate the correct Asset ID and Metadata.",
         variant: "info"
       });
       return;
@@ -591,11 +591,12 @@ export default function AdminAssetForm() {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-2">Description</label>
+              <label className="block text-sm font-medium text-ink mb-2">Description *</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
+                required
                 rows={3}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none transition-all"
                 placeholder="A cute capybara surrounded by beautiful flowers..."
@@ -771,12 +772,13 @@ export default function AdminAssetForm() {
 
             {/* Tags Input */}
             <div>
-               <label className="block text-sm font-medium text-ink mb-2">Tags</label>
+               <label className="block text-sm font-medium text-ink mb-2">Tags *</label>
                 <input
                   type="text"
                   name="tags"
                   value={formData.tags}
                   onChange={handleChange}
+                  required
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all text-sm"
                   placeholder="cat, garden, sunshine..."
                 />
