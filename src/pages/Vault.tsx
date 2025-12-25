@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
 import { apiClient } from "@/lib/api-client";
 import { Asset, Tag } from "@/api/types";
-import { ResourceCard, ResourceCardSkeleton, FilterBar, SearchBar, Button } from "@/components/ui";
+import { ResourceCard, ResourceCardSkeleton, SearchBar, Button } from "@/components/ui";
 import { ArrowUpDown, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -124,44 +124,70 @@ export default function VaultPage() {
         {/* Search Bar */}
         <SearchBar onSearch={handleSearch} placeholder="Try 'Dinosaur', 'Space', or 'Calm'..." />
 
-        {/* Filters - Horizontal Scroll on Mobile */}
-        <div className="space-y-4 mb-8">
-          {/* Categories */}
-          <div className="flex overflow-x-auto md:overflow-visible flex-nowrap md:flex-wrap items-center gap-2 pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-            <span className="text-sm font-medium text-gray-500 whitespace-nowrap">Category:</span>
-            <FilterBar
-              categories={categoriesUI}
-              selectedCategory={selectedCategory}
-              onCategoryChange={handleCategoryChange}
-            />
-          </div>
-          
-           {/* Themes - if available */}
-           {themesUI.length > 0 && (
-            <div className="flex overflow-x-auto md:overflow-visible flex-nowrap md:flex-wrap items-center gap-2 pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-              <span className="text-sm font-medium text-gray-500 whitespace-nowrap">Theme:</span>
-              <FilterBar
-                categories={themesUI}
-                selectedCategory={selectedTag}
-                onCategoryChange={handleTagChange}
-              />
+        {/* Sorting & Applied Filters */}
+        <div className="flex flex-col gap-4 mb-6">
+          <div className="flex items-center justify-between">
+            {/* Filter Button + Applied Filter Chips */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                  showMobileFilters 
+                    ? 'bg-primary text-white border-primary' 
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
+                }`}
+              >
+                <Filter className="w-4 h-4" />
+                Filters
+                {(selectedCategory || selectedSkill || selectedTag) && (
+                  <span className="bg-white/20 text-xs px-1.5 py-0.5 rounded-full">
+                    {[selectedCategory, selectedSkill, selectedTag].filter(Boolean).length}
+                  </span>
+                )}
+              </button>
+              
+              {/* Applied Filter Chips */}
+              {selectedCategory && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
+                  {selectedCategory}
+                  <button onClick={() => setSelectedCategory("")} className="hover:bg-primary/20 rounded-full p-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {selectedTag && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
+                  {selectedTag}
+                  <button onClick={() => setSelectedTag("")} className="hover:bg-primary/20 rounded-full p-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {selectedSkill && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
+                  {selectedSkill}
+                  <button onClick={() => setSelectedSkill("")} className="hover:bg-primary/20 rounded-full p-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              
+              {(selectedCategory || selectedSkill || selectedTag) && (
+                <button 
+                  onClick={() => {
+                    setSelectedCategory("");
+                    setSelectedSkill("");
+                    setSelectedTag("");
+                  }}
+                  className="text-sm text-gray-500 hover:text-primary"
+                >
+                  Clear all
+                </button>
+              )}
             </div>
-           )}
-
-          {/* Skills */}
-          <div className="flex overflow-x-auto md:overflow-visible flex-nowrap md:flex-wrap items-center gap-2 pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-            <span className="text-sm font-medium text-gray-500 whitespace-nowrap">Skill:</span>
-            <FilterBar
-              categories={skillsUI}
-              selectedCategory={selectedSkill}
-              onCategoryChange={handleSkillChange}
-            />
-          </div>
-        </div>
-
-        {/* Sorting & Free Toggle */}
-        <div className="flex items-center justify-between mb-6">
-           <div className="flex items-center gap-2">
+            
+            {/* Sort */}
+            <div className="flex items-center gap-2">
               <ArrowUpDown className="w-4 h-4 text-gray-400" />
               <select 
                 value={sortBy} 
@@ -171,25 +197,72 @@ export default function VaultPage() {
                  <option value="newest">Newest First</option>
                  <option value="oldest">Oldest First</option>
               </select>
-           </div>
-        </div>
-
-        {/* Clear filters button */}
-        {(searchQuery || selectedCategory || selectedSkill || selectedTag) && (
-          <div className="mb-6">
-            <button 
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedCategory("");
-                setSelectedSkill("");
-                setSelectedTag("");
-              }}
-              className="text-sm text-primary hover:underline flex items-center gap-1"
-            >
-              ✕ Clear all filters
-            </button>
+            </div>
           </div>
-        )}
+          
+          {/* Collapsible Filter Panel */}
+          {showMobileFilters && (
+            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm animate-in slide-in-from-top-2 duration-200">
+              <div className="grid gap-4 md:grid-cols-3">
+                {/* Category */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">All Categories</option>
+                    {categoriesUI.map(c => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Theme */}
+                {themesUI.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
+                    <select
+                      value={selectedTag}
+                      onChange={(e) => setSelectedTag(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="">All Themes</option>
+                      {themesUI.map(t => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                {/* Skill */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Skill Level</label>
+                  <select
+                    value={selectedSkill}
+                    onChange={(e) => setSelectedSkill(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">All Levels</option>
+                    {skillsUI.map(s => (
+                      <option key={s.value} value={s.value}>{s.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="flex justify-end mt-4 pt-4 border-t border-gray-100">
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Grid with Injected Banner */}
         {isLoading ? (
