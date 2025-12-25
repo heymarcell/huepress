@@ -12,7 +12,8 @@ import {
   Sparkles,
   Star,
   Download,
-  Unlock
+  Unlock,
+  ImageIcon
 } from "lucide-react";
 import SEO from "@/components/SEO";
 import { apiClient } from "@/lib/api-client";
@@ -385,11 +386,18 @@ export default function ResourceDetailPage() {
             <div className="w-full lg:w-1/2">
                <div className="sticky top-32">
                  <div className="relative aspect-a4 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 group">
-                   <img 
-                     src={asset.image_url} 
-                     alt={asset.title}
-                     className="w-full h-full object-contain p-4 group-hover:scale-[1.02] transition-transform duration-500"
-                   />
+                   {asset.image_url && !asset.image_url.includes("__draft__") ? (
+                     <img 
+                       src={asset.image_url} 
+                       alt={asset.title}
+                       className="w-full h-full object-contain p-4 group-hover:scale-[1.02] transition-transform duration-500"
+                     />
+                   ) : (
+                     <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
+                       <ImageIcon className="w-20 h-20 text-gray-300" strokeWidth={1} />
+                       <span className="text-sm text-gray-400 mt-3">Preview not available</span>
+                     </div>
+                   )}
                    
                    {/* Capture Overlay */}
                    <FreeSampleCapture source={`ResourceDetail:${assetId}`} />
