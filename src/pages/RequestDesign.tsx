@@ -6,7 +6,7 @@ import { useSubscription } from "@/lib/auth";
 
 export default function RequestDesign() {
   const { user, isLoaded } = useUser();
-  const { isSubscriber, isLoading: subLoading } = useSubscription();
+  const { isSubscriber, isLoaded: subLoaded } = useSubscription();
   const navigate = useNavigate();
   
   const [title, setTitle] = useState("");
@@ -15,12 +15,12 @@ export default function RequestDesign() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (isLoaded && !subLoading && !isSubscriber) {
+    if (isLoaded && subLoaded && !isSubscriber) {
       navigate("/pricing"); // Lock down page
     }
-  }, [isLoaded, subLoading, isSubscriber, navigate]);
+  }, [isLoaded, subLoaded, isSubscriber, navigate]);
 
-  if (!isLoaded || subLoading) {
+  if (!isLoaded || !subLoaded) {
     return (
       <div className="min-h-screen pt-32 pb-20 flex justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
