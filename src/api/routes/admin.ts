@@ -107,6 +107,66 @@ app.get("/assets", async (c) => {
   }
 });
 
+// ADMIN: Get single asset by ID
+app.get("/assets/:id", async (c) => {
+  const adminEmail = c.req.header("X-Admin-Email");
+  
+  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const { id } = c.req.param();
+
+  try {
+    const asset = await c.env.DB.prepare(
+      "SELECT * FROM assets WHERE id = ?"
+    ).bind(id).first<Record<string, unknown>>();
+    
+    if (!asset) {
+      return c.json({ error: "Asset not found" }, 404);
+    }
+
+    return c.json({ 
+      asset: {
+        ...asset,
+        tags: asset.tags ? JSON.parse(asset.tags as string) : [],
+        fun_facts: asset.fun_facts ? JSON.parse(asset.fun_facts as string) : [],
+        suggested_activities: asset.suggested_activities ? JSON.parse(asset.suggested_activities as string) : [],
+      }
+    });
+  } catch (error) {
+    console.error("Database error:", error);
+    return c.json({ error: "Failed to fetch asset" }, 500);
+  }
+});
+
+// ADMIN: Update asset status (publish/draft)
+app.patch("/assets/:id/status", async (c) => {
+  const adminEmail = c.req.header("X-Admin-Email");
+  
+  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const { id } = c.req.param();
+  const { status } = await c.req.json<{ status: 'published' | 'draft' }>();
+
+  if (!status || !['published', 'draft'].includes(status)) {
+    return c.json({ error: "Invalid status" }, 400);
+  }
+
+  try {
+    await c.env.DB.prepare(
+      "UPDATE assets SET status = ? WHERE id = ?"
+    ).bind(status, id).run();
+
+    return c.json({ success: true, status });
+  } catch (error) {
+    console.error("Update status error:", error);
+    return c.json({ error: "Failed to update status" }, 500);
+  }
+});
+
 // ADMIN: Create new asset
 app.post("/assets", async (c) => {
   const adminEmail = c.req.header("X-Admin-Email");

@@ -88,6 +88,7 @@ interface AssetFormData {
 export default function AdminAssetForm() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useUser();
   const isEditing = Boolean(id);
 
   const [availableTags, setAvailableTags] = useState<Record<string, Tag[]>>({});
@@ -107,6 +108,45 @@ export default function AdminAssetForm() {
     metaKeywords: "",
   });
 
+  // Fetch existing asset data when editing
+  useEffect(() => {
+    if (!isEditing || !id) return;
+    
+    const fetchAsset = async () => {
+      try {
+        const email = user?.primaryEmailAddress?.emailAddress || "";
+        const asset = await apiClient.admin.getAsset(id, email);
+        if (asset) {
+          setFormData({
+            title: (asset.title as string) || "",
+            description: (asset.description as string) || "",
+            category: (asset.category as string) || "",
+            skill: (asset.skill as string) || "",
+            tags: Array.isArray(asset.tags) ? (asset.tags as string[]).join(", ") : "",
+            status: (asset.status as "draft" | "published") || "draft",
+            extendedDescription: (asset.extended_description as string) || "",
+            funFacts: Array.isArray(asset.fun_facts) ? (asset.fun_facts as string[]).join("\n") : "",
+            suggestedActivities: Array.isArray(asset.suggested_activities) ? (asset.suggested_activities as string[]).join("\n") : "",
+            coloringTips: (asset.coloring_tips as string) || "",
+            therapeuticBenefits: (asset.therapeutic_benefits as string) || "",
+            metaKeywords: (asset.meta_keywords as string) || "",
+            asset_id: (asset.asset_id as string) || "",
+          });
+          // Set preview URLs if available
+          if (asset.r2_key_public && !(asset.r2_key_public as string).startsWith("__draft__")) {
+            setThumbnailPreviewUrl(`https://assets.huepress.co/${asset.r2_key_public}`);
+          }
+          if (asset.r2_key_private && !(asset.r2_key_private as string).startsWith("__draft__")) {
+            setPdfPreviewUrl(`Preview available`);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load asset", err);
+      }
+    };
+    fetchAsset();
+  }, [id, isEditing, user]);
+
   // Fetch Tags
   useEffect(() => {
     const fetchTags = async () => {
@@ -114,18 +154,20 @@ export default function AdminAssetForm() {
         const data = await apiClient.tags.list();
         setAvailableTags(data.grouped);
         
-        // Set defaults if empty
-        setFormData(prev => ({
-          ...prev,
-          category: prev.category || data.grouped.category?.[0]?.name || "",
-          skill: prev.skill || data.grouped.skill?.[0]?.name || ""
-        }));
+        // Set defaults if empty (only for new assets)
+        if (!isEditing) {
+          setFormData(prev => ({
+            ...prev,
+            category: prev.category || data.grouped.category?.[0]?.name || "",
+            skill: prev.skill || data.grouped.skill?.[0]?.name || ""
+          }));
+        }
       } catch (err) {
         console.error("Failed to load tags", err);
       }
     };
     fetchTags();
-  }, []);
+  }, [isEditing]);
 
 
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -169,7 +211,7 @@ export default function AdminAssetForm() {
     }
   };
 
-  const { user } = useUser();
+
 
   /**
    * Helper: Generate PDF and WebP from SVG file

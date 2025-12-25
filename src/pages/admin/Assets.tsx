@@ -61,12 +61,28 @@ export default function AdminAssets() {
     return asset.status === filter;
   });
 
-  const toggleStatus = (id: string) => {
-    setAssets(assets.map((asset) => 
-      asset.id === id 
-        ? { ...asset, status: asset.status === "published" ? "draft" : "published" }
-        : asset
+  const toggleStatus = async (id: string) => {
+    if (!user) return;
+    const email = user.primaryEmailAddress?.emailAddress || "";
+    const asset = assets.find(a => a.id === id);
+    if (!asset) return;
+    
+    const newStatus = asset.status === "published" ? "draft" : "published";
+    
+    // Optimistic update
+    setAssets(assets.map((a) => 
+      a.id === id ? { ...a, status: newStatus } : a
     ));
+    
+    try {
+      await apiClient.admin.updateStatus(id, newStatus, email);
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      // Revert on failure
+      setAssets(assets.map((a) => 
+        a.id === id ? { ...a, status: asset.status } : a
+      ));
+    }
   };
 
   const toggleSelect = (id: string) => {

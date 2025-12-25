@@ -164,6 +164,33 @@ export const apiClient = {
         throw new Error(data.error || "Failed to delete assets");
       }
       return data;
+    },
+    getAsset: async (id: string, adminEmail: string) => {
+      const cleanBase = API_URL.replace(/\/$/, "");
+      const response = await fetch(`${cleanBase}/api/admin/assets/${id}`, {
+        headers: { "X-Admin-Email": adminEmail }
+      });
+      const data = await response.json() as { asset?: Record<string, unknown>; error?: string };
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Failed to fetch asset");
+      }
+      return data.asset;
+    },
+    updateStatus: async (id: string, status: 'published' | 'draft', adminEmail: string) => {
+      const cleanBase = API_URL.replace(/\/$/, "");
+      const response = await fetch(`${cleanBase}/api/admin/assets/${id}/status`, {
+        method: "PATCH",
+        headers: { 
+          "X-Admin-Email": adminEmail,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ status })
+      });
+      const data = await response.json() as { success?: boolean; status?: string; error?: string };
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Failed to update status");
+      }
+      return data;
     }
   },
   billing: {
