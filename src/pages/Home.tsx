@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
+import { useSubscription } from "@/lib/auth";
 import { Asset } from "@/api/types";
 import { 
   Button, 
@@ -25,7 +26,8 @@ import {
   Printer,
   Heart,
   Star,
-  Check
+  Check,
+  PartyPopper
 } from "lucide-react";
 
 // Featured items with real thumbnails
@@ -76,6 +78,7 @@ const painPoints = [
 
 export default function HomePage() {
   const [featuredItems, setFeaturedItems] = useState<Asset[]>([]);
+  const { isSubscriber } = useSubscription();
 
   useEffect(() => {
     const fetchFeatured = async () => {
@@ -98,57 +101,109 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Content */}
             <div className="text-center lg:text-left">
-              <Badge variant="soft-success" className="mb-6 pl-1 pr-3 py-1">
-                 <span className="w-2 h-2 rounded-full bg-success mr-2"></span>
-                 Designed for Fine Motor Skills
-              </Badge>
-              
-              <Heading as="h1" variant="display" className="mb-4">
-                Therapy-Grade Coloring Pages.{" "}
-                <span className="text-secondary">Print Calm in 60 Seconds</span>
-              </Heading>
-              
-              <Text variant="large" className="mb-8 max-w-lg mx-auto lg:mx-0">
-                Join 500+ families using our bold-line designs to reduce anxiety and build focus. 
-                New drops every Sunday.
-              </Text>
-              
-              <div className="mb-8">
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                  <Link to="/pricing">
-                    <Button variant="primary" size="lg" className="w-full sm:w-auto">
-                      Join for $5/mo
-                    </Button>
-                  </Link>
-                  <a href="#free-sample">
-                    <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                      Get 3 Free Pages
-                    </Button>
-                  </a>
-                </div>
-                <p className="text-sm text-gray-500 mt-3 flex items-center justify-center lg:justify-start gap-1">
-                  <span className="font-medium text-ink">$5/month, cancel anytime.</span> Secure checkout via Stripe.
-                </p>
-              </div>
+              {isSubscriber ? (
+                // ========== SUBSCRIBER HERO ==========
+                <>
+                  <Badge variant="soft-success" className="mb-6 pl-1 pr-3 py-1">
+                     <PartyPopper className="w-4 h-4 mr-2" />
+                     You're a Member!
+                  </Badge>
+                  
+                  <Heading as="h1" variant="display" className="mb-4">
+                    Welcome Back!{" "}
+                    <span className="text-secondary">Ready to Print?</span>
+                  </Heading>
+                  
+                  <Text variant="large" className="mb-8 max-w-lg mx-auto lg:mx-0">
+                    Your full library awaits. New designs drop every Sunday — 
+                    dive in and find your next masterpiece.
+                  </Text>
+                  
+                  <div className="mb-8">
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                      <Link to="/vault">
+                        <Button variant="primary" size="lg" className="w-full sm:w-auto">
+                          Browse the Vault
+                        </Button>
+                      </Link>
+                      <Link to="/request-design">
+                        <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                          Request a Design
+                        </Button>
+                      </Link>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-3 flex items-center justify-center lg:justify-start gap-1">
+                      <Check className="w-4 h-4 text-success" />
+                      <span className="font-medium text-ink">Unlimited downloads.</span> Print as many as you like.
+                    </p>
+                  </div>
 
-              {/* Trust/Social Proof - replacing the cluttered form */}
-              <div className="flex items-center justify-center lg:justify-start gap-4 text-sm text-gray-500">
-                 <div className="flex -space-x-2">
-                    <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                      <img src="/avatars/avatar_mom_1.png" alt="Happy Mom" className="w-full h-full object-cover" loading="lazy" />
+                  {/* Subscriber social proof - reinforcement */}
+                  <div className="flex items-center justify-center lg:justify-start gap-4 text-sm text-gray-500">
+                     <div className="flex">
+                       {[1,2,3,4,5].map(i => (
+                         <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                       ))}
+                     </div>
+                     <p>Thank you for being part of the <strong className="text-ink">HuePress family</strong>!</p>
+                  </div>
+                </>
+              ) : (
+                // ========== NON-SUBSCRIBER HERO ==========
+                <>
+                  <Badge variant="soft-success" className="mb-6 pl-1 pr-3 py-1">
+                     <span className="w-2 h-2 rounded-full bg-success mr-2"></span>
+                     Designed for Fine Motor Skills
+                  </Badge>
+                  
+                  <Heading as="h1" variant="display" className="mb-4">
+                    Therapy-Grade Coloring Pages.{" "}
+                    <span className="text-secondary">Print Calm in 60 Seconds</span>
+                  </Heading>
+                  
+                  <Text variant="large" className="mb-8 max-w-lg mx-auto lg:mx-0">
+                    Join 500+ families using our bold-line designs to reduce anxiety and build focus. 
+                    New drops every Sunday.
+                  </Text>
+                  
+                  <div className="mb-8">
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                      <Link to="/pricing">
+                        <Button variant="primary" size="lg" className="w-full sm:w-auto">
+                          Join for $5/mo
+                        </Button>
+                      </Link>
+                      <a href="#free-sample">
+                        <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                          Get 3 Free Pages
+                        </Button>
+                      </a>
                     </div>
-                    <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                      <img src="/avatars/avatar_dad_1.png" alt="Happy Dad" className="w-full h-full object-cover" loading="lazy" />
-                    </div>
-                    <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                      <img src="/avatars/avatar_teacher_1.png" alt="Teacher" className="w-full h-full object-cover" loading="lazy" />
-                    </div>
-                    <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                      <img src="/avatars/avatar_mom_2.png" alt="Happy Mom" className="w-full h-full object-cover" loading="lazy" />
-                    </div>
-                 </div>
-                 <p>Join <strong className="text-ink">500+ families</strong> printing today.</p>
-              </div>
+                    <p className="text-sm text-gray-500 mt-3 flex items-center justify-center lg:justify-start gap-1">
+                      <span className="font-medium text-ink">$5/month, cancel anytime.</span> Secure checkout via Stripe.
+                    </p>
+                  </div>
+
+                  {/* Trust/Social Proof */}
+                  <div className="flex items-center justify-center lg:justify-start gap-4 text-sm text-gray-500">
+                     <div className="flex -space-x-2">
+                        <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+                          <img src="/avatars/avatar_mom_1.png" alt="Happy Mom" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                        <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+                          <img src="/avatars/avatar_dad_1.png" alt="Happy Dad" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                        <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+                          <img src="/avatars/avatar_teacher_1.png" alt="Teacher" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                        <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+                          <img src="/avatars/avatar_mom_2.png" alt="Happy Mom" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                     </div>
+                     <p>Join <strong className="text-ink">500+ families</strong> printing today.</p>
+                  </div>
+                </>
+              )}
 
 
             </div>
@@ -208,7 +263,8 @@ export default function HomePage() {
                  title={item.title}
                  imageUrl={item.image_url}
                  tags={(item.tags || []).slice(0, 2)}
-                 isLocked={true}
+                 isLocked={!isSubscriber}
+                 isSubscriber={isSubscriber}
                  isNew={idx < 2} 
                  assetId={item.asset_id}
                  slug={item.slug}
@@ -228,15 +284,28 @@ export default function HomePage() {
            
           <div className="text-center mt-10">
             <div className="flex flex-col items-center gap-4">
-               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                 <Link to="/pricing">
-                   <Button variant="primary" size="lg">Join for $5/mo</Button>
-                 </Link>
-                 <Link to="/vault">
-                   <Button variant="outline" size="lg">Browse the Vault</Button>
-                 </Link>
-               </div>
-               <Text variant="muted">Instant access to 500+ designs</Text>
+               {isSubscriber ? (
+                 // Subscriber CTAs
+                 <>
+                   <Link to="/vault">
+                     <Button variant="primary" size="lg">Explore Your Vault</Button>
+                   </Link>
+                   <Text variant="muted">All 500+ designs unlocked for you</Text>
+                 </>
+               ) : (
+                 // Non-subscriber CTAs
+                 <>
+                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                     <Link to="/pricing">
+                       <Button variant="primary" size="lg">Join for $5/mo</Button>
+                     </Link>
+                     <Link to="/vault">
+                       <Button variant="outline" size="lg">Browse the Vault</Button>
+                     </Link>
+                   </div>
+                   <Text variant="muted">Instant access to 500+ designs</Text>
+                 </>
+               )}
             </div>
           </div>
       </Section>
@@ -336,9 +405,8 @@ export default function HomePage() {
           </div>
       </Section>
 
-      {/* Free Sample - Full Width Strip - Better Integrated */}
-      {/* Free Sample - Full Width Strip - Better Integrated */}
-      <FreeSampleBanner id="free-sample" />
+      {/* Free Sample - Only show for non-subscribers */}
+      {!isSubscriber && <FreeSampleBanner id="free-sample" />}
 
 
 
@@ -417,44 +485,61 @@ export default function HomePage() {
           </div>
       </Section>
 
-      {/* Mid-Scroll CTA Bar - P1 Item 11 */}
-      <section className="bg-ink text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-           <div>
-              <h3 className="font-serif text-2xl mb-1">Ready for a calmer 10 minutes?</h3>
-              <p className="text-white/70 text-sm">Grab the free pack and see the difference.</p>
-           </div>
-           <a href="#free-sample">
-             <Button variant="primary" className="shadow-lg shadow-white/10 hover:scale-105 transition-transform">Get 3 Free Pages</Button>
-           </a>
-        </div>
-      </section>
-
-      <section className="py-20 bg-gradient-to-br from-primary to-primary-hover text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Heading as="h2" variant="h1" className="mb-6 text-white font-serif">One plan. Endless creativity.</Heading>
-          
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 max-w-2xl mx-auto mb-10 border border-white/20">
-             <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:divide-x md:divide-white/20">
-                <div className="flex-1 text-center md:text-right px-4">
-                   <p className="text-lg font-medium opacity-90">Instant Access</p>
-                   <p className="text-3xl font-bold">500+ Designs</p>
-                </div>
-                 <div className="flex-1 text-center md:text-left px-4">
-                   <p className="text-lg font-medium opacity-90">Fresh Drops</p>
-                   <p className="text-3xl font-bold">Every Sunday</p>
-                </div>
+      {/* Mid-Scroll CTA Bar - Conditional based on subscription */}
+      {!isSubscriber ? (
+        <section className="bg-ink text-white py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+             <div>
+                <h3 className="font-serif text-2xl mb-1">Ready for a calmer 10 minutes?</h3>
+                <p className="text-white/70 text-sm">Grab the free pack and see the difference.</p>
              </div>
+             <a href="#free-sample">
+               <Button variant="primary" className="shadow-lg shadow-white/10 hover:scale-105 transition-transform">Get 3 Free Pages</Button>
+             </a>
           </div>
+        </section>
+      ) : (
+        <section className="bg-primary text-white py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+             <div>
+                <h3 className="font-serif text-2xl mb-1">Your next masterpiece awaits ✨</h3>
+                <p className="text-white/70 text-sm">New designs added every Sunday — dive in!</p>
+             </div>
+             <Link to="/vault">
+               <Button variant="secondary" className="shadow-lg shadow-white/10 hover:scale-105 transition-transform">Browse the Vault</Button>
+             </Link>
+          </div>
+        </section>
+      )}
 
-          <Link to="/pricing">
-            <Button variant="secondary" size="lg" className="shadow-xl shadow-black/10">Join for $5/mo</Button>
-          </Link>
-          <p className="mt-6 text-sm text-white/70">
-             Less than a latte. Cancel anytime in one click.
-          </p>
-        </div>
-      </section>
+      {/* Final CTA - Only for non-subscribers */}
+      {!isSubscriber && (
+        <section className="py-20 bg-gradient-to-br from-primary to-primary-hover text-white">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <Heading as="h2" variant="h1" className="mb-6 text-white font-serif">One plan. Endless creativity.</Heading>
+            
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 max-w-2xl mx-auto mb-10 border border-white/20">
+               <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:divide-x md:divide-white/20">
+                  <div className="flex-1 text-center md:text-right px-4">
+                     <p className="text-lg font-medium opacity-90">Instant Access</p>
+                     <p className="text-3xl font-bold">500+ Designs</p>
+                  </div>
+                   <div className="flex-1 text-center md:text-left px-4">
+                     <p className="text-lg font-medium opacity-90">Fresh Drops</p>
+                     <p className="text-3xl font-bold">Every Sunday</p>
+                  </div>
+               </div>
+            </div>
+
+            <Link to="/pricing">
+              <Button variant="secondary" size="lg" className="shadow-xl shadow-black/10">Join for $5/mo</Button>
+            </Link>
+            <p className="mt-6 text-sm text-white/70">
+               Less than a latte. Cancel anytime in one click.
+            </p>
+          </div>
+        </section>
+      )}
 
 
       {/* Printing & Use Rights (Scannable) - P1 Item 9 */}

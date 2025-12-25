@@ -12,6 +12,7 @@ export interface ResourceCardProps {
   isLocked?: boolean;
   isNew?: boolean;
   isFree?: boolean;
+  isSubscriber?: boolean; // Hide "Members-only" badge for subscribers
 }
 
 export function ResourceCard({
@@ -24,6 +25,7 @@ export function ResourceCard({
   isLocked = true,
   isNew = false,
   isFree = false,
+  isSubscriber = false,
 }: ResourceCardProps) {
   const [imageError, setImageError] = useState(false);
   
@@ -87,9 +89,8 @@ export function ResourceCard({
               <h3 className="font-serif font-semibold text-ink text-sm line-clamp-1 group-hover:text-primary transition-colors">
                 {title}
               </h3>
-              {/* Small lock indicator - not blocking */}
-              {/* Small lock indicator - not blocking */}
-              {isLocked && (
+              {/* Small lock indicator - only show for non-subscribers */}
+              {isLocked && !isSubscriber && (
                 <span className="flex-shrink-0 flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded" title="Club members only">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />

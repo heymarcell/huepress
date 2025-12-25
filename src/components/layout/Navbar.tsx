@@ -71,9 +71,8 @@ function MenuButton({
 import { useSubscription } from "@/lib/auth";
 
 // Navigation Links
-const publicNavLinks = [
-  { to: "/vault", label: "Example Vault" },
-  { to: "/pricing", label: "Pricing" },
+const baseNavLinks = [
+  { to: "/vault", label: "Vault" },
 ];
 
 export function Navbar() {
@@ -82,9 +81,13 @@ export function Navbar() {
   const isPricingPage = location.pathname === "/pricing";
   const { isSubscriber } = useSubscription();
 
+  // Build nav links based on subscription status
   const navLinks = [
-    ...publicNavLinks,
-    ...(isSubscriber ? [{ to: "/request-design", label: "Request a Design" }] : [])
+    ...baseNavLinks,
+    // Only show Pricing if NOT subscribed
+    ...(!isSubscriber ? [{ to: "/pricing", label: "Pricing" }] : []),
+    // Only show Request a Design if subscribed
+    ...(isSubscriber ? [{ to: "/request-design", label: "Request a Design" }] : []),
   ];
 
   return (
