@@ -1,20 +1,35 @@
-import { useState, FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { useState, FormEvent, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Sparkles } from "lucide-react";
 import { useUser } from "@clerk/clerk-react";
+import { useSubscription } from "@/hooks/useSubscription";
 
 export default function RequestDesign() {
   const { user, isLoaded } = useUser();
+  const { isSubscriber, isLoading: subLoading } = useSubscription();
+  const navigate = useNavigate();
+  
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Auto-fill email when user loads
-  if (isLoaded && user && !email) {
-    setEmail(user.primaryEmailAddress?.emailAddress || "");
+  useEffect(() => {
+    if (isLoaded && !subLoading && !isSubscriber) {
+      navigate("/pricing"); // Lock down page
+    }
+  }, [isLoaded, subLoading, isSubscriber, navigate]);
+
+  if (!isLoaded || subLoading) {
+    return (
+      <div className="min-h-screen pt-32 pb-20 flex justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
   }
+
+  // Double check to avoid flash of content
+  if (!isSubscriber) return null;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -26,14 +41,12 @@ export default function RequestDesign() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Pass any auth token if needed, but endpoint supports anonymous for now
-          // If we want detailed tracking, we rely on cookies/headers if configured, or just the body
           ...(user ? { "Authorization": `Bearer ${(await (window as any).Clerk?.session?.getToken())}` } : {})
         },
         body: JSON.stringify({
           title,
           description,
-          email: user?.primaryEmailAddress?.emailAddress || email,
+          email: user?.primaryEmailAddress?.emailAddress,
         }),
       });
 
@@ -62,10 +75,10 @@ export default function RequestDesign() {
           Thanks for your idea! We review every request and add the best ones to our production queue.
         </p>
         <Link 
-          to="/"
+          to="/vault"
           className="px-8 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary-dark transition-colors"
         >
-          Back to Home
+          Back to Vault
         </Link>
         <button 
           onClick={() => setStatus("idle")} 
@@ -81,8 +94,8 @@ export default function RequestDesign() {
     <div className="min-h-screen pt-32 pb-20">
       <div className="container mx-auto px-6">
         <div className="max-w-2xl mx-auto">
-          <Link to="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-ink mb-8 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back to Home
+          <Link to="/vault" className="inline-flex items-center gap-2 text-gray-500 hover:text-ink mb-8 transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back to Vault
           </Link>
 
           <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-gray-100">
@@ -94,27 +107,11 @@ export default function RequestDesign() {
             </div>
 
             <p className="text-gray-600 mb-8">
-              Can't find what you're looking for? Let us know what you'd like to color next. 
-              Subscribers get priority processing for their requests.
+              Let us know what you'd like to color next. As a premium member, your requests get priority processing.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {!user && (
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    placeholder="you@example.com"
-                  />
-                </div>
-              )}
+              {/* Email is automatically handled */}
 
               <div>
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">

@@ -68,9 +68,11 @@ function MenuButton({
   );
 }
 
+import { useSubscription } from "@/hooks/useSubscription";
+
 // Navigation Links
-const navLinks = [
-  { to: "/vault", label: "The Vault" },
+const publicNavLinks = [
+  { to: "/vault", label: "Example Vault" },
   { to: "/pricing", label: "Pricing" },
 ];
 
@@ -78,6 +80,12 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const isPricingPage = location.pathname === "/pricing";
+  const { isSubscriber } = useSubscription();
+
+  const navLinks = [
+    ...publicNavLinks,
+    ...(isSubscriber ? [{ to: "/request-design", label: "Request a Design" }] : [])
+  ];
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all duration-200">

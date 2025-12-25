@@ -487,7 +487,7 @@ export default function ResourceDetailPage() {
                         <p className="text-sm text-gray-600 mb-3">
                            Enjoying this design? As a member, you get priority access to new releases every week.
                         </p>
-                        <Link to="/contact" className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-1 group">
+                        <Link to="/request-design" className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-1 group">
                            Request a Design <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </Link>
                      </div>
