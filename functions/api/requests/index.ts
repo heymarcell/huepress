@@ -1,15 +1,11 @@
 /**
- * Design Request Submit Endpoint
- * POST /api/requests/submit
- * Body: { title: string, description: string, email: string }
+ * Design Request Endpoint
+ * POST /api/requests
+ * Proxies to the API Worker which has D1 access
  */
 
-interface Env {
-  DB: D1Database;
-}
-
-export async function onRequestPost(context: { request: Request; env: Env }) {
-  const { request, env } = context;
+export async function onRequestPost(context: { request: Request }) {
+  const { request } = context;
 
   // CORS headers
   const corsHeaders = {
@@ -19,29 +15,26 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
   };
 
   try {
-    const body = await request.json() as { title: string; description: string; email: string };
-    const { title, description, email } = body;
+    // Proxy to the API Worker
+    const apiResponse = await fetch("https://huepress-api.neongod-llc.workers.dev/api/requests/submit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: request.body,
+    });
 
-    if (!title || !description || !email) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing required fields" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const id = crypto.randomUUID();
-
-    await env.DB.prepare(
-      `INSERT INTO design_requests (id, user_id, email, title, description, status)
-       VALUES (?, ?, ?, ?, ?, 'pending')`
-    ).bind(id, null, email, title, description).run();
-
+    const data = await apiResponse.json();
+    
     return new Response(
-      JSON.stringify({ success: true, id }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify(data),
+      { 
+        status: apiResponse.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      }
     );
   } catch (error) {
-    console.error("Create request error:", error);
+    console.error("Proxy error:", error);
     return new Response(
       JSON.stringify({ success: false, error: "Failed to submit request" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
