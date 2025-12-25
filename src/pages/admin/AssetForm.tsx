@@ -141,7 +141,7 @@ export default function AdminAssetForm() {
             // Use the public API download URL for preview if authenticated
             // Or just a placeholder if we can't get a direct link. 
             // Better: use the apiClient to get a signed URL or worker URL
-            const previewLink = apiClient.assets.getDownloadUrl(asset.id);
+            const previewLink = apiClient.assets.getDownloadUrl(asset.id as string);
             setPdfPreviewUrl(previewLink);
           }
 
@@ -196,11 +196,11 @@ export default function AdminAssetForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasExistingFiles, setHasExistingFiles] = useState(false); // Track if editing asset has files
   const [isProcessingSvg, setIsProcessingSvg] = useState(false);
-  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [_isRegenerating, setIsRegenerating] = useState(false);
   
   // Store original SVG for potential regeneration
   const [originalSvgFile, setOriginalSvgFile] = useState<File | null>(null);
-  const [isNewSourceFile, setIsNewSourceFile] = useState(false); // Track if source was just uploaded (needs upload)
+  const [_isNewSourceFile, setIsNewSourceFile] = useState(false); // Track if source was just uploaded (needs upload)
   const [pdfNeedsRegeneration, setPdfNeedsRegeneration] = useState(false);
   
   // Fields that affect PDF content/metadata/filename
@@ -511,6 +511,7 @@ export default function AdminAssetForm() {
     const rightX = 115;         // Right column  
     const row1Y = 232;          // First row
     const row2Y = 240;          // Second row
+    const iconSize = 5;
     
     doc.setFontSize(8);
     doc.setTextColor(80);
@@ -583,48 +584,20 @@ export default function AdminAssetForm() {
           skill: formData.skill, 
           tags: formData.tags 
         }, 
-        user?.emailAddresses[0].emailAddress || ""
+        user?.primaryEmailAddress?.emailAddress || ""
       );
       
       if (!assetId || !slug) {
         throw new Error("Failed to create draft. Please try again.");
       }
-      
-      doc.text("facebook.com/huepressco", startX + iconSize + 2, iconY + iconSize - 1);
 
-      // Instagram
-      const igNode = new DOMParser().parseFromString(SOCIAL_ICONS.INSTAGRAM, "image/svg+xml").documentElement;
-      await doc.svg(igNode, { x: startX, y: iconY + lineHeight * 2, width: iconSize, height: iconSize });
-      doc.link(startX, iconY + lineHeight * 2, iconSize, iconSize, { url: "https://instagram.com/huepressco" });
-      doc.text("instagram.com/huepressco", startX + iconSize + 2, iconY + lineHeight * 2 + iconSize - 1);
-
-      // Pinterest
-      const pinNode = new DOMParser().parseFromString(SOCIAL_ICONS.PINTEREST, "image/svg+xml").documentElement;
-      await doc.svg(pinNode, { x: startX, y: iconY + lineHeight * 4, width: iconSize, height: iconSize });
-      doc.link(startX, iconY + lineHeight * 4, iconSize, iconSize, { url: "https://pinterest.com/huepressco" });
-      doc.text("pinterest.com/huepressco", startX + iconSize + 2, iconY + lineHeight * 4 + iconSize - 1);
-
-      // Website
-      const webNode = new DOMParser().parseFromString(SOCIAL_ICONS.WEBSITE, "image/svg+xml").documentElement;
-      await doc.svg(webNode, { x: startX, y: iconY + lineHeight * 6, width: iconSize, height: iconSize });
-      doc.link(startX, iconY + lineHeight * 6, iconSize, iconSize, { url: "https://huepress.co" });
-      doc.text("huepress.co", startX + iconSize + 2, iconY + lineHeight * 6 + iconSize - 1);
-
-      // Support Email
-      doc.setFontSize(9);
-      doc.setTextColor(80);
-      doc.text("Questions? Email us: hello@huepress.co", 105, 268, { align: "center" });
-
-      // Copyright
-      doc.setFontSize(9);
-      doc.setTextColor(150);
-      doc.text(`Copyright © ${new Date().getFullYear()} HuePress. All rights reserved.`, 105, 275, { align: "center" });
-      
-      // Asset ID
-      doc.text(`Asset ID: ${assetId}`, 105, 280, { align: "center" });
-
-      const pdfBlob = doc.output("blob");
-      const pdfFileObj = new File([pdfBlob], `${baseFilename}.pdf`, { type: "application/pdf" });
+      // 2. Generate Files locally
+      const { pdfFile: pdfFileObj, webpFile, baseFilename } = await generateFilesFromSvg(
+        file,
+        assetId,
+        slug,
+        formData
+      );
       
       // Store assetId in form state
       setFormData(prev => ({ ...prev, asset_id: assetId }));
@@ -633,7 +606,7 @@ export default function AdminAssetForm() {
       setPdfPreviewUrl(URL.createObjectURL(pdfFileObj));
       setThumbnailPreviewUrl(URL.createObjectURL(webpFile));
 
-      // 5. IMMEDIATE UPLOAD - Upload files to backend and finalize draft
+      // 3. IMMEDIATE UPLOAD - Upload files to backend and finalize draft
       setAlertState({
         isOpen: true,
         title: "Uploading...",
@@ -654,15 +627,17 @@ export default function AdminAssetForm() {
       uploadForm.append("therapeutic_benefits", formData.therapeuticBenefits);
       uploadForm.append("meta_keywords", formData.metaKeywords);
       
-      const factsArray = formData.funFacts.split("\\n").map((s: string) => s.trim()).filter(Boolean);
-      const activitiesArray = formData.suggestedActivities.split("\\n").map((s: string) => s.trim()).filter(Boolean);
+      const factsArray = formData.funFacts.split("\n").map((s: string) => s.trim()).filter(Boolean);
+      const activitiesArray = formData.suggestedActivities.split("\n").map((s: string) => s.trim()).filter(Boolean);
       uploadForm.append("fun_facts", JSON.stringify(factsArray));
       uploadForm.append("suggested_activities", JSON.stringify(activitiesArray));
       
       uploadForm.append("thumbnail", webpFile);
       uploadForm.append("pdf", pdfFileObj);
+      // Append Source File
+      uploadForm.append("source", file);
 
-      const uploadResult = await apiClient.admin.createAsset(uploadForm, user?.emailAddresses[0].emailAddress || "");
+      const uploadResult = await apiClient.admin.createAsset(uploadForm, user?.primaryEmailAddress?.emailAddress || "");
       
       if (uploadResult.error) {
         throw new Error(uploadResult.error);
