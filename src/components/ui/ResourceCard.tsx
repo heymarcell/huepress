@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ImageIcon } from "lucide-react";
 
 export interface ResourceCardProps {
   id: string;
@@ -43,8 +44,9 @@ export function ResourceCard({
                 className="object-contain w-full h-full p-3 transition-transform duration-300 ease-out group-hover:scale-105" 
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <span className="text-5xl opacity-30">🎨</span>
+              <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
+                <ImageIcon className="w-12 h-12 text-gray-300" strokeWidth={1.5} />
+                <span className="text-xs text-gray-400 mt-2">No preview</span>
               </div>
             )}
 
