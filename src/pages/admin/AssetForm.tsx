@@ -241,7 +241,13 @@ export default function AdminAssetForm() {
     const timer = setTimeout(async () => {
       setIsRegenerating(true);
       try {
-         const assetId = formData.asset_id || "HP-PREVIEW-0000";
+         // Only regenerate if we have a real asset ID (not a preview)
+         const assetId = formData.asset_id;
+         if (!assetId || assetId.includes("PREVIEW")) {
+           console.log("Skipping regeneration - no valid asset ID yet");
+           setPdfNeedsRegeneration(false);
+           return;
+         }
          
          const slug = formData.title.toLowerCase()
           .trim()
@@ -280,6 +286,7 @@ export default function AdminAssetForm() {
     formData.category, 
     formData.skill, 
     formData.tags, 
+    formData.asset_id,
     originalSvgFile,
     pdfNeedsRegeneration
   ]);

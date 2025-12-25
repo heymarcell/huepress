@@ -102,7 +102,9 @@ function DownloadSection({ assetId, title }: { assetId: string; title: string })
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${title}.pdf`;
+      // Generate clean filename: huepress-{slug}-{assetId}.pdf
+      const cleanSlug = title.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/--+/g, '-');
+      a.download = `huepress-${cleanSlug}-${assetId}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
