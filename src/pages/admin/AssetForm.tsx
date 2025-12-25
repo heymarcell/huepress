@@ -285,7 +285,7 @@ export default function AdminAssetForm() {
 
 
 
-  /**
+  /* 
    * Helper: Generate PDF and WebP from SVG file
    * Reusable for initial upload and regeneration
    */
@@ -295,7 +295,8 @@ export default function AdminAssetForm() {
     slug: string, 
     metadata: AssetFormData
   ): Promise<{ pdfFile: File; webpFile: File; baseFilename: string }> => {
-    const baseFilename = `${assetId}-${slug}`;
+    // New Filename Format: huepress-robot-whatever-00001
+    const baseFilename = `huepress-${slug}-${assetId}`;
 
     // WebP Generation
     const webpBlob = await new Promise<Blob>((resolve, reject) => {
@@ -395,7 +396,7 @@ export default function AdminAssetForm() {
     const uniqueKeywords = [...new Set(keywordsArray)].join(", ");
 
     doc.setProperties({
-      title: `HuePress - ${metadata.title} - ${assetId}`,
+      title: `HuePress - ${metadata.title} - #${assetId}`,
       subject: `${metadata.description} | Website: huepress.co | Support: hello@huepress.co`,
       author: "HuePress",
       keywords: uniqueKeywords,
@@ -413,7 +414,7 @@ export default function AdminAssetForm() {
 
     doc.setFontSize(9);
     doc.setTextColor(150);
-    doc.text(`© ${new Date().getFullYear()} HuePress | ID: ${assetId}`, A4_WIDTH / 2, A4_HEIGHT - 10, { align: "center" });
+    doc.text(`© ${new Date().getFullYear()} HuePress | ID: #${assetId}`, A4_WIDTH / 2, A4_HEIGHT - 10, { align: "center" });
 
     // Page 2: Marketing
     doc.addPage();
@@ -510,7 +511,6 @@ export default function AdminAssetForm() {
     const rightX = 115;         // Right column  
     const row1Y = 232;          // First row
     const row2Y = 240;          // Second row
-    const iconSize = 5;
     
     doc.setFontSize(8);
     doc.setTextColor(80);
@@ -541,7 +541,7 @@ export default function AdminAssetForm() {
     doc.setFontSize(9);
     doc.setTextColor(150);
     doc.text(`Copyright © ${new Date().getFullYear()} HuePress. All rights reserved.`, 105, 262, { align: "center" });
-    doc.text(`Asset ID: ${assetId}`, 105, 267, { align: "center" });
+    doc.text(`Asset ID: #${assetId}`, 105, 267, { align: "center" });
 
     const pdfBlob = doc.output("blob");
     const pdfFile = new File([pdfBlob], `${baseFilename}.pdf`, { type: "application/pdf" });

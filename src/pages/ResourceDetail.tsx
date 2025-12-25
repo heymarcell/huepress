@@ -282,9 +282,10 @@ export default function ResourceDetailPage() {
       try {
         let lookupId = id;
         
-        // Handle SEO slug: cozy-capybara-HP-ANM-0001 -> HP-ANM-0001
+        // Handle SEO slug: cozy-capybara-HP-ANM-0001 OR cozy-capybara-00001
         if (!lookupId && slug) {
-            const match = slug.match(/(HP-[A-Z]{3}-\d{4})$/);
+            // Match legacy HP-ANM-0001 or new 00001 at end of string
+            const match = slug.match(/((?:HP-[A-Z]{3}-)?\d{4,5})$/);
             lookupId = match ? match[1] : slug;
         }
 

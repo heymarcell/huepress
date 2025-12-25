@@ -23,28 +23,17 @@ app.post("/create-draft", async (c) => {
     return c.json({ error: "Title and Category are required" }, 400);
   }
 
-  const CATEGORY_CODES: Record<string, string> = {
-    "Animals": "ANM", "Nature": "NAT", "Vehicles": "VEH", "Fantasy": "FAN",
-    "Holidays": "HOL", "Educational": "EDU", "Mandalas": "MAN",
-    "Characters": "CHR", "Food": "FOD"
-  };
-
-  // Generate Asset ID
-  const code = CATEGORY_CODES[category] || "GEN";
-  const prefix = `HP-${code}-`;
-
+  // Generate Asset ID: Sequential 5-digit number (e.g., 00001)
   const lastAsset = await c.env.DB.prepare(
-    "SELECT asset_id FROM assets WHERE asset_id LIKE ? ORDER BY asset_id DESC LIMIT 1"
-  ).bind(`${prefix}%`).first<{ asset_id: string }>();
+    "SELECT asset_id FROM assets WHERE length(asset_id) = 5 ORDER BY asset_id DESC LIMIT 1"
+  ).first<{ asset_id: string }>();
 
   let sequence = 1;
-  if (lastAsset?.asset_id) {
-    const parts = lastAsset.asset_id.split("-");
-    const lastSeq = parseInt(parts[parts.length - 1]);
-    if (!isNaN(lastSeq)) sequence = lastSeq + 1;
+  if (lastAsset?.asset_id && /^\d+$/.test(lastAsset.asset_id)) {
+    sequence = parseInt(lastAsset.asset_id, 10) + 1;
   }
 
-  const assetId = `${prefix}${sequence.toString().padStart(4, '0')}`;
+  const assetId = sequence.toString().padStart(5, '0');
   
   // Generate Slug
   const slugify = (text: string) => text
