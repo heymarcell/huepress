@@ -14,11 +14,33 @@ const PORT = process.env.PORT || 4000;
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '10mb' })); // Reduced from 50MB for DoS protection [F-004]
 
-// Helper: Sanitize SVG
+// SECURITY [F-001]: Validate uploadUrl against whitelist to prevent SSRF
+function validateUploadUrl(url) {
+  if (!url) return true; // null/undefined is fine (sync mode)
+  
+  const ALLOWED_PREFIXES = [
+    'https://api.huepress.co/',
+    'http://localhost:',  // Dev only
+  ];
+  
+  const isAllowed = ALLOWED_PREFIXES.some(prefix => url.startsWith(prefix));
+  if (!isAllowed) {
+    throw new Error(`Upload URL not allowed: ${url}`);
+  }
+  return true;
+}
+
+// Helper: Sanitize SVG [F-004 Enhanced]
 function sanitizeSvgContent(input) {
   if (!input) return input; // Let endpoints handle missing input
+  
+  // Early size check to prevent DoS [F-004]
+  if (input.length > 5 * 1024 * 1024) { // 5MB max for SVGs
+    throw new Error("SVG content too large (max 5MB)");
+  }
+  
   if (!isSvg(input)) {
     throw new Error("Invalid SVG format");
   }
@@ -48,6 +70,9 @@ app.post('/og-image', async (req, res) => {
     if (!title) {
       return res.status(400).json({ error: 'title is required' });
     }
+
+    // SSRF Protection [F-001]
+    validateUploadUrl(uploadUrl);
 
     console.log(`[OG Image] Generating for: "${title}"`);
 
@@ -210,6 +235,9 @@ app.post('/pdf', async (req, res) => {
     if (!svgContent) {
       return res.status(400).json({ error: 'Missing svgContent' });
     }
+
+    // SSRF Protection [F-001]
+    validateUploadUrl(uploadUrl);
 
     // SANITIZE INPUT
     const safeSvgContent = sanitizeSvgContent(svgContent);
@@ -412,6 +440,9 @@ app.post('/thumbnail', async (req, res) => {
       return res.status(400).json({ error: 'Missing svgContent' });
     }
 
+    // SSRF Protection [F-001]
+    validateUploadUrl(uploadUrl);
+
     // SANITIZE INPUT
     const safeSvgContent = sanitizeSvgContent(svgContent);
 
@@ -502,6 +533,11 @@ app.post('/generate-all', async (req, res) => {
     if (!uploadToken) {
       return res.status(400).json({ error: 'Missing uploadToken' });
     }
+
+    // SSRF Protection [F-001] - Validate all upload URLs
+    validateUploadUrl(thumbnailUploadUrl);
+    validateUploadUrl(ogUploadUrl);
+    validateUploadUrl(pdfUploadUrl);
 
     // SANITIZE INPUT
     const safeSvgContent = sanitizeSvgContent(svgContent);

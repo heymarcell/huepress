@@ -3,12 +3,6 @@ import { Outlet } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Images, Plus, Settings, Sparkles } from "lucide-react";
 
-// Admin email whitelist - add your admin emails here
-const ADMIN_EMAILS = [
-  "marcell@neongod.io",
-  // Add more admin emails as needed
-];
-
 export function AdminLayout() {
   const { user, isLoaded } = useUser();
   const location = useLocation();
@@ -28,9 +22,10 @@ export function AdminLayout() {
     return <RedirectToSignIn />;
   }
 
-  // Check if user is admin
+  // Check if user is admin via Clerk publicMetadata
+  // Role is set in Clerk Dashboard → Users → [User] → Public Metadata → { "role": "admin" }
   const userEmail = user.primaryEmailAddress?.emailAddress;
-  const isAdmin = userEmail && ADMIN_EMAILS.includes(userEmail);
+  const isAdmin = user.publicMetadata?.role === 'admin';
 
   if (!isAdmin) {
     return (

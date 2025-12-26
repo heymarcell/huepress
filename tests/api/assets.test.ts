@@ -60,12 +60,20 @@ describe("Assets API", () => {
     });
 
     it("GET /download/:id should return file", async () => {
-        const mockAsset = { id: "1", title: "Test", r2_key_private: "key.pdf" };
-        mockFirst.mockResolvedValue(mockAsset);
+        // Mock getAuth from @hono/clerk-auth
+        vi.mock("@hono/clerk-auth", () => ({
+            getAuth: vi.fn(() => ({ userId: "user_123" }))
+        }));
+
+        const mockAsset = { id: "1", title: "Test", r2_key_private: "key.pdf", slug: "test", asset_id: "HP-001" };
+        
+        // First call: subscription check, Second call: asset lookup
+        mockFirst
+            .mockResolvedValueOnce({ subscription_status: "active" }) // User subscription
+            .mockResolvedValueOnce(mockAsset);
         
         mockR2Get.mockResolvedValue({ body: "file content" });
 
-        // Mock auth header
         const res = await app.request("http://localhost/download/1", {
             headers: { "Authorization": "Bearer token" }
         }, mockEnv);
@@ -73,5 +81,22 @@ describe("Assets API", () => {
         expect(res.status).toBe(200);
         expect(mockR2Get).toHaveBeenCalledWith("key.pdf");
         expect(mockRun).toHaveBeenCalled(); // Update download count
+    });
+
+    it("GET /download/:id should return 403 without active subscription", async () => {
+        vi.mock("@hono/clerk-auth", () => ({
+            getAuth: vi.fn(() => ({ userId: "user_123" }))
+        }));
+
+        // User without active subscription
+        mockFirst.mockResolvedValueOnce({ subscription_status: "free" });
+
+        const res = await app.request("http://localhost/download/1", {
+            headers: { "Authorization": "Bearer token" }
+        }, mockEnv);
+
+        expect(res.status).toBe(403);
+        const data = await res.json() as { error: string };
+        expect(data.error).toBe("Active subscription required");
     });
 });

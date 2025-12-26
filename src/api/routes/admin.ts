@@ -50,25 +50,12 @@ async function verifyAdmin(c: Context<{ Bindings: Bindings }>): Promise<boolean>
   const auth = getAuth(c);
   if (!auth?.userId) return false;
 
-  // 1. Get user email from DB using Clerk ID
-  // Note: We need to trust the local DB as the source of truth for "who is this user"
-  // The DB is populated via webhooks from Clerk
-  try {
-    const user = await c.env.DB.prepare(
-      "SELECT email FROM users WHERE clerk_id = ?"
-    ).bind(auth.userId).first<{ email: string }>();
-
-    if (!user || !user.email) return false;
-
-    // 2. Check if email is in ALLOWED_ADMINS list
-    const adminEmails = c.env.ADMIN_EMAILS || "";
-    const allowedEmails = adminEmails.split(',').map((e: string) => e.trim().toLowerCase());
-    
-    return allowedEmails.includes(user.email.toLowerCase());
-  } catch (e) {
-    console.error("Admin verification failed:", e);
-    return false;
-  }
+  // Check Clerk publicMetadata.role from session claims
+  // Role is set in Clerk Dashboard → Users → [User] → Public Metadata → { "role": "admin" }
+  const sessionClaims = auth.sessionClaims as { publicMetadata?: { role?: string } } | undefined;
+  const role = sessionClaims?.publicMetadata?.role;
+  
+  return role === 'admin';
 }
 
 // ADMIN: Create Draft Asset (called on SVG upload)

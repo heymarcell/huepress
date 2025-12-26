@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { getAuth } from "@hono/clerk-auth";
 import { Bindings } from "../types";
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -116,14 +117,20 @@ app.get("/assets/:id", async (c) => {
 app.get("/download/:id", async (c) => {
   const id = c.req.param("id");
   
-  // Get Clerk session from header (MVP check)
-  const authHeader = c.req.header("Authorization");
-  if (!authHeader) {
+  // Verify authentication via Clerk JWT
+  const auth = getAuth(c);
+  if (!auth?.userId) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  // TODO: Verify Clerk JWT token properly with key
-  // For MVP refactor, we are keeping behavior same as original
+  // Verify subscription status from database
+  const user = await c.env.DB.prepare(
+    "SELECT subscription_status FROM users WHERE clerk_id = ?"
+  ).bind(auth.userId).first<{ subscription_status: string }>();
+
+  if (!user || user.subscription_status !== 'active') {
+    return c.json({ error: "Active subscription required" }, 403);
+  }
 
   try {
     const asset = await c.env.DB.prepare("SELECT * FROM assets WHERE id = ?")

@@ -45,7 +45,11 @@ describe("Admin API", () => {
         mockPrepare = vi.fn();
         mockR2Put = vi.fn();
         mockGetAuth = getAuth as unknown as Mock;
-        mockGetAuth.mockReturnValue({ userId: "user_admin" });
+        // Mock admin user with publicMetadata.role = 'admin'
+        mockGetAuth.mockReturnValue({ 
+            userId: "user_admin",
+            sessionClaims: { publicMetadata: { role: 'admin' } }
+        });
         
         const mockStatement = {
             all: mockAll,
@@ -61,20 +65,23 @@ describe("Admin API", () => {
             ASSETS_PUBLIC: { put: mockR2Put },
             ASSETS_PRIVATE: { put: mockR2Put },
             ASSETS_CDN_URL: "https://assets.test",
-            ADMIN_EMAILS: "admin@test.com",
             PROCESSING: {}, // Mock Service Binding
             INTERNAL_API_TOKEN: "test-token"
         };
     });
 
     it("GET /assets should return unauthorized if not admin", async () => {
-        mockFirst.mockResolvedValue(null); // User not found/email mismatch
+        // Mock non-admin user (no role in publicMetadata)
+        mockGetAuth.mockReturnValue({ 
+            userId: "user_notadmin",
+            sessionClaims: { publicMetadata: {} }
+        });
         const res = await app.request("http://localhost/assets", {}, mockEnv);
         expect(res.status).toBe(401);
     });
 
     it("GET /assets should return assets if authorized", async () => {
-        mockFirst.mockResolvedValue({ email: "admin@test.com" }); // Verify Admin check
+        // Admin is already set in beforeEach
         mockAll.mockResolvedValue({ results: [] });
         const res = await app.request("http://localhost/assets", {
         }, mockEnv);
@@ -95,7 +102,6 @@ describe("Admin API", () => {
         // Mock DB calls for ID generation
         const mockLastAsset = { asset_id: "HP-ANM-0001" };
         mockFirst
-           .mockResolvedValueOnce({ email: "admin@test.com" }) // Admin check
            .mockResolvedValueOnce(mockLastAsset) // Last asset
            .mockResolvedValueOnce(undefined); // Unused
 
@@ -123,7 +129,6 @@ describe("Admin API", () => {
         formData.append("thumbnail", new File([""], "thumb.png", { type: "image/png" }));
 
         mockFirst
-           .mockResolvedValueOnce({ email: "admin@test.com" }) // Admin check
            .mockResolvedValueOnce(undefined); // New asset (no existing)
 
         // Mock Insert Success
@@ -157,9 +162,7 @@ describe("Admin API", () => {
 
     it("GET /assets/:id should return single asset", async () => {
         const mockAsset = { id: "123", title: "Test", tags: '["tag1"]' };
-        mockFirst
-            .mockResolvedValueOnce({ email: "admin@test.com" }) // Admin check
-            .mockResolvedValueOnce(mockAsset);
+        mockFirst.mockResolvedValueOnce(mockAsset);
         
         const res = await app.request("http://localhost/assets/123", {
         }, mockEnv);
@@ -170,9 +173,7 @@ describe("Admin API", () => {
     });
 
     it("GET /assets/:id should return 404 for unknown asset", async () => {
-        mockFirst
-            .mockResolvedValueOnce({ email: "admin@test.com" }) // Admin check
-            .mockResolvedValueOnce(null);
+        mockFirst.mockResolvedValueOnce(null);
         
         const res = await app.request("http://localhost/assets/unknown", {
         }, mockEnv);
@@ -181,7 +182,6 @@ describe("Admin API", () => {
     });
 
     it("PATCH /assets/:id/status should update asset status", async () => {
-        mockFirst.mockResolvedValue({ email: "admin@test.com" }); // Admin check
 
         const res = await app.request("http://localhost/assets/123/status", {
             method: "PATCH",
@@ -196,9 +196,7 @@ describe("Admin API", () => {
     });
 
     it("DELETE /assets/:id should delete asset", async () => {
-        mockFirst
-            .mockResolvedValueOnce({ email: "admin@test.com" }) // Admin check
-            .mockResolvedValueOnce({ id: "123", r2_key_private: "file.pdf" });
+        mockFirst.mockResolvedValueOnce({ id: "123", r2_key_private: "file.pdf" });
         
         const mockR2Delete = vi.fn();
         mockEnv.ASSETS_PRIVATE = { ...mockEnv.ASSETS_PRIVATE as object, delete: mockR2Delete };
@@ -213,9 +211,7 @@ describe("Admin API", () => {
     });
 
     it("DELETE /assets/:id should return 404 for unknown asset", async () => {
-        mockFirst
-            .mockResolvedValueOnce({ email: "admin@test.com" }) // Admin check
-            .mockResolvedValueOnce(null);
+        mockFirst.mockResolvedValueOnce(null);
         
         const res = await app.request("http://localhost/assets/unknown", {
             method: "DELETE",
@@ -225,19 +221,27 @@ describe("Admin API", () => {
     });
 
     it("should reject non-admin users", async () => {
-        mockFirst.mockResolvedValue({ email: "notadmin@test.com" });
+        // Mock non-admin user
+        mockGetAuth.mockReturnValue({ 
+            userId: "user_random",
+            sessionClaims: { publicMetadata: { role: 'user' } }
+        });
         
         const res = await app.request("http://localhost/assets", {
         }, mockEnv);
         
         expect(res.status).toBe(401);
+        
+        // Reset to admin for subsequent tests
+        mockGetAuth.mockReturnValue({ 
+            userId: "user_admin",
+            sessionClaims: { publicMetadata: { role: 'admin' } }
+        });
     });
 
     it("POST /create-draft should create draft asset", async () => {
         // Mock sequence insert/update
-        mockFirst
-            .mockResolvedValueOnce({ email: "admin@test.com" }) // Admin check
-            .mockResolvedValueOnce({ value: 1 });
+        mockFirst.mockResolvedValueOnce({ value: 1 });
         
         const formData = new FormData();
         formData.append("title", "Draft Test");
@@ -256,8 +260,6 @@ describe("Admin API", () => {
     });
 
     it("POST /create-draft should require title", async () => {
-        mockFirst.mockResolvedValue({ email: "admin@test.com" }); // Admin check
-        
         const formData = new FormData();
         formData.append("category", "Animals");
 
@@ -270,8 +272,6 @@ describe("Admin API", () => {
     });
 
     it("POST /create-draft should require category", async () => {
-        mockFirst.mockResolvedValue({ email: "admin@test.com" }); // Admin check
-        
         const formData = new FormData();
         formData.append("title", "Test Title");
 
@@ -284,8 +284,6 @@ describe("Admin API", () => {
     });
 
     it("PATCH /assets/:id/status should reject invalid status", async () => {
-        mockFirst.mockResolvedValue({ email: "admin@test.com" }); // Admin check
-        
         const res = await app.request("http://localhost/assets/123/status", {
             method: "PATCH",
             headers: { 
@@ -298,8 +296,6 @@ describe("Admin API", () => {
     });
 
     it("PATCH /assets/:id/status should accept 'draft' status", async () => {
-        mockFirst.mockResolvedValue({ email: "admin@test.com" }); // Admin check
-        
         const res = await app.request("http://localhost/assets/123/status", {
             method: "PATCH",
             headers: { 
@@ -312,7 +308,6 @@ describe("Admin API", () => {
     });
 
     it("GET /assets should parse tags as JSON array", async () => {
-        mockFirst.mockResolvedValue({ email: "admin@test.com" }); // Admin check
         mockAll.mockResolvedValue({ results: [
             { id: "1", title: "Test", tags: '["cute","animal"]' }
         ] });

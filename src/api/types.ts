@@ -14,7 +14,6 @@ export type Bindings = {
   ENVIRONMENT: string;
   META_ACCESS_TOKEN: string;
   META_PIXEL_ID: string;
-  ADMIN_EMAILS: string; // Comma-separated list of admin emails
   SITE_URL: string; // e.g., https://huepress.co
   ASSETS_CDN_URL: string; // e.g., https://assets.huepress.co
   PINTEREST_ACCESS_TOKEN: string;
