@@ -2,28 +2,32 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/Button"; // Assuming this exists or using standard button
-import { ArrowRight, Check } from "lucide-react";
+import { 
+  ArrowRight, Check, User, Users, BookOpen, Briefcase, Palette, 
+  Cat, Crown, Skull, Car, Rocket, Leaf, Sparkles, Gift, Circle, 
+  GraduationCap, Sun, Heart, Instagram, Music, Search, Facebook, Pin, MoreHorizontal 
+} from "lucide-react";
 
 // Types
 type OnboardingStep = "welcome" | "role" | "ages" | "themes" | "goal" | "source" | "complete";
 
 const ROLES = [
-  { id: "mom", label: "Mom 👩" },
-  { id: "dad", label: "Dad 👨" },
-  { id: "grandparent", label: "Grandparent 👵" },
-  { id: "teacher", label: "Teacher 🍎" },
-  { id: "professional", label: "Therapist/Pro 💼" },
-  { id: "self", label: "Just for Me 🎨" }
+  { id: "mom", label: "Mom", icon: User },
+  { id: "dad", label: "Dad", icon: User },
+  { id: "grandparent", label: "Grandparent", icon: Users },
+  { id: "teacher", label: "Teacher", icon: BookOpen },
+  { id: "professional", label: "Therapist/Pro", icon: Briefcase },
+  { id: "self", label: "Just for Me", icon: Palette }
 ];
 
 const SOURCES = [
-  { id: "instagram", label: "Instagram 📸" },
-  { id: "tiktok", label: "TikTok 🎵" },
-  { id: "google", label: "Google Search 🔍" },
-  { id: "friend", label: "Friend / Family 🗣️" },
-  { id: "facebook", label: "Facebook 📘" },
-  { id: "pinterest", label: "Pinterest 📌" },
-  { id: "other", label: "Other" }
+  { id: "instagram", label: "Instagram", icon: Instagram },
+  { id: "tiktok", label: "TikTok", icon: Music },
+  { id: "google", label: "Google Search", icon: Search },
+  { id: "friend", label: "Friend / Family", icon: Heart },
+  { id: "facebook", label: "Facebook", icon: Facebook },
+  { id: "pinterest", label: "Pinterest", icon: Pin },
+  { id: "other", label: "Other", icon: MoreHorizontal }
 ];
 
 const AGE_RANGES = [
@@ -35,23 +39,23 @@ const AGE_RANGES = [
 ];
 
 const THEMES = [
-  "Animals 🦁",
-  "Princesses 👑",
-  "Dinosaurs 🦖",
-  "Vehicles 🚗",
-  "Space 🚀",
-  "Nature 🌿",
-  "Fantasy 🦄",
-  "Holidays 🎄",
-  "Educational 📚",
-  "Mandala 🌀"
+  { id: "Animals", label: "Animals", icon: Cat },
+  { id: "Princesses", label: "Princesses", icon: Crown },
+  { id: "Dinosaurs", label: "Dinosaurs", icon: Skull },
+  { id: "Vehicles", label: "Vehicles", icon: Car },
+  { id: "Space", label: "Space", icon: Rocket },
+  { id: "Nature", label: "Nature", icon: Leaf },
+  { id: "Fantasy", label: "Fantasy", icon: Sparkles },
+  { id: "Holidays", label: "Holidays", icon: Gift },
+  { id: "Educational", label: "Educational", icon: BookOpen },
+  { id: "Mandala", label: "Mandala", icon: Circle }
 ];
 
 const GOALS = [
-  { id: "fun", label: "Just for Fun", emoji: "🎨" },
-  { id: "education", label: "Education & Learning", emoji: "📚" },
-  { id: "calm", label: "Relaxation & Calm", emoji: "🧘‍♀️" },
-  { id: "bonding", label: "Family Bonding", emoji: "❤️" }
+  { id: "fun", label: "Just for Fun", icon: Palette },
+  { id: "education", label: "Education & Learning", icon: GraduationCap },
+  { id: "calm", label: "Relaxation & Calm", icon: Sun },
+  { id: "bonding", label: "Family Bonding", icon: Heart }
 ];
 
 export default function Onboarding() {
@@ -158,8 +162,8 @@ export default function Onboarding() {
                       : "border-gray-100 hover:border-primary/30 hover:bg-gray-50"
                   }`}
                 >
-                  <span className="text-3xl">{r.label.split(" ").pop()}</span>
-                  <span className="font-medium text-sm">{r.label.split(" ").slice(0, -1).join(" ")}</span>
+                  <r.icon className={`w-8 h-8 ${role === r.id ? "text-primary" : "text-gray-400"}`} />
+                  <span className="font-medium text-sm">{r.label}</span>
                 </button>
               ))}
             </div>
@@ -217,18 +221,19 @@ export default function Onboarding() {
               <p className="text-gray-500 text-sm mt-1">Pick a few favorites to get started.</p>
             </div>
 
-            <div className="flex flex-wrap gap-2 justify-center">
+            <div className="grid grid-cols-2 gap-3">
               {THEMES.map((theme) => (
                 <button
-                  key={theme}
-                  onClick={() => toggleSelection(theme, themes, setThemes)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
-                    themes.includes(theme)
-                      ? "bg-secondary text-white border-secondary shadow-sm transform scale-105"
+                  key={theme.id}
+                  onClick={() => toggleSelection(theme.id, themes, setThemes)}
+                  className={`p-3 rounded-xl border text-sm font-medium transition-all flex flex-col items-center justify-center gap-2 h-24 ${
+                    themes.includes(theme.id)
+                      ? "bg-secondary/10 text-secondary-dark border-secondary shadow-sm"
                       : "bg-white text-gray-600 border-gray-200 hover:border-secondary/50 hover:bg-secondary/5"
                   }`}
                 >
-                  {theme}
+                  <theme.icon className={`w-6 h-6 ${themes.includes(theme.id) ? "text-secondary" : "text-gray-400"}`} />
+                  <span>{theme.label}</span>
                 </button>
               ))}
             </div>
@@ -262,7 +267,7 @@ export default function Onboarding() {
                       : "border-gray-100 hover:border-primary/30 hover:bg-gray-50"
                   }`}
                 >
-                  <span className="text-2xl">{g.emoji}</span>
+                  <g.icon className={`w-6 h-6 ${goal === g.id ? "text-primary" : "text-gray-400"}`} />
                   <span className={`font-medium ${goal === g.id ? "text-primary-dark" : "text-gray-700"}`}>
                     {g.label}
                   </span>
@@ -294,14 +299,15 @@ export default function Onboarding() {
                 <button
                   key={s.id}
                   onClick={() => setSource(s.id)}
-                  className={`p-3 rounded-xl border-2 text-left transition-all flex items-center justify-between ${
+                  className={`p-3 rounded-xl border-2 text-left transition-all flex items-center gap-4 ${
                     source === s.id
                       ? "border-primary bg-primary/5 text-primary-dark"
                       : "border-gray-100 hover:border-primary/30 hover:bg-gray-50"
                   }`}
                 >
+                  <s.icon className={`w-5 h-5 ${source === s.id ? "text-primary" : "text-gray-400"}`} />
                   <span className="font-medium">{s.label}</span>
-                  {source === s.id && <Check className="w-5 h-5 text-primary" />}
+                  {source === s.id && <Check className="ml-auto w-5 h-5 text-primary" />}
                 </button>
               ))}
             </div>
