@@ -40,6 +40,9 @@ function PageLoader() {
   );
 }
 
+const OnboardingPage = lazy(() => import("./pages/Onboarding"));
+import { RequireOnboarding } from "./components/auth/RequireOnboarding";
+
 export default function App() {
   return (
     <ConsentProvider>
@@ -48,8 +51,16 @@ export default function App() {
       <ConsentPreferences />
       <Suspense fallback={<PageLoader />}>
       <Routes>
+      
+      {/* Onboarding - Standalone */}
+      <Route path="onboarding" element={<OnboardingPage />} />
+
       {/* Public routes */}
-      <Route element={<Layout />}>
+      <Route element={
+        <RequireOnboarding>
+          <Layout />
+        </RequireOnboarding>
+      }>
         <Route index element={<HomePage />} />
         <Route path="vault" element={<VaultPage />} />
         <Route path="vault/:id" element={<ResourceDetailPage />} />
@@ -63,7 +74,11 @@ export default function App() {
       </Route>
 
       {/* Admin routes */}
-      <Route path="admin" element={<AdminLayout />}>
+      <Route path="admin" element={
+        <RequireOnboarding>
+          <AdminLayout />
+        </RequireOnboarding>
+      }>
         <Route index element={<AdminDashboard />} />
         <Route path="assets" element={<AdminAssets />} />
         <Route path="assets/new" element={<AdminAssetForm />} />
