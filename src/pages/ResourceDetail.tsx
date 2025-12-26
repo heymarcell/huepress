@@ -74,7 +74,7 @@ function ReviewsSection({ assetId }: { assetId: string }) {
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 lg:p-8 mt-6">
-      <h3 className="font-serif text-h3 text-ink mb-4">Reviews</h3>
+      <h2 className="font-serif text-h3 restext-ink mb-4">Reviews</h2>
       
       {/* Review List */}
       <ReviewList assetId={assetId} refreshTrigger={refreshTrigger} />
@@ -578,7 +578,7 @@ export default function ResourceDetailPage() {
         <div className="container mx-auto px-6">
            <div className="max-w-6xl mx-auto">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-serif text-2xl text-ink">You might also like</h3>
+                <h2 className="font-serif text-2xl text-ink">You might also like</h2>
                 <Link to="/vault" className="text-primary text-sm font-medium hover:text-primary-dark transition-colors">
                   View all →
                 </Link>

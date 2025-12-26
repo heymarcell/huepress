@@ -91,7 +91,7 @@ export function AboutDesign({
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <h3 className="font-serif text-2xl text-ink">About This Design</h3>
+        <h2 className="font-serif text-2xl text-ink">About This Design</h2>
         <div className="h-px bg-gray-200 flex-1" />
       </div>
 
@@ -114,7 +114,7 @@ export function AboutDesign({
                 <div className={`w-8 h-8 rounded-full ${section.iconBg} ${section.iconColor} flex items-center justify-center`}>
                   <section.icon className="w-4 h-4" />
                 </div>
-                <h4 className="font-serif text-lg font-medium text-ink">{section.title}</h4>
+                <h3 className="font-serif text-lg font-medium text-ink">{section.title}</h3>
               </div>
               
               {section.type === 'text' && (

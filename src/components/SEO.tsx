@@ -37,8 +37,8 @@ export function SEO({
     <Helmet>
       {/* Standard Metadata */}
       <title>{fullTitle}</title>
-      <meta name="description" content={description} />
-      {keywords && <meta name="keywords" content={keywords} />}
+      <meta name="theme-color" content="#FFFAF9" />
+      <meta name="keywords" content={keywords || "coloring pages, therapy coloring, bold coloring pages, toddler coloring, autism friendly coloring"} />
       <link rel="canonical" href={canonical || url} />
 
       {/* Open Graph / Facebook */}
@@ -47,10 +47,14 @@ export function SEO({
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={fullImage} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content={title || "HuePress Coloring Page"} />
       <meta property="og:site_name" content="HuePress" />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:domain" content="huepress.co" />
       <meta name="twitter:creator" content="@huepress" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
