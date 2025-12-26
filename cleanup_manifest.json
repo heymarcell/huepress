@@ -1,0 +1,40 @@
+{
+  "mode": "apply",
+  "allow_destructive": true,
+  "baseline": {
+    "build_cmd": "npm run build",
+    "test_cmd": "npm run test:run",
+    "lint_cmd": "npm run lint",
+    "baseline_tests": "pass",
+    "baseline_lint": "pass"
+  },
+  "findings": [
+    {
+      "id": "F-0001",
+      "type": "obsolete_backup",
+      "path": "public_backup_20251223_023041",
+      "symbol": null,
+      "confidence": "high",
+      "evidence": [
+        "grep: folder name matches backup naming pattern from compress-images.sh",
+        "diff: contains identical files to public/ but with larger file sizes",
+        "import_graph: no references to this folder in codebase"
+      ],
+      "proposed_action": "delete",
+      "proposed_destination": null,
+      "risk_notes": "Safe to delete - backup created during image compression, originals no longer needed"
+    }
+  ],
+  "changes_applied": [
+    {
+      "commit": "not_committed",
+      "message": "chore: delete obsolete public_backup_20251223_023041 folder",
+      "summary": ["Removed ~1.4MB backup folder created by image compression script"]
+    }
+  ],
+  "post_checks": {
+    "build": "not_run",
+    "tests": "pass",
+    "lint": "pass"
+  }
+}
