@@ -49,7 +49,7 @@ export function ResourceCard({
                 src={imageUrl} 
                 alt={title} 
                 className="max-w-[95%] max-h-[95%] object-contain select-none"
-                style={{ clipPath: 'inset(0 0 8% 0)' }} /* Clips bottom 8% to hide banner */
+                style={{ clipPath: 'inset(0 0 8% 0)', transform: 'translateY(4%)' }} /* Clip bottom + shift down for visual centering */
                 onError={() => setImageError(true)}
                 onContextMenu={(e) => e.preventDefault()}
                 onDragStart={(e) => e.preventDefault()}
