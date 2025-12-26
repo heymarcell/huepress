@@ -173,4 +173,91 @@ describe("Admin API", () => {
         
         expect(res.status).toBe(401);
     });
+
+    it("POST /create-draft should create draft asset", async () => {
+        // Mock sequence insert/update
+        mockFirst.mockResolvedValue({ value: 1 });
+        
+        const formData = new FormData();
+        formData.append("title", "Draft Test");
+        formData.append("category", "Animals");
+        formData.append("description", "Test desc");
+        formData.append("skill", "Easy");
+        formData.append("tags", "cute, animal");
+
+        const res = await app.request("http://localhost/create-draft", {
+            method: "POST",
+            headers: { "X-Admin-Email": "admin@test.com" },
+            body: formData
+        }, mockEnv);
+        
+        expect(res.status).toBe(200);
+        expect(mockRun).toHaveBeenCalled();
+    });
+
+    it("POST /create-draft should require title", async () => {
+        const formData = new FormData();
+        formData.append("category", "Animals");
+
+        const res = await app.request("http://localhost/create-draft", {
+            method: "POST",
+            headers: { "X-Admin-Email": "admin@test.com" },
+            body: formData
+        }, mockEnv);
+        
+        expect(res.status).toBe(400);
+    });
+
+    it("POST /create-draft should require category", async () => {
+        const formData = new FormData();
+        formData.append("title", "Test Title");
+
+        const res = await app.request("http://localhost/create-draft", {
+            method: "POST",
+            headers: { "X-Admin-Email": "admin@test.com" },
+            body: formData
+        }, mockEnv);
+        
+        expect(res.status).toBe(400);
+    });
+
+    it("PATCH /assets/:id/status should reject invalid status", async () => {
+        const res = await app.request("http://localhost/assets/123/status", {
+            method: "PATCH",
+            headers: { 
+                "X-Admin-Email": "admin@test.com",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ status: "invalid" })
+        }, mockEnv);
+        
+        expect(res.status).toBe(400);
+    });
+
+    it("PATCH /assets/:id/status should accept 'draft' status", async () => {
+        const res = await app.request("http://localhost/assets/123/status", {
+            method: "PATCH",
+            headers: { 
+                "X-Admin-Email": "admin@test.com",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ status: "draft" })
+        }, mockEnv);
+        
+        expect(res.status).toBe(200);
+    });
+
+    it("GET /assets should parse tags as JSON array", async () => {
+        mockAll.mockResolvedValue({ results: [
+            { id: "1", title: "Test", tags: '["cute","animal"]' }
+        ] });
+        
+        const res = await app.request("http://localhost/assets", {
+            headers: { "X-Admin-Email": "admin@test.com" }
+        }, mockEnv);
+        
+        expect(res.status).toBe(200);
+        const data = await res.json() as { assets: { tags: string[] }[] };
+        expect(data.assets[0].tags).toEqual(["cute", "animal"]);
+    });
 });
