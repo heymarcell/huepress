@@ -87,7 +87,6 @@ export async function generateNativePdf(
       const centerX = p2w / 2;
 
       // Helper to draw centered text
-      // @ts-expect-error - font type inference
       const drawCentered = (text: string, y: number, size: number) => {
           const width = fontRegular.widthOfTextAtSize(text, size);
           page2.drawText(text, {

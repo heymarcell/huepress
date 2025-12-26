@@ -22,6 +22,7 @@ export type Bindings = {
   GA4_API_SECRET: string;
   GA4_MEASUREMENT_ID: string; // e.g., G-XXXXXXXX
   INTERNAL_API_TOKEN: string; // Shared secret for internal container uploads
+  API_URL?: string; // Optional API base URL for container calls
 };
 
 export interface Asset {
