@@ -42,14 +42,14 @@ export function ResourceCard({
         {/* Card container with shadow, not on the paper */}
         <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-200 overflow-hidden border border-gray-100">
           
-          {/* 1:1 container - clips bottom banner using clip-path */}
-          <div className="relative aspect-square bg-white overflow-hidden">
+          {/* 1:1 container - flex centers the image, clip-path hides banner */}
+          <div className="relative aspect-square bg-white overflow-hidden flex items-center justify-center">
             {!showPlaceholder ? (
               <img 
                 src={imageUrl} 
                 alt={title} 
-                className="w-full h-auto object-contain select-none"
-                style={{ clipPath: 'inset(0 0 12% 0)' }} /* Clips bottom 12% to fully hide banner */
+                className="max-w-[95%] max-h-[95%] object-contain select-none"
+                style={{ clipPath: 'inset(0 0 8% 0)' }} /* Clips bottom 8% to hide banner */
                 onError={() => setImageError(true)}
                 onContextMenu={(e) => e.preventDefault()}
                 onDragStart={(e) => e.preventDefault()}
