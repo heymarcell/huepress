@@ -98,7 +98,7 @@ describe("Admin API", () => {
         }, mockEnv, mockExecutionCtx as any); // Pass executionCtx
 
         expect(res.status).toBe(200);
-        expect(mockR2Put).toHaveBeenCalledTimes(3); // Thumb + OG + PDF
+        expect(mockR2Put).toHaveBeenCalledTimes(2); // Thumb + PDF (OG is async container)
         expect(mockRun).toHaveBeenCalled(); // Insert
     });
 });
