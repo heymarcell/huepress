@@ -418,19 +418,21 @@ export default function ResourceDetailPage() {
             <div className="w-full lg:w-1/2">
                <div className="sticky top-32">
                  <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 group">
-                   {asset.image_url && !asset.image_url.includes("__draft__") && !imageError ? (
-                     <img 
-                       src={asset.image_url} 
-                       alt={asset.title}
-                       className="w-full h-auto object-contain p-4 group-hover:scale-[1.02] transition-transform duration-500"
-                       onError={() => setImageError(true)}
-                     />
-                   ) : (
-                     <div className="w-full aspect-square flex flex-col items-center justify-center bg-gray-50">
-                       <ImageIcon className="w-20 h-20 text-gray-300" strokeWidth={1} />
-                       <span className="text-sm text-gray-400 mt-3">Preview not available</span>
-                     </div>
-                   )}
+                   <div className="aspect-square w-full flex items-center justify-center p-4">
+                     {asset.image_url && !asset.image_url.includes("__draft__") && !imageError ? (
+                       <img 
+                         src={asset.image_url} 
+                         alt={asset.title}
+                         className="max-w-full max-h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
+                         onError={() => setImageError(true)}
+                       />
+                     ) : (
+                       <div className="flex flex-col items-center justify-center">
+                         <ImageIcon className="w-20 h-20 text-gray-300" strokeWidth={1} />
+                         <span className="text-sm text-gray-400 mt-3">Preview not available</span>
+                       </div>
+                     )}
+                   </div>
                  </div>
                </div>
             </div>
