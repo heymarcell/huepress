@@ -48,8 +48,11 @@ export function ResourceCard({
               <img 
                 src={imageUrl} 
                 alt={title} 
-                className="object-contain w-full h-full p-3 transition-transform duration-300 ease-out group-hover:scale-105"
+                className="object-contain w-full h-full p-3 transition-transform duration-300 ease-out group-hover:scale-105 select-none"
                 onError={() => setImageError(true)}
+                onContextMenu={(e) => e.preventDefault()}
+                onDragStart={(e) => e.preventDefault()}
+                draggable={false}
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">

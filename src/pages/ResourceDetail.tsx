@@ -423,8 +423,11 @@ export default function ResourceDetailPage() {
                        <img 
                          src={asset.image_url} 
                          alt={asset.title}
-                         className="max-w-full max-h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
+                         className="max-w-full max-h-full object-contain group-hover:scale-[1.02] transition-transform duration-500 select-none pointer-events-none"
                          onError={() => setImageError(true)}
+                         onContextMenu={(e) => e.preventDefault()}
+                         onDragStart={(e) => e.preventDefault()}
+                         draggable={false}
                        />
                      ) : (
                        <div className="flex flex-col items-center justify-center">
