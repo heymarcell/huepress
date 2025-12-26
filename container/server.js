@@ -504,12 +504,12 @@ app.post('/generate-all', async (req, res) => {
     console.log(`[GenerateAll] Starting for "${title}" (assetId: ${assetId})`);
 
     // 1. THUMBNAIL - Generate 1:1 with hidden copyright banner
-    // Final image: 600x640 (600x600 art + 40px banner)
+    // Final image: 600x650 (600x600 art + 50px banner)
     // On website, CSS clips to square, hiding the banner
     // If image is saved directly, banner is visible with copyright info
     let thumbnailBuffer = null;
     const thumbSize = 600;
-    const bannerHeight = 40;
+    const bannerHeight = 50;
     const totalHeight = thumbSize + bannerHeight;
     
     if (thumbnailUploadUrl && thumbnailUploadKey) {
@@ -522,7 +522,7 @@ app.post('/generate-all', async (req, res) => {
         .png()
         .toBuffer();
       
-      // Step 1b: Create banner SVG with copyright info
+      // Step 1b: Create banner SVG with copyright info and anti-piracy message
       const displayId = (assetId || "").replace(/^HP-[A-Z]+-/, '');
       const currentYear = new Date().getFullYear();
       const bannerSvg = `
@@ -530,10 +530,12 @@ app.post('/generate-all', async (req, res) => {
           <rect fill="#374151" width="${thumbSize}" height="${bannerHeight}"/>
           <style>
             .domain { font: bold 14px 'Helvetica', sans-serif; fill: #E5E7EB; }
-            .info { font: 11px 'Helvetica', sans-serif; fill: #9CA3AF; }
+            .info { font: 10px 'Helvetica', sans-serif; fill: #9CA3AF; }
+            .warning { font: 9px 'Helvetica', sans-serif; fill: #6B7280; }
           </style>
-          <text x="12" y="16" class="domain">huepress.co</text>
-          <text x="12" y="32" class="info">#${displayId} | © ${currentYear} HuePress</text>
+          <text x="12" y="15" class="domain">huepress.co</text>
+          <text x="12" y="30" class="info">#${displayId} | © ${currentYear} HuePress. All rights reserved.</text>
+          <text x="12" y="44" class="warning">🖨️ This is a low-res preview. Join huepress.co for print-quality PDFs!</text>
         </svg>
       `;
       

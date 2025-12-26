@@ -49,7 +49,7 @@ export function ResourceCard({
                 src={imageUrl} 
                 alt={title} 
                 className="w-full h-auto object-contain select-none"
-                style={{ clipPath: 'inset(0 0 8% 0)' }} /* Clips bottom 8% to fully hide banner */
+                style={{ clipPath: 'inset(0 0 12% 0)' }} /* Clips bottom 12% to fully hide banner */
                 onError={() => setImageError(true)}
                 onContextMenu={(e) => e.preventDefault()}
                 onDragStart={(e) => e.preventDefault()}

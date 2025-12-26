@@ -425,7 +425,7 @@ export default function ResourceDetailPage() {
                          src={asset.image_url} 
                          alt={asset.title}
                          className="max-w-full max-h-full object-contain group-hover:scale-[1.02] transition-transform duration-500 select-none"
-                         style={{ clipPath: 'inset(0 0 8% 0)' }} /* Clips bottom 8% to fully hide banner */
+                         style={{ clipPath: 'inset(0 0 12% 0)' }} /* Clips bottom 12% to fully hide banner */
                          onError={() => setImageError(true)}
                          onContextMenu={(e) => e.preventDefault()}
                          onDragStart={(e) => e.preventDefault()}
