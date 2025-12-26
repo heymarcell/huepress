@@ -530,13 +530,14 @@ app.post('/generate-all', async (req, res) => {
           <rect fill="#1F2937" width="${thumbSize}" height="${bannerHeight}"/>
           <style>
             .domain { font: bold 16px 'Inter', 'FreeSans', sans-serif; fill: #FFFFFF; }
-            .meta { font: 11px 'Inter', 'FreeSans', sans-serif; fill: #9CA3AF; }
-            .notice { font: 10px 'Inter', 'FreeSans', sans-serif; fill: #6B7280; }
+            .id { font: bold 24px 'Inter', 'FreeSans', sans-serif; fill: #9CA3AF; }
+            .meta { font: 10px 'Inter', 'FreeSans', sans-serif; fill: #9CA3AF; }
+            .notice { font: 9px 'Inter', 'FreeSans', sans-serif; fill: #6B7280; }
           </style>
-          <text x="15" y="18" class="domain">huepress.co</text>
-          <text x="${thumbSize - 15}" y="18" text-anchor="end" class="meta">#${displayId}</text>
-          <text x="15" y="36" class="meta">${currentYear} HuePress. All rights reserved.</text>
-          <text x="15" y="48" class="notice">Low-res preview only. Get print-quality PDFs at huepress.co</text>
+          <text x="15" y="17" class="domain">huepress.co</text>
+          <text x="${thumbSize - 15}" y="20" text-anchor="end" class="id">#${displayId}</text>
+          <text x="15" y="32" class="meta">${currentYear} HuePress. All rights reserved.</text>
+          <text x="15" y="44" class="notice">Low-res preview only. Get print-quality PDFs at huepress.co</text>
         </svg>
       `;
       
