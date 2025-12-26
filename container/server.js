@@ -159,32 +159,7 @@ app.post('/og-image', async (req, res) => {
  * Metadata: { title, assetId, description, qrCodeUrl }
  * Returns: PDF buffer as base64
  */
-// Global browser instance
-let browserInstance = null;
 
-async function getBrowser() {
-  if (browserInstance) return browserInstance;
-
-  console.log('[PDF] Launching new Browser instance...');
-  browserInstance = await puppeteer.launch({
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
-      headless: "new",
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu'
-      ]
-  });
-  
-  // Handle disconnection
-  browserInstance.on('disconnected', () => {
-    console.log('[PDF] Browser disconnected, clearing instance');
-    browserInstance = null;
-  });
-
-  return browserInstance;
-}
 
 // Import PDF generation libs
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');

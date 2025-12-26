@@ -40,18 +40,42 @@ async function fetchWithRetry(
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// Admin check using environment variable
-function isAdmin(email: string | undefined, adminEmails: string): boolean {
-  if (!email) return false;
-  const allowedEmails = adminEmails.split(',').map(e => e.trim().toLowerCase());
-  return allowedEmails.includes(email.toLowerCase());
+import { getAuth } from "@hono/clerk-auth";
+
+// Admin Middleware Check
+import { Context } from "hono";
+
+// Admin Middleware Check
+async function verifyAdmin(c: Context<{ Bindings: Bindings }>): Promise<boolean> {
+  const auth = getAuth(c);
+  if (!auth?.userId) return false;
+
+  // 1. Get user email from DB using Clerk ID
+  // Note: We need to trust the local DB as the source of truth for "who is this user"
+  // The DB is populated via webhooks from Clerk
+  try {
+    const user = await c.env.DB.prepare(
+      "SELECT email FROM users WHERE clerk_id = ?"
+    ).bind(auth.userId).first<{ email: string }>();
+
+    if (!user || !user.email) return false;
+
+    // 2. Check if email is in ALLOWED_ADMINS list
+    const adminEmails = c.env.ADMIN_EMAILS || "";
+    const allowedEmails = adminEmails.split(',').map((e: string) => e.trim().toLowerCase());
+    
+    return allowedEmails.includes(user.email.toLowerCase());
+  } catch (e) {
+    console.error("Admin verification failed:", e);
+    return false;
+  }
 }
 
 // ADMIN: Create Draft Asset (called on SVG upload)
 // Saves all current form data and returns the generated assetId & slug
 app.post("/create-draft", async (c) => {
-  const adminEmail = c.req.header("X-Admin-Email");
-  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) return c.json({ error: "Unauthorized" }, 401);
+  const isAdminUser = await verifyAdmin(c);
+  if (!isAdminUser) return c.json({ error: "Unauthorized" }, 401);
 
   const body = await c.req.parseBody() as Record<string, string>;
   const { title, description, category, skill, tags } = body;
@@ -111,9 +135,9 @@ app.post("/create-draft", async (c) => {
 
 // ADMIN: Get all assets (including drafts)
 app.get("/assets", async (c) => {
-  const adminEmail = c.req.header("X-Admin-Email");
+  const isAdminUser = await verifyAdmin(c);
   
-  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
+  if (!isAdminUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -136,9 +160,9 @@ app.get("/assets", async (c) => {
 
 // ADMIN: Get single asset by ID
 app.get("/assets/:id", async (c) => {
-  const adminEmail = c.req.header("X-Admin-Email");
+  const isAdminUser = await verifyAdmin(c);
   
-  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
+  if (!isAdminUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -169,9 +193,9 @@ app.get("/assets/:id", async (c) => {
 
 // ADMIN: Update asset status (publish/draft)
 app.patch("/assets/:id/status", async (c) => {
-  const adminEmail = c.req.header("X-Admin-Email");
+  const isAdminUser = await verifyAdmin(c);
   
-  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
+  if (!isAdminUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -197,11 +221,15 @@ app.patch("/assets/:id/status", async (c) => {
 // ADMIN: Create new asset
 // ADMIN: Create or Update asset
 app.post("/assets", async (c) => {
-  const adminEmail = c.req.header("X-Admin-Email");
+  const isAdminUser = await verifyAdmin(c);
   
-  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
+  if (!isAdminUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
+
+
+  let id: string | undefined;
+  let isNewAsset = false;
 
   try {
     const body = await c.req.parseBody();
@@ -286,27 +314,49 @@ app.post("/assets", async (c) => {
     const slug = slugify(title);
 
     // 3. Resolve UUID (Moved up for immutable file naming)
-    let id: string;
+    // 3. Resolve UUID (Moved up for immutable file naming)
     
     if (providedAssetId) {
       // Create vs Update check
-      // Ideally we should check if it exists in DB
       const existing = await c.env.DB.prepare("SELECT id FROM assets WHERE asset_id = ?").bind(providedAssetId).first<{ id: string }>();
       
       if (existing) {
         id = existing.id;
       } else {
-        // Fallback or error - if we have asset_id but no DB record, assume new but pre-assigned ID? 
-        // For safety, let's treat it as new if not found, but we should log this.
         console.warn(`Asset ID ${providedAssetId} provided but not found in DB. Creating new UUID.`);
         id = crypto.randomUUID();
+        isNewAsset = true;
       }
     } else {
       id = crypto.randomUUID();
+      isNewAsset = true;
+    }
+
+    const tagsArray = tags ? tags.split(",").map(t => t.trim()).filter(Boolean) : [];
+    const tagsJson = JSON.stringify(tagsArray);
+
+    // 0. PRE-INSERT (Transaction Start)
+    // If this is a new asset, insert a "pending" record immediately.
+    // This ensures we have a DB row to track the files we are about to upload.
+    if (isNewAsset) {
+        await c.env.DB.prepare(`
+        INSERT INTO assets (
+          id, asset_id, slug, title, description, category, skill, 
+          r2_key_public, r2_key_private, r2_key_source, r2_key_og, status, tags, 
+          extended_description, fun_facts, suggested_activities, 
+          coloring_tips, therapeutic_benefits, meta_keywords,
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_upload', ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      `).bind(
+        id, assetId, slug, title, description, category, skill,
+        "__pending__", "__pending__", null, null, tagsJson,
+        extendedDescription, funFacts, suggestedActivities,
+        coloringTips, therapeuticBenefits, metaKeywords
+      ).run();
+      console.log(`[Create] Inserted pending record for ${assetId}`);
     }
 
     // 2. Handle File Uploads (Independent) using UUID for keys
-    // 2. Handle File Uploads (Optimistic Keys + Async Processing)
     // Deterministic Keys based on UUID
     const idPath = id; 
     let thumbnailKey: string | null = null;
@@ -331,114 +381,102 @@ app.post("/assets", async (c) => {
       sourceKey = `sources/${idPath}.svg`;
     }
 
-    // A. Synchronous Uploads (Fast R2 PUTs)
-    let sourceSvgContent: string | null = null;
 
-    if (hasThumbnailUpload) {
-       console.log(`Uploading provided thumbnail for ${assetId}...`);
-       await c.env.ASSETS_PUBLIC.put(thumbnailKey!, thumbnailFile as File);
-    }
-    if (hasPdfUpload) {
-       console.log(`Uploading provided PDF for ${assetId}...`);
-       await c.env.ASSETS_PRIVATE.put(pdfKey!, pdfFile as File);
-    }
-    if (hasSourceUpload) {
-       console.log(`[Sync] Reading & Uploading Source SVG for ${assetId}...`);
-       // Read content into memory to ensure availability for background task
-       sourceSvgContent = await (sourceFile as File).text();
-       await c.env.ASSETS_PRIVATE.put(sourceKey!, sourceSvgContent);
-    }
+        // A. Synchronous Uploads (Fast R2 PUTs)
+        let sourceSvgContent: string | null = null;
 
-    // B. Background Processing (Slow Container Calls)
-    // We use c.executionCtx.waitUntil to ensure this runs after response is returned
-    c.executionCtx.waitUntil((async () => {
-      try {
-        // Small delay to allow response to flush
-        await new Promise(resolve => setTimeout(resolve, 500));
-        console.log(`[Background] Starting UNIFIED processing for ${assetId} (UUID: ${idPath})...`);
-        
-        const svgContent = sourceSvgContent;
-        
-        if (hasSourceUpload && !svgContent) {
-           console.error(`[Background] Error: Has source upload but content is missing!`);
-           return;
+        if (hasThumbnailUpload) {
+           console.log(`Uploading provided thumbnail for ${assetId}...`);
+           await c.env.ASSETS_PUBLIC.put(thumbnailKey!, thumbnailFile as File);
+        }
+        if (hasPdfUpload) {
+           console.log(`Uploading provided PDF for ${assetId}...`);
+           await c.env.ASSETS_PRIVATE.put(pdfKey!, pdfFile as File);
+        }
+        if (hasSourceUpload) {
+           console.log(`[Sync] Reading & Uploading Source SVG for ${assetId}...`);
+           // Read content into memory to ensure availability for background task
+           sourceSvgContent = await (sourceFile as File).text();
+           await c.env.ASSETS_PRIVATE.put(sourceKey!, sourceSvgContent);
         }
 
-        // Base URL for internal uploads
-        const apiBaseUrl = c.env.API_URL || 'https://api.huepress.co';
-        const uploadToken = c.env.INTERNAL_API_TOKEN;
-
-        // Use UNIFIED /generate-all endpoint for sequential processing
-        // This ensures: Thumbnail → OG (with thumbnail) → PDF all complete in one request
-        if (hasSourceUpload && svgContent) {
-            console.log(`[Background] Calling /generate-all for ${assetId}...`);
-            try {
-                const container = (await import("@cloudflare/containers")).getContainer(c.env.PROCESSING, "main");
-                
-                const response = await fetchWithRetry(() => container.fetch("http://container/generate-all", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        svgContent,
-                        title: (title as string) || "",
-                        assetId: assetId,
-                        description: (description as string) || "",
-                        // Thumbnail settings
-                        thumbnailUploadUrl: !hasThumbnailUpload ? `${apiBaseUrl}/api/internal/upload-public` : null,
-                        thumbnailUploadKey: !hasThumbnailUpload ? thumbnailKey : null,
-                        // OG settings
-                        ogUploadUrl: `${apiBaseUrl}/api/internal/upload-public`,
-                        ogUploadKey: ogKey,
-                        // PDF settings
-                        pdfUploadUrl: `${apiBaseUrl}/api/internal/upload-private`,
-                        pdfUploadKey: pdfKey,
-                        pdfFilename: `${assetId}-${slug}.pdf`,
-                        // Auth
-                        uploadToken
-                    })
-                }));
-                
-                if (response.ok) {
-                    const result = await response.json() as { success: boolean; results: Record<string, unknown>; elapsedMs: number };
-                    console.log(`[Background] /generate-all completed for ${assetId} in ${result.elapsedMs}ms:`, JSON.stringify(result.results));
-                } else {
-                    const errorText = await response.text();
-                    console.error(`[Background] /generate-all failed for ${assetId}: ${response.status} - ${errorText}`);
-                }
-            } catch (err) {
-                console.error(`[Background] /generate-all dispatch failed after retries:`, err);
+        // B. Background Processing (Slow Container Calls)
+        // We use c.executionCtx.waitUntil to ensure this runs after response is returned
+        c.executionCtx.waitUntil((async () => {
+          try {
+            // Small delay to allow response to flush
+            await new Promise(resolve => setTimeout(resolve, 500));
+            console.log(`[Background] Starting UNIFIED processing for ${assetId} (UUID: ${idPath})...`);
+            
+            const svgContent = sourceSvgContent;
+            
+            if (hasSourceUpload && !svgContent) {
+               console.error(`[Background] Error: Has source upload but content is missing!`);
+               return;
             }
-        }
+
+            // Base URL for internal uploads
+            const apiBaseUrl = c.env.API_URL || 'https://api.huepress.co';
+            const uploadToken = c.env.INTERNAL_API_TOKEN;
+
+            // Use UNIFIED /generate-all endpoint for sequential processing
+            if (hasSourceUpload && svgContent) {
+                console.log(`[Background] Calling /generate-all for ${assetId}...`);
+                try {
+                    const container = (await import("@cloudflare/containers")).getContainer(c.env.PROCESSING, "main");
+                    
+                    const response = await fetchWithRetry(() => container.fetch("http://container/generate-all", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            svgContent,
+                            title: (title as string) || "",
+                            assetId: assetId,
+                            description: (description as string) || "",
+                            // Thumbnail settings
+                            thumbnailUploadUrl: !hasThumbnailUpload ? `${apiBaseUrl}/api/internal/upload-public` : null,
+                            thumbnailUploadKey: !hasThumbnailUpload ? thumbnailKey : null,
+                            // OG settings
+                            ogUploadUrl: `${apiBaseUrl}/api/internal/upload-public`,
+                            ogUploadKey: ogKey,
+                            // PDF settings
+                            pdfUploadUrl: `${apiBaseUrl}/api/internal/upload-private`,
+                            pdfUploadKey: pdfKey,
+                            pdfFilename: `${assetId}-${slug}.pdf`,
+                            // Auth
+                            uploadToken
+                        })
+                    }));
+                    
+                    if (response.ok) {
+                        const result = await response.json() as { success: boolean; results: Record<string, unknown>; elapsedMs: number };
+                        console.log(`[Background] /generate-all completed for ${assetId} in ${result.elapsedMs}ms:`, JSON.stringify(result.results));
+                    } else {
+                        const errorText = await response.text();
+                        console.error(`[Background] /generate-all failed for ${assetId}: ${response.status} - ${errorText}`);
+                    }
+                } catch (err) {
+                    console.error(`[Background] /generate-all dispatch failed after retries:`, err);
+                }
+            }
+            
+            console.log(`[Background] Processing complete for ${assetId}.`);
+
+          } catch (err) {
+            console.error(`[Background] Error processing ${assetId}:`, err);
+          }
+        })());
         
-        console.log(`[Background] Processing complete for ${assetId}.`);
+        // 4. Upsert / Finalize (Transaction Commit)
+        // If we made it here, uploads were successful (or background task dispatched)
+        // Now we update the DB record to "Active" (or requested status) and potentially update metadata.
 
-      } catch (err) {
-        console.error(`[Background] Error processing ${assetId}:`, err);
-      }
-    })());
-    
-    // 4. Insert or Update into D1
-    const tagsArray = tags ? tags.split(",").map(t => t.trim()).filter(Boolean) : [];
-    const tagsJson = JSON.stringify(tagsArray);
-
-    // ID is already resolved above
-    
-    // Check if updating a reserved asset (re-using logic but simplified since we have ID)
-    if (providedAssetId) {
-      // We already resolved 'id'
-      const existing = await c.env.DB.prepare("SELECT id FROM assets WHERE id = ?").bind(id).first();
-      
-      if (existing) {
         // Build Dynamic Update Query
-
-        // We only update R2 keys if new files were uploaded
         const fields: string[] = [];
         const values: unknown[] = [];
 
         // Always update metadata
-        fields.push("slug = ?");
-        values.push(slug);
-        
+        fields.push("slug = ?"); values.push(slug);
         fields.push("title = ?"); values.push(title);
         fields.push("description = ?"); values.push(description);
         fields.push("category = ?"); values.push(category);
@@ -453,82 +491,50 @@ app.post("/assets", async (c) => {
         fields.push("meta_keywords = ?"); values.push(metaKeywords);
 
         if (thumbnailKey) {
-          fields.push("r2_key_public = ?");
-          values.push(thumbnailKey);
+          fields.push("r2_key_public = ?"); values.push(thumbnailKey);
         }
-
         if (pdfKey) {
-          fields.push("r2_key_private = ?");
-          values.push(pdfKey);
+          fields.push("r2_key_private = ?"); values.push(pdfKey);
         }
-
         if (sourceKey) {
-          fields.push("r2_key_source = ?");
-          values.push(sourceKey);
+          fields.push("r2_key_source = ?"); values.push(sourceKey);
         }
-
         if (ogKey) {
-          fields.push("r2_key_og = ?");
-          values.push(ogKey);
+          fields.push("r2_key_og = ?"); values.push(ogKey);
         }
 
-        // Add WHERE clause ID
-        values.push(providedAssetId);
+        // Add WHERE clause ID (we resolved `id` earlier)
+        values.push(id);
 
-        const query = `UPDATE assets SET ${fields.join(", ")} WHERE asset_id = ?`;
+        const query = `UPDATE assets SET ${fields.join(", ")} WHERE id = ?`;
         
         await c.env.DB.prepare(query).bind(...values).run();
 
-      } else {
-         // Provided ID but not found in DB? Insert it.
-         // This happens if a Draft was "created" in memory but DB failed, or just a new manual entry with ID.
-         await c.env.DB.prepare(`
-          INSERT INTO assets (
-            id, asset_id, slug, title, description, category, skill, 
-            r2_key_public, r2_key_private, r2_key_source, r2_key_og, status, tags, 
-            extended_description, fun_facts, suggested_activities, 
-            coloring_tips, therapeutic_benefits, meta_keywords,
-            created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-        `).bind(
-          id, assetId, slug, title, description, category, skill,
-          thumbnailKey || "__draft__", pdfKey || "__draft__", sourceKey || null, ogKey || null, status, tagsJson,
-          extendedDescription, funFacts, suggestedActivities,
-          coloringTips, therapeuticBenefits, metaKeywords
-        ).run();
-      }
-    } else {
-      // Standard Insert (New asset flow without ID)
-      await c.env.DB.prepare(`
-        INSERT INTO assets (
-          id, asset_id, slug, title, description, category, skill, 
-          r2_key_public, r2_key_private, r2_key_source, r2_key_og, status, tags, 
-          extended_description, fun_facts, suggested_activities, 
-          coloring_tips, therapeutic_benefits, meta_keywords,
-          created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-      `).bind(
-        id, assetId, slug, title, description, category, skill,
-        thumbnailKey, pdfKey, sourceKey || null, ogKey || null, status, tagsJson,
-        extendedDescription, funFacts, suggestedActivities,
-        coloringTips, therapeuticBenefits, metaKeywords
-      ).run();
-    }
+        return c.json({ success: true, id, assetId });
 
-    return c.json({ success: true, id, assetId });
-  } catch (error) {
-    console.error("Asset creation error:", error);
-    // Be verbose on error for debugging
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return c.json({ error: `Failed to create/update asset: ${errorMessage}` }, 500);
-  }
+    } catch (error) {
+        console.error("Asset creation error:", error);
+        
+        // ROLLBACK: If it was a new asset, delete the pending ID to prevent orphans/zombies
+        if (isNewAsset) {
+            console.warn(`[Rollback] Deleting pending asset ${id} due to upload failure.`);
+            try {
+                await c.env.DB.prepare("DELETE FROM assets WHERE id = ?").bind(id).run();
+            } catch (cleanupErr) {
+                console.error("Failed to cleanup pending asset:", cleanupErr);
+            }
+        }
+        
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        return c.json({ error: `Failed to create/update asset: ${errorMessage}` }, 500);
+    }
 });
 
 // ADMIN: Get Dashboard Stats
 app.get("/stats", async (c) => {
-  const adminEmail = c.req.header("X-Admin-Email");
+  const isAdminUser = await verifyAdmin(c);
   
-  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
+  if (!isAdminUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -565,8 +571,8 @@ app.get("/stats", async (c) => {
 
 // ADMIN: Delete single asset
 app.delete("/assets/:id", async (c) => {
-  const adminEmail = c.req.header("X-Admin-Email");
-  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
+  const isAdminUser = await verifyAdmin(c);
+  if (!isAdminUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -619,8 +625,8 @@ app.delete("/assets/:id", async (c) => {
 
 // ADMIN: Get Asset Source (SVG)
 app.get("/assets/:id/source", async (c) => {
-  const adminEmail = c.req.header("X-Admin-Email");
-  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
+  const isAdminUser = await verifyAdmin(c);
+  if (!isAdminUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -655,8 +661,8 @@ app.get("/assets/:id/source", async (c) => {
 
 // ADMIN: Bulk delete assets
 app.post("/assets/bulk-delete", async (c) => {
-  const adminEmail = c.req.header("X-Admin-Email");
-  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) {
+  const isAdminUser = await verifyAdmin(c);
+  if (!isAdminUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -708,8 +714,8 @@ app.post("/assets/bulk-delete", async (c) => {
 
 // ADMIN: Get Design Requests
 app.get("/requests", async (c) => {
-  const adminEmail = c.req.header("X-Admin-Email");
-  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) return c.json({ error: "Unauthorized" }, 401);
+  const isAdminUser = await verifyAdmin(c);
+  if (!isAdminUser) return c.json({ error: "Unauthorized" }, 401);
 
   const { status } = c.req.query();
   
@@ -729,8 +735,8 @@ app.get("/requests", async (c) => {
 
 // ADMIN: Update Design Request
 app.patch("/requests/:id", async (c) => {
-  const adminEmail = c.req.header("X-Admin-Email");
-  if (!isAdmin(adminEmail, c.env.ADMIN_EMAILS)) return c.json({ error: "Unauthorized" }, 401);
+  const isAdminUser = await verifyAdmin(c);
+  if (!isAdminUser) return c.json({ error: "Unauthorized" }, 401);
   
   const id = c.req.param("id");
   const { status, admin_notes } = await c.req.json<{ status?: string, admin_notes?: string }>();
