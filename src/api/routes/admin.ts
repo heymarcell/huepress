@@ -13,7 +13,42 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   }
   return btoa(binary);
 }
-import { generateOgImageViaContainer, generatePdfViaContainer, generateThumbnailViaContainer } from "../../lib/processing-container";
+// Container calls are now fire-and-forget via direct fetch
+
+// Retry helper for container calls (handles cold starts)
+async function fetchWithRetry(
+  fetchFn: () => Promise<Response>,
+  maxRetries: number = 5,
+  initialDelayMs: number = 2000
+): Promise<Response> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetchFn();
+      // Check for container not ready errors in response
+      if (response.status >= 500) {
+        const text = await response.text();
+        if (text.includes('not listening') || text.includes('container')) {
+          throw new Error(`Container not ready: ${text}`);
+        }
+      }
+      return response;
+    } catch (err) {
+      lastError = err as Error;
+      const errorMsg = (err as Error).message || '';
+      // Only retry on container-specific errors
+      if (errorMsg.includes('not listening') || errorMsg.includes('container') || errorMsg.includes('Network')) {
+        const delay = initialDelayMs * Math.pow(1.5, attempt); // Exponential backoff
+        console.log(`[Retry] Attempt ${attempt + 1}/${maxRetries} failed. Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      // For other errors, throw immediately
+      throw err;
+    }
+  }
+  throw lastError;
+}
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -330,95 +365,64 @@ app.post("/assets", async (c) => {
     // We use c.executionCtx.waitUntil to ensure this runs after response is returned
     c.executionCtx.waitUntil((async () => {
       try {
-        console.log(`[Background] Starting processing for ${assetId} (UUID: ${idPath})...`);
+        // Small delay to allow response to flush
+        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log(`[Background] Starting UNIFIED processing for ${assetId} (UUID: ${idPath})...`);
         
-        // 1. Get Source Content
-        // Use the content we already read synchronously
         const svgContent = sourceSvgContent;
         
         if (hasSourceUpload && !svgContent) {
            console.error(`[Background] Error: Has source upload but content is missing!`);
-        } else if (svgContent) {
-           console.log(`[Background] Source content available (${svgContent.length} chars).`);
+           return;
         }
 
-        let currentThumbnailBase64: string | null = null;
-        let currentThumbnailMime = "image/webp";
+        // Base URL for internal uploads
+        const apiBaseUrl = c.env.API_URL || 'https://api.huepress.co';
+        const uploadToken = c.env.INTERNAL_API_TOKEN;
 
-        // Define parallel tasks
-        const thumbnailAndOgTask = async () => {
+        // Use UNIFIED /generate-all endpoint for sequential processing
+        // This ensures: Thumbnail → OG (with thumbnail) → PDF all complete in one request
+        if (hasSourceUpload && svgContent) {
+            console.log(`[Background] Calling /generate-all for ${assetId}...`);
             try {
-                // 2. Generate Thumbnail (if missing and have source)
-                if (!hasThumbnailUpload && hasSourceUpload && svgContent && thumbnailKey) {
-                   console.log(`[Background] Generating Thumbnail for ${assetId}...`);
-                   // Use 600px width for better performance
-                   const res = await generateThumbnailViaContainer(c.env, svgContent, 600);
-                   
-                   const buf = Uint8Array.from(atob(res.imageBase64), x => x.charCodeAt(0));
-                   await c.env.ASSETS_PUBLIC.put(thumbnailKey, buf, { 
-                     httpMetadata: { contentType: res.mimeType } 
-                   });
-                   
-                   currentThumbnailBase64 = res.imageBase64;
-                   currentThumbnailMime = res.mimeType;
-                } else if (hasThumbnailUpload && thumbnailKey) {
-                   // Read uploaded thumbnail for OG generation
-                   const obj = await c.env.ASSETS_PUBLIC.get(thumbnailKey);
-                   if (obj) {
-                     const buf = await obj.arrayBuffer();
-                     currentThumbnailBase64 = arrayBufferToBase64(buf);
-                   }
-                }
-
-                // 3. Generate OG Image (needs thumbnail)
-                if (currentThumbnailBase64 && ogKey) {
-                   console.log(`[Background] Generating OG for ${assetId}...`);
-                   const { imageBase64 } = await generateOgImageViaContainer(c.env, title, currentThumbnailBase64, currentThumbnailMime);
-                   const buf = Uint8Array.from(atob(imageBase64), x => x.charCodeAt(0));
-                   await c.env.ASSETS_PUBLIC.put(ogKey, buf, { httpMetadata: { contentType: "image/png" } });
-                }
-            } catch (err) {
-                console.error(`[Background] Thumbnail/OG Task failed:`, err);
-            }
-        };
-
-        const pdfTask = async () => {
-            try {
-                // 4. Generate PDF (if missing and have source)
-                if (!hasPdfUpload && hasSourceUpload && svgContent && pdfKey) {
-                   console.log(`[Background] Offloading PDF Generation for ${assetId}...`);
-                   
-                   const origin = new URL(c.req.url).origin;
-                   const uploadToken = c.env.INTERNAL_API_TOKEN;
-                   const uploadUrl = `${origin}/api/internal/upload-pdf/${encodeURIComponent(pdfKey)}`;
-
-                   await generatePdfViaContainer(
-                     c.env,
-                     svgContent,
-                     `${assetId}-${slug}`,
-                     {
-                       title: (title as string) || "",
-                       assetId: idPath,
-                       description: (description as string) || "",
-                       qrCodeUrl: "https://huepress.co/review"
-                     },
-                     {
-                        uploadUrl,
+                const container = (await import("@cloudflare/containers")).getContainer(c.env.PROCESSING, "main");
+                
+                const response = await fetchWithRetry(() => container.fetch("http://container/generate-all", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        svgContent,
+                        title: (title as string) || "",
+                        assetId: assetId,
+                        description: (description as string) || "",
+                        // Thumbnail settings
+                        thumbnailUploadUrl: !hasThumbnailUpload ? `${apiBaseUrl}/api/internal/upload-public` : null,
+                        thumbnailUploadKey: !hasThumbnailUpload ? thumbnailKey : null,
+                        // OG settings
+                        ogUploadUrl: `${apiBaseUrl}/api/internal/upload-public`,
+                        ogUploadKey: ogKey,
+                        // PDF settings
+                        pdfUploadUrl: `${apiBaseUrl}/api/internal/upload-private`,
+                        pdfUploadKey: pdfKey,
+                        pdfFilename: `${assetId}-${slug}.pdf`,
+                        // Auth
                         uploadToken
-                     }
-                   );
-                   
-                   console.log(`[Background] PDF Generation task sent to container.`);
+                    })
+                }));
+                
+                if (response.ok) {
+                    const result = await response.json() as { success: boolean; results: Record<string, unknown>; elapsedMs: number };
+                    console.log(`[Background] /generate-all completed for ${assetId} in ${result.elapsedMs}ms:`, JSON.stringify(result.results));
+                } else {
+                    const errorText = await response.text();
+                    console.error(`[Background] /generate-all failed for ${assetId}: ${response.status} - ${errorText}`);
                 }
             } catch (err) {
-                 console.error(`[Background] PDF Task failed:`, err);
+                console.error(`[Background] /generate-all dispatch failed after retries:`, err);
             }
-        };
-
-        // Run tasks in parallel to avoid timeout
-        await Promise.allSettled([thumbnailAndOgTask(), pdfTask()]);
+        }
         
-        console.log(`[Background] Processing complete for ${assetId}`);
+        console.log(`[Background] Processing complete for ${assetId}.`);
 
       } catch (err) {
         console.error(`[Background] Error processing ${assetId}:`, err);
@@ -583,22 +587,36 @@ app.delete("/assets/:id", async (c) => {
   try {
     // Get asset to find R2 keys
     const asset = await c.env.DB.prepare(
-      "SELECT r2_key_private, r2_key_public, r2_key_source FROM assets WHERE id = ?"
-    ).bind(id).first<{ r2_key_private: string; r2_key_public: string; r2_key_source: string }>();
+      "SELECT r2_key_private, r2_key_public, r2_key_source, r2_key_og FROM assets WHERE id = ?"
+    ).bind(id).first<{ r2_key_private: string; r2_key_public: string; r2_key_source: string; r2_key_og: string }>();
 
     if (!asset) {
+      console.log(`[Delete] Asset ${id} not found`);
       return c.json({ error: "Asset not found" }, 404);
     }
+
+    console.log(`[Delete] Deleting Asset ${id}. Keys found: Private=${asset.r2_key_private}, Public=${asset.r2_key_public}, OG=${asset.r2_key_og}, Source=${asset.r2_key_source}`);
 
     // Delete from R2
     if (asset.r2_key_private && !asset.r2_key_private.startsWith("__draft__")) {
       await c.env.ASSETS_PRIVATE.delete(asset.r2_key_private);
+      console.log(`[Delete] Deleted Private: ${asset.r2_key_private}`);
     }
     if (asset.r2_key_public && !asset.r2_key_public.startsWith("__draft__")) {
       await c.env.ASSETS_PUBLIC.delete(asset.r2_key_public);
+      console.log(`[Delete] Deleted Public: ${asset.r2_key_public}`);
     }
+    if (asset.r2_key_og && !asset.r2_key_og.startsWith("__draft__")) {
+       console.log(`[Delete] Attempting to delete OG: ${asset.r2_key_og}`);
+       await c.env.ASSETS_PUBLIC.delete(asset.r2_key_og);
+       console.log(`[Delete] Deleted OG: ${asset.r2_key_og}`);
+    } else {
+       console.log(`[Delete] OG key skipped (Missing or Draft): ${asset.r2_key_og}`);
+    }
+    
     if (asset.r2_key_source) {
       await c.env.ASSETS_PRIVATE.delete(asset.r2_key_source);
+      console.log(`[Delete] Deleted Source: ${asset.r2_key_source}`);
     }
 
     // Delete from database
@@ -665,16 +683,22 @@ app.post("/assets/bulk-delete", async (c) => {
 
     for (const id of ids) {
       const asset = await c.env.DB.prepare(
-        "SELECT r2_key_private, r2_key_public, r2_key_source FROM assets WHERE id = ?"
-      ).bind(id).first<{ r2_key_private: string; r2_key_public: string; r2_key_source: string }>();
+        "SELECT r2_key_private, r2_key_public, r2_key_source, r2_key_og FROM assets WHERE id = ?"
+      ).bind(id).first<{ r2_key_private: string; r2_key_public: string; r2_key_source: string; r2_key_og: string }>();
 
       if (asset) {
+        console.log(`[Bulk Delete] Deleting Asset ${id}. OG=${asset.r2_key_og}`);
+
         // Delete from R2
         if (asset.r2_key_private && !asset.r2_key_private.startsWith("__draft__")) {
           await c.env.ASSETS_PRIVATE.delete(asset.r2_key_private);
         }
         if (asset.r2_key_public && !asset.r2_key_public.startsWith("__draft__")) {
           await c.env.ASSETS_PUBLIC.delete(asset.r2_key_public);
+        }
+        if (asset.r2_key_og && !asset.r2_key_og.startsWith("__draft__")) {
+          await c.env.ASSETS_PUBLIC.delete(asset.r2_key_og);
+          console.log(`[Bulk Delete] Deleted OG: ${asset.r2_key_og}`);
         }
         if (asset.r2_key_source) {
           await c.env.ASSETS_PRIVATE.delete(asset.r2_key_source);

@@ -42,6 +42,11 @@ pages_build_output_dir = "dist"
 
 
 # Cloudflare Container for resource-intensive processing
+# Cloudflare Container for resource-intensive processing
+# Enable Container Observability (logs visible in Cloudflare dashboard)
+[observability]
+enabled = true
+
 [[containers]]
 class_name = "ProcessingContainer"
 image = "./container/Dockerfile"
@@ -56,3 +61,9 @@ name = "PROCESSING"
 [[migrations]]
 new_sqlite_classes = ["ProcessingContainer"]
 tag = "v1"
+
+# Bundle SVG files as text
+[[rules]]
+type = "Text"
+globs = ["**/*.svg"]
+fallthrough = false

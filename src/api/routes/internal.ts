@@ -14,30 +14,99 @@ const auth = async (c: any, next: any) => {
 };
 
 /**
- * Internal Upload Route for Containers
- * PUT /api/internal/upload-pdf/:key
- * Header: X-Filename (optional)
- * Body: Raw PDF Binary
+ * Internal Upload Route for Containers - PRIVATE Bucket (PDFs, Sources)
+ * PUT /api/internal/upload-private?key=xxx
+ * Header: X-Filename (optional), X-Content-Type (optional)
+ * Body: Raw Binary
  */
-app.put("/upload-pdf/:key", auth, async (c) => {
-    const rawKey = c.req.param("key");
-    const key = decodeURIComponent(rawKey);
-    const body = await c.req.arrayBuffer();
-    const filename = c.req.header("X-Filename");
-    
-    if (!key || !body) return c.json({ error: "Invalid data" }, 400);
-
-    // Upload to Private R2
-    // We expect the key to comprise the path, e.g. "pdfs/UUID"
-    await c.env.ASSETS_PRIVATE.put(key, body, {
-        httpMetadata: {
-            contentType: "application/pdf",
-            // If filename provided, set Content-Disposition
-            contentDisposition: filename ? `attachment; filename="${filename}"` : undefined
+app.put("/upload-private", auth, async (c) => {
+    try {
+        const key = c.req.query("key");
+        console.log(`[Internal API] Received PRIVATE upload for key: ${key}`);
+        
+        const body = await c.req.arrayBuffer();
+        const filename = c.req.header("X-Filename");
+        const contentType = c.req.header("X-Content-Type") || "application/pdf";
+        
+        if (!key || !body || body.byteLength === 0) {
+            console.error(`[Internal API] Invalid data: key=${key}, bodySize=${body?.byteLength}`);
+            return c.json({ error: "Invalid data" }, 400);
         }
-    });
 
-    return c.json({ success: true });
+        await c.env.ASSETS_PRIVATE.put(key, body, {
+            httpMetadata: {
+                contentType,
+                contentDisposition: filename ? `attachment; filename="${filename}"` : undefined
+            }
+        });
+        console.log(`[Internal API] PRIVATE Write Success: ${key} (${body.byteLength} bytes)`);
+
+        return c.json({ success: true });
+    } catch (err) {
+        console.error(`[Internal API] PRIVATE Upload Error:`, err);
+        return c.json({ error: "Internal Server Error", message: String(err) }, 500);
+    }
+});
+
+// Legacy alias for PDF uploads
+app.put("/upload-pdf", auth, async (c) => {
+    try {
+        const key = c.req.query("key");
+        console.log(`[Internal API] Received PDF upload for key: ${key}`);
+        
+        const body = await c.req.arrayBuffer();
+        const filename = c.req.header("X-Filename");
+        
+        if (!key || !body || body.byteLength === 0) {
+            console.error(`[Internal API] Invalid data: key=${key}, bodySize=${body?.byteLength}`);
+            return c.json({ error: "Invalid data" }, 400);
+        }
+
+        await c.env.ASSETS_PRIVATE.put(key, body, {
+            httpMetadata: {
+                contentType: "application/pdf",
+                contentDisposition: filename ? `attachment; filename="${filename}"` : undefined
+            }
+        });
+        console.log(`[Internal API] PDF Write Success: ${key}`);
+
+        return c.json({ success: true });
+    } catch (err) {
+        console.error(`[Internal API] PDF Upload Error:`, err);
+        return c.json({ error: "Internal Server Error", message: String(err) }, 500);
+    }
+});
+
+/**
+ * Internal Upload Route for Containers - PUBLIC Bucket (Thumbnails, OG Images)
+ * PUT /api/internal/upload-public?key=xxx
+ * Header: X-Content-Type (required)
+ * Body: Raw Binary
+ */
+app.put("/upload-public", auth, async (c) => {
+    try {
+        const key = c.req.query("key");
+        console.log(`[Internal API] Received PUBLIC upload for key: ${key}`);
+        
+        const body = await c.req.arrayBuffer();
+        const contentType = c.req.header("X-Content-Type") || "image/png";
+        
+        if (!key || !body || body.byteLength === 0) {
+            console.error(`[Internal API] Invalid data: key=${key}, bodySize=${body?.byteLength}`);
+            return c.json({ error: "Invalid data" }, 400);
+        }
+
+        await c.env.ASSETS_PUBLIC.put(key, body, {
+            httpMetadata: { contentType }
+        });
+        console.log(`[Internal API] PUBLIC Write Success: ${key} (${body.byteLength} bytes)`);
+
+        return c.json({ success: true });
+    } catch (err) {
+        console.error(`[Internal API] PUBLIC Upload Error:`, err);
+        return c.json({ error: "Internal Server Error", message: String(err) }, 500);
+    }
 });
 
 export default app;
+

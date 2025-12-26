@@ -6,6 +6,17 @@ vi.mock("../../src/lib/og-generator", () => ({
   arrayBufferToBase64: vi.fn().mockReturnValue("base64data"),
 }));
 
+vi.mock("@cloudflare/containers", () => ({
+  getContainer: vi.fn().mockReturnValue({
+    fetch: vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({ success: true, results: {}, elapsedMs: 100 }),
+      text: vi.fn().mockResolvedValue("OK"),
+    }),
+  }),
+}));
+
 import app from "../../src/api/routes/admin";
 
 describe("Admin API", () => {
@@ -39,7 +50,9 @@ describe("Admin API", () => {
             ASSETS_PUBLIC: { put: mockR2Put },
             ASSETS_PRIVATE: { put: mockR2Put },
             ASSETS_CDN_URL: "https://assets.test",
-            ADMIN_EMAILS: "admin@test.com"
+            ADMIN_EMAILS: "admin@test.com",
+            PROCESSING: {}, // Mock Service Binding
+            INTERNAL_API_TOKEN: "test-token"
         };
     });
 
@@ -73,11 +86,16 @@ describe("Admin API", () => {
            .mockResolvedValueOnce(mockLastAsset) // Last asset
            .mockResolvedValueOnce(undefined); // Unused
 
+        const mockExecutionCtx = {
+            waitUntil: vi.fn(),
+            passThroughOnException: vi.fn(),
+        };
+
         const res = await app.request("http://localhost/assets", {
             method: "POST",
             headers: { "X-Admin-Email": "admin@test.com" },
             body: formData
-        }, mockEnv);
+        }, mockEnv, mockExecutionCtx as any); // Pass executionCtx
 
         expect(res.status).toBe(200);
         expect(mockR2Put).toHaveBeenCalledTimes(3); // Thumb + OG + PDF
