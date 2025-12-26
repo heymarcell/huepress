@@ -418,15 +418,14 @@ export default function ResourceDetailPage() {
             <div className="w-full lg:w-1/2">
                <div className="sticky top-32">
                  <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 group">
-                   {/* 1:1 container with hidden banner clipping */}
-                   {/* Image is 600x640, we show only 600x600 (93.75% height) */}
-                   <div className="relative w-full overflow-hidden" style={{ paddingBottom: '100%' }}>
+                   {/* 1:1 container - clips bottom banner using clip-path */}
+                   <div className="aspect-square w-full bg-white overflow-hidden flex items-center justify-center p-4">
                      {asset.image_url && !asset.image_url.includes("__draft__") && !imageError ? (
                        <img 
                          src={asset.image_url} 
                          alt={asset.title}
-                         className="absolute inset-0 w-full object-contain object-top group-hover:scale-[1.02] transition-transform duration-500 select-none"
-                         style={{ height: '93.75%' }} /* Shows only art, hides 40px banner */
+                         className="max-w-full max-h-full object-contain group-hover:scale-[1.02] transition-transform duration-500 select-none"
+                         style={{ clipPath: 'inset(0 0 6.25% 0)' }} /* Clips bottom 6.25% (40px of 640px) */
                          onError={() => setImageError(true)}
                          onContextMenu={(e) => e.preventDefault()}
                          onDragStart={(e) => e.preventDefault()}
