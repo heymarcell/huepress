@@ -1,7 +1,7 @@
 FROM node:20-slim
 
 # Force rebuild - increment to bust cache
-ARG CACHEBURST=21
+ARG CACHEBURST=22
 
 # Install only essential fonts for PDF text rendering
 RUN apt-get update && apt-get install -y \

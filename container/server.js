@@ -552,16 +552,37 @@ app.post('/generate-all', async (req, res) => {
       // 2. Prepare Layers
       const layers = [];
 
-      // Layer A: Thumbnail (Placed on the RIGHT side, under the gradient)
+      // Layer A: Thumbnail (Placed on the RIGHT side, centered in a 500x500 box)
+      // The right area is from x=650 to x=1150, y-centered at 315
+      // Max dimensions: 450x500 to leave padding
       if (thumbnailBuffer) {
         try {
-          // Resize thumbnail to fill the right side nicely
+          // Get original dimensions to determine scaling
+          const thumbMeta = await sharp(thumbnailBuffer).metadata();
+          const origW = thumbMeta.width || 500;
+          const origH = thumbMeta.height || 500;
+          
+          // Max bounds for the thumbnail on the right side
+          const maxW = 460;
+          const maxH = 520;
+          
+          // Scale to fit within bounds
+          const scale = Math.min(maxW / origW, maxH / origH, 1); // Don't scale up
+          const newW = Math.round(origW * scale);
+          const newH = Math.round(origH * scale);
+          
           const thumb = await sharp(thumbnailBuffer)
-            .resize({ height: 630, fit: 'cover' })
+            .resize(newW, newH, { fit: 'inside' })
             .toBuffer();
-            
-          // Place it on the right side (x=500 starts moving into the gradient zone)
-          layers.push({ input: thumb, left: 500, top: 0 });
+          
+          // Center in the right area (x: 650-1150, y: 0-630)
+          // Center point = x: 900, y: 315
+          const thumbLeft = 900 - Math.round(newW / 2);
+          const thumbTop = 315 - Math.round(newH / 2);
+          
+          console.log(`[GenerateAll] OG Thumbnail: ${origW}x${origH} -> ${newW}x${newH}, pos: (${thumbLeft}, ${thumbTop})`);
+          
+          layers.push({ input: thumb, left: thumbLeft, top: thumbTop });
         } catch (e) {
           console.error('[GenerateAll] OG thumbnail processing error:', e.message);
         }
@@ -579,8 +600,8 @@ app.post('/generate-all', async (req, res) => {
       const textSvg = `
         <svg width="${width}" height="${height}">
           <style>
-             .title { font: bold 48px sans-serif; fill: #0f766e; }
-             .subtitle { font: 24px sans-serif; fill: #374151; }
+             .title { font: bold 48px 'Helvetica', 'Inter', sans-serif; fill: #0f766e; }
+             .subtitle { font: 24px 'Helvetica', 'Inter', sans-serif; fill: #374151; }
           </style>
           <text x="60" y="280" class="title">${safeTitle}</text>
           <text x="60" y="340" class="subtitle">${safeDescription}</text>
