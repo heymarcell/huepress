@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
 import { AlertModal } from "@/components/ui/AlertModal";
 
@@ -18,6 +18,7 @@ interface AdminAsset {
 
 export default function AdminAssets() {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [assets, setAssets] = useState<AdminAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
@@ -40,7 +41,9 @@ export default function AdminAssets() {
 
       const fetchAssets = async () => {
         try {
-          const data = await apiClient.admin.listAssets(user.primaryEmailAddress?.emailAddress || "");
+          const token = await getToken();
+          if (!token) return;
+          const data = await apiClient.admin.listAssets(token);
           setAssets(data.assets || []);
         } catch (error) {
         console.error("Failed to fetch assets:", error);
@@ -50,7 +53,7 @@ export default function AdminAssets() {
     };
 
     fetchAssets();
-  }, [user]);
+  }, [user, getToken]);
 
   if (loading) {
     return <div className="p-8 text-center text-gray-500">Loading assets...</div>;
@@ -63,7 +66,9 @@ export default function AdminAssets() {
 
   const toggleStatus = async (id: string) => {
     if (!user) return;
-    const email = user.primaryEmailAddress?.emailAddress || "";
+    const token = await getToken();
+    if (!token) return;
+
     const asset = assets.find(a => a.id === id);
     if (!asset) return;
     
@@ -75,7 +80,7 @@ export default function AdminAssets() {
     ));
     
     try {
-      await apiClient.admin.updateStatus(id, newStatus, email);
+      await apiClient.admin.updateStatus(id, newStatus, token);
     } catch (error) {
       console.error("Failed to update status:", error);
       // Revert on failure
@@ -113,16 +118,17 @@ export default function AdminAssets() {
 
   const handleDeleteConfirm = async () => {
     if (!user) return;
-    const email = user.primaryEmailAddress?.emailAddress || "";
+    const token = await getToken();
+    if (!token) return;
     
     setIsDeleting(true);
     try {
       if (deleteModal.isBulk) {
-        await apiClient.admin.bulkDeleteAssets(Array.from(selectedIds), email);
+        await apiClient.admin.bulkDeleteAssets(Array.from(selectedIds), token);
         setAssets(assets.filter(a => !selectedIds.has(a.id)));
         setSelectedIds(new Set());
       } else if (deleteModal.assetId) {
-        await apiClient.admin.deleteAsset(deleteModal.assetId, email);
+        await apiClient.admin.deleteAsset(deleteModal.assetId, token);
         setAssets(assets.filter(a => a.id !== deleteModal.assetId));
       }
     } catch (error) {

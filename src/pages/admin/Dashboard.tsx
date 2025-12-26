@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Images, TrendingUp, Users, Download } from "lucide-react";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
 import { Asset } from "@/api/types";
 
@@ -14,6 +14,7 @@ interface DashboardStats {
 
 export default function AdminDashboard() {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalAssets: 0,
     totalDownloads: 0,
@@ -28,12 +29,16 @@ export default function AdminDashboard() {
 
     const loadData = async () => {
       try {
-        const email = user.primaryEmailAddress!.emailAddress;
-        
+        const token = await getToken();
+        if (!token) {
+            console.error("No token available");
+            return;
+        }
+
         // Parallel fetch
         const [statsData, assetsData] = await Promise.all([
-          apiClient.admin.getStats(email),
-          apiClient.admin.listAssets(email)
+          apiClient.admin.getStats(token),
+          apiClient.admin.listAssets(token)
         ]);
 
         setStats(statsData);
@@ -46,7 +51,7 @@ export default function AdminDashboard() {
     };
 
     loadData();
-  }, [user]);
+  }, [user, getToken]);
 
   const statCards = [
     { label: "Total Assets", value: stats.totalAssets.toString(), icon: Images, color: "bg-primary" },

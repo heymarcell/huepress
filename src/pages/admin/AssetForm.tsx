@@ -4,7 +4,7 @@ import { Button } from "@/components/ui";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { Upload, Save, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
 
 import { Tag } from "@/api/types";
@@ -36,6 +36,7 @@ export default function AdminAssetForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useUser();
+  const { getToken } = useAuth();
   const isEditing = Boolean(id);
 
   const [availableTags, setAvailableTags] = useState<Record<string, Tag[]>>({});
@@ -61,8 +62,10 @@ export default function AdminAssetForm() {
     
     const fetchAsset = async () => {
       try {
-        const email = user?.primaryEmailAddress?.emailAddress || "";
-        const asset = await apiClient.admin.getAsset(id, email);
+        const token = await getToken();
+        if (!token) return;
+
+        const asset = await apiClient.admin.getAsset(id, token);
         if (asset) {
           setFormData({
             title: (asset.title as string) || "",
@@ -94,7 +97,7 @@ export default function AdminAssetForm() {
 
           // Fetch Source SVG for Regeneration
           try {
-            const sourceBlob = await apiClient.admin.getAssetSource(id, email);
+            const sourceBlob = await apiClient.admin.getAssetSource(id, token);
             if (sourceBlob) {
               const sourceFile = new File([sourceBlob], "original.svg", { type: "image/svg+xml" });
               setOriginalSvgFile(sourceFile);
@@ -110,7 +113,7 @@ export default function AdminAssetForm() {
       }
     };
     fetchAsset();
-  }, [id, isEditing, user]);
+  }, [id, isEditing, user, getToken]);
 
   // Fetch Tags
   useEffect(() => {
@@ -208,6 +211,9 @@ export default function AdminAssetForm() {
     setIsNewSourceFile(true); // Mark as new for upload
     
     try {
+      const token = await getToken();
+      if (!token) throw new Error("No authenticated session found.");
+
       // 1. Create Draft Asset (saves all form data, returns ID & slug)
       const { assetId, slug } = await apiClient.admin.createDraft(
         { 
@@ -217,7 +223,7 @@ export default function AdminAssetForm() {
           skill: formData.skill, 
           tags: formData.tags 
         }, 
-        user?.primaryEmailAddress?.emailAddress || ""
+        token
       );
       
       if (!assetId || !slug) {
@@ -262,7 +268,7 @@ export default function AdminAssetForm() {
       // Append Source File
       uploadForm.append("source", file);
 
-      const uploadResult = await apiClient.admin.createAsset(uploadForm, user?.primaryEmailAddress?.emailAddress || "");
+      const uploadResult = await apiClient.admin.createAsset(uploadForm, token);
       
       if (uploadResult.error) {
         throw new Error(uploadResult.error);
@@ -347,6 +353,9 @@ export default function AdminAssetForm() {
     setIsSubmitting(true);
 
     try {
+      const token = await getToken();
+      if (!token) throw new Error("No authenticated session found.");
+
       const currentThumbnail = thumbnailFile;
       const currentPdf = pdfFile;
       
@@ -394,7 +403,7 @@ export default function AdminAssetForm() {
       // Use production API URL if in prod, else local
       // apiClient handles API_URL internally, but createAsset needs manualFormData
       
-      const result = await apiClient.admin.createAsset(form, user?.primaryEmailAddress?.emailAddress || "");
+      const result = await apiClient.admin.createAsset(form, token);
 
 
       console.log("Asset created:", result);

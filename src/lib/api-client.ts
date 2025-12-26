@@ -83,22 +83,19 @@ export const apiClient = {
     }
   },
   admin: {
-    listAssets: async (adminEmail: string) => {
+    listAssets: async (token: string) => {
       return fetchApi<{ assets: Asset[] }>("/api/admin/assets", {
-        headers: { "X-Admin-Email": adminEmail }
+        token
       });
     },
-    createAsset: async (formData: FormData, adminEmail: string) => {
+    createAsset: async (formData: FormData, token: string) => {
       // Form data requires special handling (no Content-Type header, let browser set boundary)
-      const headers: Record<string, string> = {
-        "X-Admin-Email": adminEmail
-      };
-      
-      // We don't use fetchApi helper here because we need custom body handling
       const cleanBase = API_URL.replace(/\/$/, "");
       const response = await fetch(`${cleanBase}/api/admin/assets`, {
         method: "POST",
-        headers,
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
         body: formData,
       });
 
@@ -106,17 +103,17 @@ export const apiClient = {
       if (!response.ok) throw new Error(data.error || "Failed to create asset");
       return data;
     },
-    getStats: async (adminEmail: string) => {
+    getStats: async (token: string) => {
       return fetchApi<{
         totalAssets: number;
         totalDownloads: number;
         totalSubscribers: number;
         newAssetsThisWeek: number;
       }>("/api/admin/stats", {
-        headers: { "X-Admin-Email": adminEmail }
+        token
       });
     },
-    createDraft: async (formData: { title: string; description: string; category: string; skill: string; tags: string }, adminEmail: string) => {
+    createDraft: async (formData: { title: string; description: string; category: string; skill: string; tags: string }, token: string) => {
       const form = new FormData();
       form.append("title", formData.title);
       form.append("description", formData.description);
@@ -127,7 +124,9 @@ export const apiClient = {
       const cleanBase = API_URL.replace(/\/$/, "");
       const response = await fetch(`${cleanBase}/api/admin/create-draft`, {
         method: "POST",
-        headers: { "X-Admin-Email": adminEmail },
+        headers: { 
+          "Authorization": `Bearer ${token}`
+        },
         body: form
       });
       
@@ -137,11 +136,13 @@ export const apiClient = {
       }
       return data as { assetId: string; slug: string; id: string };
     },
-    deleteAsset: async (id: string, adminEmail: string) => {
+    deleteAsset: async (id: string, token: string) => {
       const cleanBase = API_URL.replace(/\/$/, "");
       const response = await fetch(`${cleanBase}/api/admin/assets/${id}`, {
         method: "DELETE",
-        headers: { "X-Admin-Email": adminEmail }
+        headers: { 
+          "Authorization": `Bearer ${token}`
+        }
       });
       const data = await response.json() as { success?: boolean; error?: string };
       if (!response.ok || data.error) {
@@ -149,13 +150,13 @@ export const apiClient = {
       }
       return data;
     },
-    bulkDeleteAssets: async (ids: string[], adminEmail: string) => {
+    bulkDeleteAssets: async (ids: string[], token: string) => {
       const cleanBase = API_URL.replace(/\/$/, "");
       const response = await fetch(`${cleanBase}/api/admin/assets/bulk-delete`, {
         method: "POST",
         headers: { 
-          "X-Admin-Email": adminEmail,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ ids })
       });
@@ -165,38 +166,31 @@ export const apiClient = {
       }
       return data;
     },
-    getAsset: async (id: string, adminEmail: string) => {
-      const cleanBase = API_URL.replace(/\/$/, "");
-      const response = await fetch(`${cleanBase}/api/admin/assets/${id}`, {
-        headers: { "X-Admin-Email": adminEmail }
-      });
-      const data = await response.json() as { asset?: Record<string, unknown>; error?: string };
-      if (!response.ok || data.error) {
-        throw new Error(data.error || "Failed to fetch asset");
-      }
-      return data.asset;
+    getAsset: async (id: string, token: string) => {
+      return fetchApi<{ asset?: Record<string, unknown> }>(`/api/admin/assets/${id}`, {
+        token
+      }).then(data => data.asset);
     },
-    getAssetSource: async (id: string, adminEmail: string) => {
+    getAssetSource: async (id: string, token: string) => {
       const cleanBase = API_URL.replace(/\/$/, "");
       const response = await fetch(`${cleanBase}/api/admin/assets/${id}/source`, {
-        headers: { "X-Admin-Email": adminEmail }
+        headers: { 
+          "Authorization": `Bearer ${token}`
+        }
       });
       if (!response.ok) {
-        // partial success (no source found) is common for old assets, don't throw, just return null?
-        // But for regeneration we need it. Let's throw if it's strictly not found when we expect it.
-        // Or return null to safe handle.
         if (response.status === 404) return null;
         throw new Error("Failed to fetch asset source");
       }
       return response.blob();
     },
-    updateStatus: async (id: string, status: 'published' | 'draft', adminEmail: string) => {
+    updateStatus: async (id: string, status: 'published' | 'draft', token: string) => {
       const cleanBase = API_URL.replace(/\/$/, "");
       const response = await fetch(`${cleanBase}/api/admin/assets/${id}/status`, {
         method: "PATCH",
         headers: { 
-          "X-Admin-Email": adminEmail,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ status })
       });

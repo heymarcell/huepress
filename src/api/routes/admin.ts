@@ -50,12 +50,40 @@ async function verifyAdmin(c: Context<{ Bindings: Bindings }>): Promise<boolean>
   const auth = getAuth(c);
   if (!auth?.userId) return false;
 
-  // Check Clerk publicMetadata.role from session claims
-  // Role is set in Clerk Dashboard → Users → [User] → Public Metadata → { "role": "admin" }
+  // Try 1: Check Clerk publicMetadata.role from session claims
+  // This works if custom claims are configured in Clerk Dashboard
   const sessionClaims = auth.sessionClaims as { publicMetadata?: { role?: string } } | undefined;
-  const role = sessionClaims?.publicMetadata?.role;
-  
-  return role === 'admin';
+  if (sessionClaims?.publicMetadata?.role === 'admin') {
+    return true;
+  }
+
+  // Try 2: Fallback to Clerk Backend API (if session claims don't include publicMetadata)
+  // This is slower but always works
+  try {
+    const clerkSecretKey = c.env.CLERK_SECRET_KEY;
+    if (!clerkSecretKey) {
+      console.error("CLERK_SECRET_KEY not configured");
+      return false;
+    }
+    
+    const response = await fetch(`https://api.clerk.com/v1/users/${auth.userId}`, {
+      headers: {
+        'Authorization': `Bearer ${clerkSecretKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      console.error("Clerk API error:", response.status);
+      return false;
+    }
+    
+    const userData = await response.json() as { public_metadata?: { role?: string } };
+    return userData?.public_metadata?.role === 'admin';
+  } catch (e) {
+    console.error("Admin verification failed:", e);
+    return false;
+  }
 }
 
 // ADMIN: Create Draft Asset (called on SVG upload)
