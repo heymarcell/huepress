@@ -152,13 +152,13 @@ export default function Onboarding() {
                 <button
                   key={r.id}
                   onClick={() => setRole(r.id)}
-                  className={`p-4 rounded-xl border-2 text-center transition-all ${
+                  className={`p-4 rounded-xl border-2 text-center transition-all flex flex-col items-center justify-center gap-2 h-32 ${
                     role === r.id
                       ? "border-primary bg-primary/5 text-primary-dark"
                       : "border-gray-100 hover:border-primary/30 hover:bg-gray-50"
                   }`}
                 >
-                  <span className="block text-lg mb-1">{r.label.split(" ").pop()}</span>
+                  <span className="text-3xl">{r.label.split(" ").pop()}</span>
                   <span className="font-medium text-sm">{r.label.split(" ").slice(0, -1).join(" ")}</span>
                 </button>
               ))}
