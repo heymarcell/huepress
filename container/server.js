@@ -504,11 +504,11 @@ app.post('/generate-all', async (req, res) => {
     console.log(`[GenerateAll] Starting for "${title}" (assetId: ${assetId})`);
 
     // 1. THUMBNAIL - Generate 1:1 with hidden copyright banner
-    // Final image: 400x440 (400x400 art + 40px banner)
-    // On website, CSS clips to 400x400, hiding the banner
+    // Final image: 600x640 (600x600 art + 40px banner)
+    // On website, CSS clips to square, hiding the banner
     // If image is saved directly, banner is visible with copyright info
     let thumbnailBuffer = null;
-    const thumbSize = 400;
+    const thumbSize = 600;
     const bannerHeight = 40;
     const totalHeight = thumbSize + bannerHeight;
     
@@ -529,11 +529,11 @@ app.post('/generate-all', async (req, res) => {
         <svg width="${thumbSize}" height="${bannerHeight}">
           <rect fill="#374151" width="${thumbSize}" height="${bannerHeight}"/>
           <style>
-            .logo { font: bold 12px 'Helvetica', sans-serif; fill: #9CA3AF; }
-            .info { font: 10px 'Helvetica', sans-serif; fill: #6B7280; }
+            .domain { font: bold 14px 'Helvetica', sans-serif; fill: #E5E7EB; }
+            .info { font: 11px 'Helvetica', sans-serif; fill: #9CA3AF; }
           </style>
-          <text x="10" y="16" class="logo">HuePress</text>
-          <text x="10" y="32" class="info">huepress.co #${displayId} | © ${currentYear}</text>
+          <text x="12" y="16" class="domain">huepress.co</text>
+          <text x="12" y="32" class="info">#${displayId} | © ${currentYear} HuePress</text>
         </svg>
       `;
       

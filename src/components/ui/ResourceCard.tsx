@@ -42,13 +42,15 @@ export function ResourceCard({
         {/* Card container with shadow, not on the paper */}
         <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-200 overflow-hidden border border-gray-100">
           
-          {/* Pure white paper - 1:1 container clips the hidden banner at bottom */}
-          <div className="relative aspect-square bg-white overflow-hidden">
+          {/* 1:1 container with hidden banner clipping */}
+          {/* Image is 600x640, we show only 600x600 (93.75% height) */}
+          <div className="relative bg-white overflow-hidden" style={{ paddingBottom: '100%' }}>
             {!showPlaceholder ? (
               <img 
                 src={imageUrl} 
                 alt={title} 
-                className="object-cover object-top w-full h-full transition-transform duration-300 ease-out group-hover:scale-105 select-none"
+                className="absolute inset-0 w-full object-contain object-top select-none"
+                style={{ height: '93.75%' }} /* 600/640 = 93.75% shows only the art, hides banner */
                 onError={() => setImageError(true)}
                 onContextMenu={(e) => e.preventDefault()}
                 onDragStart={(e) => e.preventDefault()}
