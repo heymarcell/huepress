@@ -530,12 +530,12 @@ app.post('/generate-all', async (req, res) => {
           <rect fill="#1F2937" width="${thumbSize}" height="${bannerHeight}"/>
           <style>
             .domain { font: bold 16px 'Inter', 'FreeSans', sans-serif; fill: #FFFFFF; }
-            .id { font: bold 24px 'Inter', 'FreeSans', sans-serif; fill: #9CA3AF; }
+            .id { font: 24px 'Inter', 'FreeSans', sans-serif; fill: #9CA3AF; }
             .meta { font: 10px 'Inter', 'FreeSans', sans-serif; fill: #9CA3AF; }
             .notice { font: 9px 'Inter', 'FreeSans', sans-serif; fill: #6B7280; }
           </style>
           <text x="15" y="17" class="domain">huepress.co</text>
-          <text x="${thumbSize - 15}" y="20" text-anchor="end" class="id">#${displayId}</text>
+          <text x="${thumbSize - 15}" y="32" text-anchor="end" class="id">#${displayId}</text>
           <text x="15" y="32" class="meta">${currentYear} HuePress. All rights reserved.</text>
           <text x="15" y="44" class="notice">Low-res preview only. Get print-quality PDFs at huepress.co</text>
         </svg>
