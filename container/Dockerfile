@@ -1,13 +1,18 @@
 FROM node:20-slim
 
 # Force rebuild - increment to bust cache
-ARG CACHEBURST=28
+ARG CACHEBURST=29
 
-# Install only essential fonts for PDF text rendering
+# Install fonts and fontconfig for proper font rendering
 RUN apt-get update && apt-get install -y \
     fonts-freefont-ttf \
+    fontconfig \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Inter font
+COPY fonts/*.ttf /usr/share/fonts/truetype/inter/
+RUN fc-cache -f -v
 
 WORKDIR /app
 

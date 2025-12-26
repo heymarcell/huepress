@@ -529,9 +529,9 @@ app.post('/generate-all', async (req, res) => {
         <svg width="${thumbSize}" height="${bannerHeight}">
           <rect fill="#1F2937" width="${thumbSize}" height="${bannerHeight}"/>
           <style>
-            .domain { font: bold 16px 'Helvetica', sans-serif; fill: #FFFFFF; }
-            .meta { font: 11px 'Helvetica', sans-serif; fill: #9CA3AF; }
-            .notice { font: 10px 'Helvetica', sans-serif; fill: #6B7280; }
+            .domain { font: bold 16px 'Inter', 'FreeSans', sans-serif; fill: #FFFFFF; }
+            .meta { font: 11px 'Inter', 'FreeSans', sans-serif; fill: #9CA3AF; }
+            .notice { font: 10px 'Inter', 'FreeSans', sans-serif; fill: #6B7280; }
           </style>
           <text x="15" y="18" class="domain">huepress.co</text>
           <text x="${thumbSize - 15}" y="18" text-anchor="end" class="meta">#${displayId}</text>
@@ -631,8 +631,8 @@ app.post('/generate-all', async (req, res) => {
       const textSvg = `
         <svg width="${width}" height="${height}">
           <style>
-             .title { font: bold 48px 'Helvetica', 'Inter', sans-serif; fill: #0f766e; }
-             .subtitle { font: 24px 'Helvetica', 'Inter', sans-serif; fill: #374151; }
+             .title { font: bold 48px 'Inter', 'FreeSans', sans-serif; fill: #0f766e; }
+             .subtitle { font: 24px 'Inter', 'FreeSans', sans-serif; fill: #374151; }
           </style>
           <text x="60" y="280" class="title">${safeTitle}</text>
           <text x="60" y="340" class="subtitle">${safeDescription}</text>
