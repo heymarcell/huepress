@@ -418,12 +418,13 @@ export default function ResourceDetailPage() {
             <div className="w-full lg:w-1/2">
                <div className="sticky top-32">
                  <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 group">
-                   <div className="aspect-square w-full flex items-center justify-center p-4">
+                   {/* 1:1 container clips the hidden banner at bottom */}
+                   <div className="aspect-square w-full overflow-hidden">
                      {asset.image_url && !asset.image_url.includes("__draft__") && !imageError ? (
                        <img 
                          src={asset.image_url} 
                          alt={asset.title}
-                         className="max-w-full max-h-full object-contain group-hover:scale-[1.02] transition-transform duration-500 select-none pointer-events-none"
+                         className="w-full h-full object-cover object-top group-hover:scale-[1.02] transition-transform duration-500 select-none"
                          onError={() => setImageError(true)}
                          onContextMenu={(e) => e.preventDefault()}
                          onDragStart={(e) => e.preventDefault()}

@@ -42,13 +42,13 @@ export function ResourceCard({
         {/* Card container with shadow, not on the paper */}
         <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-200 overflow-hidden border border-gray-100">
           
-          {/* Pure white paper - NO gradients, NO gray */}
-          <div className="relative aspect-a4 bg-white overflow-hidden">
+          {/* Pure white paper - 1:1 container clips the hidden banner at bottom */}
+          <div className="relative aspect-square bg-white overflow-hidden">
             {!showPlaceholder ? (
               <img 
                 src={imageUrl} 
                 alt={title} 
-                className="object-contain w-full h-full p-3 transition-transform duration-300 ease-out group-hover:scale-105 select-none"
+                className="object-cover object-top w-full h-full transition-transform duration-300 ease-out group-hover:scale-105 select-none"
                 onError={() => setImageError(true)}
                 onContextMenu={(e) => e.preventDefault()}
                 onDragStart={(e) => e.preventDefault()}

@@ -503,15 +503,50 @@ app.post('/generate-all', async (req, res) => {
 
     console.log(`[GenerateAll] Starting for "${title}" (assetId: ${assetId})`);
 
-    // 1. THUMBNAIL - Generate and upload
+    // 1. THUMBNAIL - Generate 1:1 with hidden copyright banner
+    // Final image: 400x440 (400x400 art + 40px banner)
+    // On website, CSS clips to 400x400, hiding the banner
+    // If image is saved directly, banner is visible with copyright info
     let thumbnailBuffer = null;
+    const thumbSize = 400;
+    const bannerHeight = 40;
+    const totalHeight = thumbSize + bannerHeight;
+    
     if (thumbnailUploadUrl && thumbnailUploadKey) {
-      console.log(`[GenerateAll] Step 1: Generating Thumbnail...`);
-      thumbnailBuffer = await sharp(Buffer.from(svgContent))
-        .resize(600, null, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
+      console.log(`[GenerateAll] Step 1: Generating Thumbnail (${thumbSize}x${totalHeight} with banner)...`);
+      
+      // Step 1a: Resize SVG to 1:1 square
+      const artBuffer = await sharp(Buffer.from(svgContent))
+        .resize(thumbSize, thumbSize, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
         .flatten({ background: { r: 255, g: 255, b: 255 } })
-        .webp({ quality: 90 })
+        .png()
         .toBuffer();
+      
+      // Step 1b: Create banner SVG with copyright info
+      const displayId = (assetId || "").replace(/^HP-[A-Z]+-/, '');
+      const currentYear = new Date().getFullYear();
+      const bannerSvg = `
+        <svg width="${thumbSize}" height="${bannerHeight}">
+          <rect fill="#374151" width="${thumbSize}" height="${bannerHeight}"/>
+          <style>
+            .logo { font: bold 12px 'Helvetica', sans-serif; fill: #9CA3AF; }
+            .info { font: 10px 'Helvetica', sans-serif; fill: #6B7280; }
+          </style>
+          <text x="10" y="16" class="logo">HuePress</text>
+          <text x="10" y="32" class="info">huepress.co #${displayId} | © ${currentYear}</text>
+        </svg>
+      `;
+      
+      // Step 1c: Composite art + banner
+      thumbnailBuffer = await sharp({
+        create: { width: thumbSize, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
+      })
+      .composite([
+        { input: artBuffer, top: 0, left: 0 },
+        { input: Buffer.from(bannerSvg), top: thumbSize, left: 0 }
+      ])
+      .webp({ quality: 85 })
+      .toBuffer();
       
       console.log(`[GenerateAll] Thumbnail generated: ${thumbnailBuffer.length} bytes. Uploading...`);
       
