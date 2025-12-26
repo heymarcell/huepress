@@ -101,4 +101,76 @@ describe("Admin API", () => {
         expect(mockR2Put).toHaveBeenCalledTimes(2); // Thumb + PDF (OG is async container)
         expect(mockRun).toHaveBeenCalled(); // Insert
     });
+
+    it("GET /assets/:id should return single asset", async () => {
+        const mockAsset = { id: "123", title: "Test", tags: '["tag1"]' };
+        mockFirst.mockResolvedValue(mockAsset);
+        
+        const res = await app.request("http://localhost/assets/123", {
+            headers: { "X-Admin-Email": "admin@test.com" }
+        }, mockEnv);
+        
+        expect(res.status).toBe(200);
+        const data = await res.json() as { asset: { title: string } };
+        expect(data.asset).toHaveProperty("title", "Test");
+    });
+
+    it("GET /assets/:id should return 404 for unknown asset", async () => {
+        mockFirst.mockResolvedValue(null);
+        
+        const res = await app.request("http://localhost/assets/unknown", {
+            headers: { "X-Admin-Email": "admin@test.com" }
+        }, mockEnv);
+        
+        expect(res.status).toBe(404);
+    });
+
+    it("PATCH /assets/:id/status should update asset status", async () => {
+        const res = await app.request("http://localhost/assets/123/status", {
+            method: "PATCH",
+            headers: { 
+                "X-Admin-Email": "admin@test.com",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ status: "published" })
+        }, mockEnv);
+        
+        expect(res.status).toBe(200);
+        expect(mockRun).toHaveBeenCalled();
+    });
+
+    it("DELETE /assets/:id should delete asset", async () => {
+        mockFirst.mockResolvedValue({ id: "123", r2_key_private: "file.pdf" });
+        
+        const mockR2Delete = vi.fn();
+        mockEnv.ASSETS_PRIVATE = { ...mockEnv.ASSETS_PRIVATE as object, delete: mockR2Delete };
+        mockEnv.ASSETS_PUBLIC = { ...mockEnv.ASSETS_PUBLIC as object, delete: mockR2Delete };
+        
+        const res = await app.request("http://localhost/assets/123", {
+            method: "DELETE",
+            headers: { "X-Admin-Email": "admin@test.com" }
+        }, mockEnv);
+        
+        expect(res.status).toBe(200);
+        expect(mockRun).toHaveBeenCalled();
+    });
+
+    it("DELETE /assets/:id should return 404 for unknown asset", async () => {
+        mockFirst.mockResolvedValue(null);
+        
+        const res = await app.request("http://localhost/assets/unknown", {
+            method: "DELETE",
+            headers: { "X-Admin-Email": "admin@test.com" }
+        }, mockEnv);
+        
+        expect(res.status).toBe(404);
+    });
+
+    it("should reject non-admin users", async () => {
+        const res = await app.request("http://localhost/assets", {
+            headers: { "X-Admin-Email": "notadmin@test.com" }
+        }, mockEnv);
+        
+        expect(res.status).toBe(401);
+    });
 });
