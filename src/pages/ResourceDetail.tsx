@@ -304,6 +304,8 @@ export default function ResourceDetailPage() {
   const [imageError, setImageError] = useState(false);
   const { isSubscriber } = useSubscription();
 
+  const [reviewStats, setReviewStats] = useState<{ avg: number | null; count: number }>({ avg: null, count: 0 });
+
   useEffect(() => {
     const fetchAsset = async () => {
       setIsLoading(true);
@@ -335,6 +337,15 @@ export default function ResourceDetailPage() {
            } catch(e) {
              console.error("Failed to load related items", e);
            }
+        }
+
+        // Fetch review stats for SEO
+        try {
+           const res = await fetch(`${API_URL}/api/reviews/${data.id}`);
+           const reviewData = await res.json() as { averageRating: number; totalReviews: number };
+           setReviewStats({ avg: reviewData.averageRating, count: reviewData.totalReviews });
+        } catch (e) {
+           console.error("Failed to load review stats", e);
         }
 
       } catch (err) {
@@ -380,6 +391,10 @@ export default function ResourceDetailPage() {
   // Use fetched asset ID for components
   const assetId = asset.id;
 
+  // Calculate validity date (1 year from now)
+  const priceValidUntil = new Date();
+  priceValidUntil.setFullYear(priceValidUntil.getFullYear() + 1);
+
   return (
     <div className="bg-gray-50 min-h-screen">
       <SEO 
@@ -399,11 +414,39 @@ export default function ResourceDetailPage() {
             description: asset.description,
             image: asset.image_url,
             sku: asset.asset_id,
+            brand: {
+              "@type": "Brand",
+              "name": "HuePress"
+            },
+            ...(reviewStats.count > 0 && {
+              aggregateRating: {
+                "@type": "AggregateRating",
+                ratingValue: reviewStats.avg,
+                reviewCount: reviewStats.count
+              }
+            }),
             offers: {
               "@type": "Offer",
               "price": "5.00",
               "priceCurrency": "USD",
-              "availability": "https://schema.org/InStock"
+              "availability": "https://schema.org/InStock",
+              "priceValidUntil": priceValidUntil.toISOString().split('T')[0],
+              "shippingDetails": {
+                "@type": "OfferShippingDetails",
+                "shippingRate": {
+                  "@type": "MonetaryAmount",
+                  "value": 0,
+                  "currency": "USD"
+                },
+                "shippingDestination": {
+                  "@type": "DefinedRegion",
+                  "addressCountry": "US"
+                }
+              },
+              "hasMerchantReturnPolicy": {
+                "@type": "MerchantReturnPolicy",
+                "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted"
+              }
             }
           }}
         />
