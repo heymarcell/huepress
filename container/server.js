@@ -527,15 +527,16 @@ app.post('/generate-all', async (req, res) => {
       const currentYear = new Date().getFullYear();
       const bannerSvg = `
         <svg width="${thumbSize}" height="${bannerHeight}">
-          <rect fill="#374151" width="${thumbSize}" height="${bannerHeight}"/>
+          <rect fill="#1F2937" width="${thumbSize}" height="${bannerHeight}"/>
           <style>
-            .domain { font: bold 14px 'Helvetica', sans-serif; fill: #E5E7EB; }
-            .info { font: 10px 'Helvetica', sans-serif; fill: #9CA3AF; }
-            .warning { font: 9px 'Helvetica', sans-serif; fill: #6B7280; }
+            .domain { font: bold 16px 'Helvetica', sans-serif; fill: #FFFFFF; }
+            .meta { font: 11px 'Helvetica', sans-serif; fill: #9CA3AF; }
+            .notice { font: 10px 'Helvetica', sans-serif; fill: #6B7280; }
           </style>
-          <text x="12" y="15" class="domain">huepress.co</text>
-          <text x="12" y="30" class="info">#${displayId} | © ${currentYear} HuePress. All rights reserved.</text>
-          <text x="12" y="44" class="warning">🖨️ This is a low-res preview. Join huepress.co for print-quality PDFs!</text>
+          <text x="15" y="18" class="domain">huepress.co</text>
+          <text x="${thumbSize - 15}" y="18" text-anchor="end" class="meta">#${displayId}</text>
+          <text x="15" y="36" class="meta">${currentYear} HuePress. All rights reserved.</text>
+          <text x="15" y="48" class="notice">Low-res preview only. Get print-quality PDFs at huepress.co</text>
         </svg>
       `;
       
@@ -589,39 +590,32 @@ app.post('/generate-all', async (req, res) => {
       // 2. Prepare Layers
       const layers = [];
 
-      // Layer A: Thumbnail (Placed on the RIGHT side, centered in a 500x500 box)
+      // Layer A: Art from SVG (NO banner) - placed on the RIGHT side
       // The right area is from x=650 to x=1150, y-centered at 315
-      // Max dimensions: 450x500 to leave padding
-      if (thumbnailBuffer) {
+      // Use fresh render from SVG content, not the thumbnail with banner
+      if (svgContent) {
         try {
-          // Get original dimensions to determine scaling
-          const thumbMeta = await sharp(thumbnailBuffer).metadata();
-          const origW = thumbMeta.width || 500;
-          const origH = thumbMeta.height || 500;
-          
-          // Max bounds for the thumbnail on the right side
-          const maxW = 460;
-          const maxH = 520;
-          
-          // Scale to fit within bounds
-          const scale = Math.min(maxW / origW, maxH / origH, 1); // Don't scale up
-          const newW = Math.round(origW * scale);
-          const newH = Math.round(origH * scale);
-          
-          const thumb = await sharp(thumbnailBuffer)
-            .resize(newW, newH, { fit: 'inside' })
+          // Render SVG directly for OG (no banner)
+          const ogArt = await sharp(Buffer.from(svgContent))
+            .resize(450, 500, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+            .flatten({ background: { r: 255, g: 255, b: 255 } })
+            .png()
             .toBuffer();
+          
+          const artMeta = await sharp(ogArt).metadata();
+          const artW = artMeta.width || 450;
+          const artH = artMeta.height || 500;
           
           // Center in the right area (x: 650-1150, y: 0-630)
           // Center point = x: 900, y: 315
-          const thumbLeft = 900 - Math.round(newW / 2);
-          const thumbTop = 315 - Math.round(newH / 2);
+          const artLeft = 900 - Math.round(artW / 2);
+          const artTop = 315 - Math.round(artH / 2);
           
-          console.log(`[GenerateAll] OG Thumbnail: ${origW}x${origH} -> ${newW}x${newH}, pos: (${thumbLeft}, ${thumbTop})`);
+          console.log(`[GenerateAll] OG Art: ${artW}x${artH}, pos: (${artLeft}, ${artTop})`);
           
-          layers.push({ input: thumb, left: thumbLeft, top: thumbTop });
+          layers.push({ input: ogArt, left: artLeft, top: artTop });
         } catch (e) {
-          console.error('[GenerateAll] OG thumbnail processing error:', e.message);
+          console.error('[GenerateAll] OG art processing error:', e.message);
         }
       }
 
