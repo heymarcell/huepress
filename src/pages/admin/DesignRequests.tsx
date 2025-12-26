@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Check, Clock, X } from "lucide-react";
 
 interface DesignRequest {
@@ -16,7 +16,7 @@ export default function AdminDesignRequests() {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     setIsLoading(true);
     try {
       const url = filter === "all" ? "/api/admin/requests" : "/api/admin/requests?status=pending";
@@ -34,11 +34,11 @@ export default function AdminDesignRequests() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filter]);
 
   useEffect(() => {
     fetchRequests();
-  }, [filter]);
+  }, [fetchRequests]);
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {

@@ -75,7 +75,13 @@ export async function generatePdfViaContainer(
   metadata?: PdfMetadata,
   asyncOptions?: { uploadUrl: string; uploadToken: string }
 ): Promise<{ pdfBase64?: string; mimeType: string; filename: string } | void> {
-  const body: any = {
+  const body: {
+    svgContent: string;
+    filename: string;
+    metadata?: PdfMetadata;
+    uploadUrl?: string;
+    uploadToken?: string;
+  } = {
     svgContent,
     filename,
     metadata

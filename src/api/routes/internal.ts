@@ -1,10 +1,10 @@
-import { Hono } from "hono";
+import { Hono, Context, Next } from "hono";
 import { Bindings } from "../types";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
 // Simple Bearer Auth middleware
-const auth = async (c: any, next: any) => {
+const auth = async (c: Context<{ Bindings: Bindings }>, next: Next) => {
     const authHeader = c.req.header('Authorization');
     // Allow if env token matches (ensure token is set!)
     if (!c.env.INTERNAL_API_TOKEN || !authHeader || authHeader !== `Bearer ${c.env.INTERNAL_API_TOKEN}`) {

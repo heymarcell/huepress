@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
+import { Bindings } from "../../src/api/types";
 
 // Mock @cloudflare/containers
 vi.mock("@cloudflare/containers", () => ({
@@ -15,17 +16,17 @@ import {
 import { getContainer } from "@cloudflare/containers";
 
 describe("Processing Container", () => {
-    let mockEnv: Record<string, unknown>;
+    let mockEnv: Partial<Bindings>;
     let mockFetch: Mock;
     
     beforeEach(() => {
         mockFetch = vi.fn();
         vi.mocked(getContainer).mockReturnValue({
             fetch: mockFetch
-        } as any);
+        } as unknown as ReturnType<typeof getContainer>);
         
         mockEnv = {
-            PROCESSING: {},
+            PROCESSING: {} as Bindings["PROCESSING"],
         };
     });
 
@@ -34,7 +35,7 @@ describe("Processing Container", () => {
             mockFetch.mockResolvedValue(new Response(JSON.stringify({ success: true }), { status: 200 }));
             
             const response = await callProcessingContainer(
-                mockEnv as any,
+                mockEnv as Bindings,
                 "/test-path",
                 { key: "value" }
             );
@@ -53,7 +54,7 @@ describe("Processing Container", () => {
         it("should use 'main' as container instance name", async () => {
             mockFetch.mockResolvedValue(new Response("{}", { status: 200 }));
             
-            await callProcessingContainer(mockEnv as any, "/path", {});
+            await callProcessingContainer(mockEnv as Bindings, "/path", {});
             
             expect(getContainer).toHaveBeenCalledWith(mockEnv.PROCESSING, "main");
         });
@@ -67,7 +68,7 @@ describe("Processing Container", () => {
             );
             
             const result = await generateOgImageViaContainer(
-                mockEnv as any,
+                mockEnv as Bindings,
                 "Test Title",
                 "base64data",
                 "image/webp"
@@ -92,7 +93,7 @@ describe("Processing Container", () => {
             );
             
             await expect(
-                generateOgImageViaContainer(mockEnv as any, "Title", "data", "image/png")
+                generateOgImageViaContainer(mockEnv as Bindings, "Title", "data", "image/png")
             ).rejects.toThrow("Container OG generation failed: Generation failed");
         });
     });
@@ -105,7 +106,7 @@ describe("Processing Container", () => {
             );
             
             const result = await generatePdfViaContainer(
-                mockEnv as any,
+                mockEnv as Bindings,
                 "<svg></svg>",
                 "test.pdf",
                 { title: "Test", assetId: "123", description: "Desc", qrCodeUrl: "https://example.com" }
@@ -120,7 +121,7 @@ describe("Processing Container", () => {
             );
             
             const result = await generatePdfViaContainer(
-                mockEnv as any,
+                mockEnv as Bindings,
                 "<svg></svg>",
                 "test.pdf",
                 undefined,
@@ -136,7 +137,7 @@ describe("Processing Container", () => {
             );
             
             await generatePdfViaContainer(
-                mockEnv as any,
+                mockEnv as Bindings,
                 "<svg></svg>",
                 "async.pdf",
                 { title: "Async" },
@@ -154,7 +155,7 @@ describe("Processing Container", () => {
             );
             
             await expect(
-                generatePdfViaContainer(mockEnv as any, "<svg></svg>", "test.pdf")
+                generatePdfViaContainer(mockEnv as Bindings, "<svg></svg>", "test.pdf")
             ).rejects.toThrow("Container PDF generation failed: PDF failed");
         });
     });
@@ -167,7 +168,7 @@ describe("Processing Container", () => {
             );
             
             const result = await generateThumbnailViaContainer(
-                mockEnv as any,
+                mockEnv as Bindings,
                 "<svg></svg>",
                 512
             );
@@ -186,7 +187,7 @@ describe("Processing Container", () => {
                 new Response(JSON.stringify({ imageBase64: "x", mimeType: "image/webp" }), { status: 200 })
             );
             
-            await generateThumbnailViaContainer(mockEnv as any, "<svg></svg>");
+            await generateThumbnailViaContainer(mockEnv as Bindings, "<svg></svg>");
             
             const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
             expect(callBody.width).toBe(1024);
@@ -198,7 +199,7 @@ describe("Processing Container", () => {
             );
             
             await expect(
-                generateThumbnailViaContainer(mockEnv as any, "<svg></svg>")
+                generateThumbnailViaContainer(mockEnv as Bindings, "<svg></svg>")
             ).rejects.toThrow("Container Thumbnail generation failed: Thumbnail failed");
         });
     });

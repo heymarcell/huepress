@@ -1,9 +1,15 @@
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
+import { Context, Next } from "hono";
+
+// Type for the auth object returned by getAuth
+interface MockAuthObject {
+    userId: string | null;
+}
 
 // Mock Clerk auth
 vi.mock("@hono/clerk-auth", () => ({
     getAuth: vi.fn(),
-    clerkMiddleware: vi.fn(() => async (_c: any, next: any) => await next()),
+    clerkMiddleware: vi.fn(() => async (_c: Context, next: Next) => await next()),
 }));
 
 import app from "../../src/api/routes/requests";
@@ -32,7 +38,7 @@ describe("Requests API", () => {
 
     describe("POST /submit", () => {
         it("should create request with all required fields", async () => {
-            vi.mocked(getAuth).mockReturnValue({ userId: null } as any);
+            vi.mocked(getAuth).mockReturnValue({ userId: null } as MockAuthObject as ReturnType<typeof getAuth>);
             
             const res = await app.request("http://localhost/submit", {
                 method: "POST",
@@ -52,7 +58,7 @@ describe("Requests API", () => {
         });
 
         it("should reject request without title", async () => {
-            vi.mocked(getAuth).mockReturnValue({ userId: null } as any);
+            vi.mocked(getAuth).mockReturnValue({ userId: null } as MockAuthObject as ReturnType<typeof getAuth>);
             
             const res = await app.request("http://localhost/submit", {
                 method: "POST",
@@ -69,7 +75,7 @@ describe("Requests API", () => {
         });
 
         it("should reject request without description", async () => {
-            vi.mocked(getAuth).mockReturnValue({ userId: null } as any);
+            vi.mocked(getAuth).mockReturnValue({ userId: null } as MockAuthObject as ReturnType<typeof getAuth>);
             
             const res = await app.request("http://localhost/submit", {
                 method: "POST",
@@ -84,7 +90,7 @@ describe("Requests API", () => {
         });
 
         it("should reject request without email", async () => {
-            vi.mocked(getAuth).mockReturnValue({ userId: null } as any);
+            vi.mocked(getAuth).mockReturnValue({ userId: null } as MockAuthObject as ReturnType<typeof getAuth>);
             
             const res = await app.request("http://localhost/submit", {
                 method: "POST",
@@ -99,7 +105,7 @@ describe("Requests API", () => {
         });
 
         it("should link to user if authenticated", async () => {
-            vi.mocked(getAuth).mockReturnValue({ userId: "clerk_123" } as any);
+            vi.mocked(getAuth).mockReturnValue({ userId: "clerk_123" } as MockAuthObject as ReturnType<typeof getAuth>);
             mockFirst.mockResolvedValue({ id: "db-user-id", email: "user@example.com" });
             
             const res = await app.request("http://localhost/submit", {
@@ -120,7 +126,7 @@ describe("Requests API", () => {
         });
 
         it("should handle anonymous submissions", async () => {
-            vi.mocked(getAuth).mockReturnValue({ userId: null } as any);
+            vi.mocked(getAuth).mockReturnValue({ userId: null } as MockAuthObject as ReturnType<typeof getAuth>);
             
             const res = await app.request("http://localhost/submit", {
                 method: "POST",
@@ -136,7 +142,7 @@ describe("Requests API", () => {
         });
 
         it("should handle database errors gracefully", async () => {
-            vi.mocked(getAuth).mockReturnValue({ userId: null } as any);
+            vi.mocked(getAuth).mockReturnValue({ userId: null } as MockAuthObject as ReturnType<typeof getAuth>);
             mockRun.mockRejectedValue(new Error("DB connection failed"));
             
             const res = await app.request("http://localhost/submit", {

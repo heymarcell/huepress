@@ -1,11 +1,12 @@
 import { useState, FormEvent, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Sparkles } from "lucide-react";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { useSubscription } from "@/lib/auth";
 
 export default function RequestDesign() {
   const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const { isSubscriber, isLoaded: subLoaded } = useSubscription();
   const navigate = useNavigate();
   
@@ -37,11 +38,12 @@ export default function RequestDesign() {
     setErrorMessage("");
 
     try {
+      const token = await getToken();
       const response = await fetch("/api/requests", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(user ? { "Authorization": `Bearer ${(await (window as any).Clerk?.session?.getToken())}` } : {})
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           title,

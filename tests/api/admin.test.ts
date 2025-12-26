@@ -89,13 +89,14 @@ describe("Admin API", () => {
         const mockExecutionCtx = {
             waitUntil: vi.fn(),
             passThroughOnException: vi.fn(),
-        };
+            props: {},
+        } as ExecutionContext;
 
         const res = await app.request("http://localhost/assets", {
             method: "POST",
             headers: { "X-Admin-Email": "admin@test.com" },
             body: formData
-        }, mockEnv, mockExecutionCtx as any); // Pass executionCtx
+        }, mockEnv, mockExecutionCtx); // Pass executionCtx
 
         expect(res.status).toBe(200);
         expect(mockR2Put).toHaveBeenCalledTimes(2); // Thumb + PDF (OG is async container)
