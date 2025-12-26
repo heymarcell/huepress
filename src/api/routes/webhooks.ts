@@ -35,9 +35,33 @@ app.post("/clerk", async (c) => {
     type: string;
     data: {
       id: string;
-      email_addresses?: Array<{ email_address: string }>;
+      email_addresses?: Array<{ 
+          id: string;
+          email_address: string;
+          verification?: { status: string };
+      }>;
+      primary_email_address_id?: string;
     };
   }
+
+  // Helper: Get Primary Verified Email
+  const getVerifiedEmail = (user: ClerkWebhookEvent['data']): string | null => {
+      if (!user.email_addresses || user.email_addresses.length === 0) return null;
+
+      // 1. Try to find primary email
+      if (user.primary_email_address_id) {
+          const primary = user.email_addresses.find(e => e.id === user.primary_email_address_id);
+          if (primary && primary.verification?.status === 'verified') {
+              return primary.email_address;
+          }
+      }
+
+      // 2. Fallback: Find ANY verified email (optional, but safer to stick to primary?)
+      // Stick to primary for strictness, OR find first verified.
+      // Let's stick to primary or first verified if primary logic fails.
+      const verified = user.email_addresses.find(e => e.verification?.status === 'verified');
+      return verified ? verified.email_address : null;
+  };
 
   let evt: ClerkWebhookEvent;
 
@@ -60,44 +84,59 @@ app.post("/clerk", async (c) => {
     switch (eventType) {
       case "user.created": {
         const user = evt.data;
-        const email = user.email_addresses?.[0]?.email_address;
+        const email = getVerifiedEmail(user);
         
-        if (email) {
-          await c.env.DB.prepare(`
-            INSERT OR IGNORE INTO users (id, email, clerk_id, subscription_status)
-            VALUES (?, ?, ?, 'free')
-          `)
-            .bind(crypto.randomUUID(), email, user.id)
-            .run();
+        // Always insert user, but email might be null if not verified.
+        // If email is null, Admin check will fail (desired).
+        await c.env.DB.prepare(`
+          INSERT OR IGNORE INTO users (id, email, clerk_id, subscription_status)
+          VALUES (?, ?, ?, 'free')
+        `)
+          .bind(crypto.randomUUID(), email, user.id)
+          .run();
 
-          console.log("User created:", email);
+        console.log(`User created: ${user.id} (Email: ${email || 'Unverified'})`);
 
-          // Track signup in GA4
-          if (c.env.GA4_API_SECRET && c.env.GA4_MEASUREMENT_ID) {
-            const ga4Result = await trackGA4Signup(
-              c.env.GA4_MEASUREMENT_ID,
-              c.env.GA4_API_SECRET,
-              { userId: user.id, method: 'email' }
-            );
-            if (ga4Result.success) {
-              console.log('GA4 SignUp event sent for:', email);
-            }
+        // Track signup in GA4 (Only if we have email? Or track generic signup?)
+        // Tracking generic signup is fine, but email match requires email.
+        if (email && c.env.GA4_API_SECRET && c.env.GA4_MEASUREMENT_ID) {
+          const ga4Result = await trackGA4Signup(
+            c.env.GA4_MEASUREMENT_ID,
+            c.env.GA4_API_SECRET,
+            { userId: user.id, method: 'email' }
+          );
+          if (ga4Result.success) {
+            console.log('GA4 SignUp event sent for:', email);
           }
+        }
 
-          // Track signup in Meta
-          if (c.env.META_ACCESS_TOKEN && c.env.META_PIXEL_ID) {
-            const metaResult = await trackCompleteRegistration(
-              c.env.META_ACCESS_TOKEN,
-              c.env.META_PIXEL_ID,
-              c.env.SITE_URL,
-              { email, externalId: user.id }
-            );
-            if (metaResult.success) {
-              console.log('Meta CompleteRegistration event sent for:', email);
-            }
+        // Track signup in Meta
+        if (email && c.env.META_ACCESS_TOKEN && c.env.META_PIXEL_ID) {
+          const metaResult = await trackCompleteRegistration(
+            c.env.META_ACCESS_TOKEN,
+            c.env.META_PIXEL_ID,
+            c.env.SITE_URL,
+            { email, externalId: user.id }
+          );
+          if (metaResult.success) {
+            console.log('Meta CompleteRegistration event sent for:', email);
           }
         }
         break;
+      }
+      
+      case "user.updated": {
+          const user = evt.data;
+          const email = getVerifiedEmail(user);
+          
+          // Update email (it might have become verified, or changed)
+          // If email becomes unverified (null), we update it to null to revoke access/trust.
+          await c.env.DB.prepare("UPDATE users SET email = ? WHERE clerk_id = ?")
+            .bind(email, user.id)
+            .run();
+            
+          console.log(`User updated: ${user.id} (Email: ${email || 'Unverified'})`);
+          break;
       }
 
       case "user.deleted": {
@@ -112,7 +151,7 @@ app.post("/clerk", async (c) => {
       }
     }
 
-    return c.json({ received: true });
+    return c.json({ received: true, type: eventType });
   } catch (error) {
     console.error("Clerk webhook error:", error);
     return c.json({ error: "Webhook failed" }, 400);

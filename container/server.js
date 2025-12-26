@@ -1,6 +1,13 @@
 const express = require('express');
 const sharp = require('sharp');
 const cors = require('cors');
+const isSvg = require('is-svg');
+const createDOMPurify = require('dompurify');
+const { JSDOM } = require('jsdom');
+
+// Setup DOMPurify
+const window = new JSDOM('').window;
+const DOMPurify = createDOMPurify(window);
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -8,6 +15,20 @@ const PORT = process.env.PORT || 4000;
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+
+// Helper: Sanitize SVG
+function sanitizeSvgContent(input) {
+  if (!input) return input; // Let endpoints handle missing input
+  if (!isSvg(input)) {
+    throw new Error("Invalid SVG format");
+  }
+  // Sanitize: strip scripts, foreignObjects, event handlers
+  return DOMPurify.sanitize(input, { 
+    USE_PROFILES: { svg: true, svgFilters: true },
+    ADD_TAGS: ['style', 'defs', 'linearGradient', 'stop', 'rect', 'circle', 'path', 'g', 'text', 'tspan', 'clipPath'], // Ensure standard SVG tags are kept
+    ADD_ATTR: ['id', 'class', 'width', 'height', 'viewBox', 'fill', 'stroke', 'style', 'd', 'transform', 'x', 'y', 'r', 'cx', 'cy', 'rx', 'ry', 'offset', 'stop-color', 'stop-opacity'] 
+  });
+}
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -190,6 +211,9 @@ app.post('/pdf', async (req, res) => {
       return res.status(400).json({ error: 'Missing svgContent' });
     }
 
+    // SANITIZE INPUT
+    const safeSvgContent = sanitizeSvgContent(svgContent);
+
     // Processing Logic (Encapsulated)
     const generatePdf = async () => {
         const pdfDoc = await PDFDocument.create();
@@ -199,7 +223,7 @@ app.post('/pdf', async (req, res) => {
         // Render SVG to PNG Buffer using Sharp (Proven working)
         // High density for print quality (72dpi * 4 ~ 300dpi effectiveness or just high width)
         // A4 width @ 300dpi is ~2480px.
-        const pngBuffer = await sharp(Buffer.from(svgContent))
+        const pngBuffer = await sharp(Buffer.from(safeSvgContent))
             .resize({ width: 2480, fit: 'inside' })
             .png()
             .toBuffer();
@@ -388,9 +412,12 @@ app.post('/thumbnail', async (req, res) => {
       return res.status(400).json({ error: 'Missing svgContent' });
     }
 
+    // SANITIZE INPUT
+    const safeSvgContent = sanitizeSvgContent(svgContent);
+
     const generateThumbnail = async () => {
       console.log(`[Thumbnail] Generating (width: ${width})...`);
-      const imageBuffer = await sharp(Buffer.from(svgContent))
+      const imageBuffer = await sharp(Buffer.from(safeSvgContent))
         .resize(width, null, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
         .flatten({ background: { r: 255, g: 255, b: 255 } })
         .webp({ quality: 90 })
@@ -476,6 +503,9 @@ app.post('/generate-all', async (req, res) => {
       return res.status(400).json({ error: 'Missing uploadToken' });
     }
 
+    // SANITIZE INPUT
+    const safeSvgContent = sanitizeSvgContent(svgContent);
+
     console.log(`[GenerateAll] Starting for "${title}" (assetId: ${assetId})`);
 
     // 1. THUMBNAIL - Generate 1:1 with hidden copyright banner
@@ -491,7 +521,7 @@ app.post('/generate-all', async (req, res) => {
       console.log(`[GenerateAll] Step 1: Generating Thumbnail (${thumbSize}x${totalHeight} with banner)...`);
       
       // Step 1a: Resize SVG to 1:1 square
-      const artBuffer = await sharp(Buffer.from(svgContent))
+      const artBuffer = await sharp(Buffer.from(safeSvgContent))
         .resize(thumbSize, thumbSize, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
         .flatten({ background: { r: 255, g: 255, b: 255 } })
         .png()
@@ -569,10 +599,10 @@ app.post('/generate-all', async (req, res) => {
       // Layer A: Art from SVG (NO banner) - placed on the RIGHT side
       // The right area is from x=650 to x=1150, y-centered at 315
       // Use fresh render from SVG content, not the thumbnail with banner
-      if (svgContent) {
+      if (safeSvgContent) {
         try {
           // Render SVG directly for OG (no banner)
-          const ogArt = await sharp(Buffer.from(svgContent))
+          const ogArt = await sharp(Buffer.from(safeSvgContent))
             .resize(450, 500, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 1 } })
             .flatten({ background: { r: 255, g: 255, b: 255 } })
             .png()
@@ -658,9 +688,9 @@ app.post('/generate-all', async (req, res) => {
         const MARGIN = 28.35; // 10mm margin safe for most printers
 
         // 1. Parse SVG Dimensions FIRST to determine orientation
-        const svgWidthMatch = svgContent.match(/width=["']?(\d+(?:\.\d+)?)/);
-        const svgHeightMatch = svgContent.match(/height=["']?(\d+(?:\.\d+)?)/);
-        const viewBoxMatch = svgContent.match(/viewBox=["']([^"']+)/);
+        const svgWidthMatch = safeSvgContent.match(/width=["']?(\d+(?:\.\d+)?)/);
+        const svgHeightMatch = safeSvgContent.match(/height=["']?(\d+(?:\.\d+)?)/);
+        const viewBoxMatch = safeSvgContent.match(/viewBox=["']([^"']+)/);
         
         let svgWidth = svgWidthMatch ? parseFloat(svgWidthMatch[1]) : 800;
         let svgHeight = svgHeightMatch ? parseFloat(svgHeightMatch[1]) : 800;
@@ -713,7 +743,7 @@ app.post('/generate-all', async (req, res) => {
         console.log(`[GenerateAll] Scaling to fit ${availWidth.toFixed(1)}x${availHeight.toFixed(1)} safe area. Scale: ${scale.toFixed(3)}`);
         
         // Convert SVG to PDF (TRUE VECTOR CONVERSION!)
-        SVGtoPDF(pdfDoc, svgContent, x, y, {
+        SVGtoPDF(pdfDoc, safeSvgContent, x, y, {
           width: scaledWidth,
           height: scaledHeight,
           preserveAspectRatio: 'xMidYMid meet'

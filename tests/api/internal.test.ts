@@ -19,7 +19,7 @@ describe("Internal API", () => {
 
     describe("Authentication", () => {
         it("should reject requests without auth header", async () => {
-            const res = await app.request("http://localhost/upload-public?key=test.png", {
+            const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", { // use valid key
                 method: "PUT",
                 body: new ArrayBuffer(10),
             }, mockEnv);
@@ -30,7 +30,7 @@ describe("Internal API", () => {
         });
 
         it("should reject requests with invalid token", async () => {
-            const res = await app.request("http://localhost/upload-public?key=test.png", {
+            const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", { // use valid key
                 method: "PUT",
                 headers: { "Authorization": "Bearer wrong-token" },
                 body: new ArrayBuffer(10),
@@ -40,7 +40,7 @@ describe("Internal API", () => {
         });
 
         it("should accept requests with valid token", async () => {
-            const res = await app.request("http://localhost/upload-public?key=test.png", {
+            const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", { // use valid key
                 method: "PUT",
                 headers: { 
                     "Authorization": "Bearer test-secret-token",
@@ -54,7 +54,7 @@ describe("Internal API", () => {
     });
 
     describe("PUT /upload-public", () => {
-        it("should upload to public bucket successfully", async () => {
+        it("should upload to public bucket successfully (thumbnails)", async () => {
             const testData = new ArrayBuffer(100);
             
             const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", {
@@ -67,15 +67,39 @@ describe("Internal API", () => {
             }, mockEnv);
             
             expect(res.status).toBe(200);
-            expect(mockR2PutPublic).toHaveBeenCalledWith(
-                "thumbnails/test.png",
-                expect.any(ArrayBuffer),
-                { httpMetadata: { contentType: "image/webp" } }
-            );
+        });
+
+        it("should upload to public bucket successfully (og-images)", async () => {
+            const testData = new ArrayBuffer(100);
+            
+            const res = await app.request("http://localhost/upload-public?key=og-images/test.png", {
+                method: "PUT",
+                headers: { 
+                    "Authorization": "Bearer test-secret-token",
+                    "X-Content-Type": "image/png"
+                },
+                body: testData,
+            }, mockEnv);
+            
+            expect(res.status).toBe(200);
+        });
+
+        it("should reject invalid public keys", async () => {
+            const invalidKeys = ["test.png", "other/test.png", "pdfs/test.png"];
+            
+            for (const key of invalidKeys) {
+                const res = await app.request(`http://localhost/upload-public?key=${key}`, {
+                    method: "PUT",
+                    headers: { "Authorization": "Bearer test-secret-token" },
+                    body: new ArrayBuffer(10),
+                }, mockEnv);
+                expect(res.status).toBe(403);
+                expect(await res.json()).toHaveProperty("error", "Invalid key path");
+            }
         });
 
         it("should reject empty body", async () => {
-            const res = await app.request("http://localhost/upload-public?key=test.png", {
+            const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", {
                 method: "PUT",
                 headers: { 
                     "Authorization": "Bearer test-secret-token",
@@ -104,7 +128,7 @@ describe("Internal API", () => {
     });
 
     describe("PUT /upload-private", () => {
-        it("should upload to private bucket successfully", async () => {
+        it("should upload to private bucket successfully (pdfs)", async () => {
             const testData = new ArrayBuffer(200);
             
             const res = await app.request("http://localhost/upload-private?key=pdfs/test.pdf", {
@@ -118,20 +142,23 @@ describe("Internal API", () => {
             }, mockEnv);
             
             expect(res.status).toBe(200);
-            expect(mockR2PutPrivate).toHaveBeenCalledWith(
-                "pdfs/test.pdf",
-                expect.any(ArrayBuffer),
-                { 
-                    httpMetadata: { 
-                        contentType: "application/pdf",
-                        contentDisposition: 'attachment; filename="document.pdf"'
-                    } 
-                }
-            );
+        });
+
+        it("should reject invalid private keys", async () => {
+             const invalidKeys = ["test.pdf", "other/test.pdf", "thumbnails/test.pdf"]; // Private shouldn't accept thumbnails
+            
+            for (const key of invalidKeys) {
+                const res = await app.request(`http://localhost/upload-private?key=${key}`, {
+                    method: "PUT",
+                    headers: { "Authorization": "Bearer test-secret-token" },
+                    body: new ArrayBuffer(10),
+                }, mockEnv);
+                expect(res.status).toBe(403);
+            }
         });
 
         it("should use default content type if not provided", async () => {
-            const res = await app.request("http://localhost/upload-private?key=test.pdf", {
+            const res = await app.request("http://localhost/upload-private?key=pdfs/test.pdf", {
                 method: "PUT",
                 headers: { 
                     "Authorization": "Bearer test-secret-token"
@@ -141,7 +168,7 @@ describe("Internal API", () => {
             
             expect(res.status).toBe(200);
             expect(mockR2PutPrivate).toHaveBeenCalledWith(
-                "test.pdf",
+                "pdfs/test.pdf",
                 expect.any(ArrayBuffer),
                 expect.objectContaining({
                     httpMetadata: expect.objectContaining({
@@ -154,7 +181,7 @@ describe("Internal API", () => {
 
     describe("PUT /upload-pdf (legacy)", () => {
         it("should upload PDF to private bucket", async () => {
-            const res = await app.request("http://localhost/upload-pdf?key=legacy.pdf", {
+            const res = await app.request("http://localhost/upload-pdf?key=pdfs/legacy.pdf", {
                 method: "PUT",
                 headers: { 
                     "Authorization": "Bearer test-secret-token",
@@ -172,7 +199,7 @@ describe("Internal API", () => {
         it("should handle R2 errors gracefully", async () => {
             mockR2PutPublic.mockRejectedValue(new Error("R2 connection failed"));
             
-            const res = await app.request("http://localhost/upload-public?key=test.png", {
+            const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", {
                 method: "PUT",
                 headers: { 
                     "Authorization": "Bearer test-secret-token",

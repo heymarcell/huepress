@@ -1,0 +1,47 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.16 [39m[90m/Users/heymarcell/Documents/huepress[39m
+
+[90mstderr[2m | tests/api/webhooks.test.ts[2m > [22m[2mWebhooks API[2m > [22m[2mshould accept verified emails on user.created
+[22m[39m[vitest] The vi.fn() mock did not use 'function' or 'class' in its implementation, see https://vitest.dev/api/vi#vi-spyon for examples.
+
+[90mstderr[2m | tests/api/webhooks.test.ts[2m > [22m[2mWebhooks API[2m > [22m[2mshould accept verified emails on user.created
+[22m[39mTypeError: () => ({
+      verify: mockVerify
+    }) is not a constructor
+    at new Mock [90m(file:///Users/heymarcell/Documents/huepress/[39mnode_modules/[4m@vitest[24m/spy/dist/index.js:262:27[90m)[39m
+    at Array.<anonymous> [90m(/Users/heymarcell/Documents/huepress/[39msrc/api/routes/webhooks.ts:31:14[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90m/Users/heymarcell/Documents/huepress/[39mtests/api/webhooks.test.ts:100:9
+    at [90mfile:///Users/heymarcell/Documents/huepress/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:915:20
+
+ [2m[90m↓[39m[22m tests/api/webhooks.test.ts[2m > [22mWebhooks API[2m > [22mshould sync unverified users with NULL email on user.created
+ [31m×[39m tests/api/webhooks.test.ts[2m > [22mWebhooks API[2m > [22mshould accept verified emails on user.created[32m 13[2mms[22m[39m
+[31m   → expected "vi.fn()" to be called with arguments: [ StringContaining "INSERT" ][90m
+
+Number of calls: [1m0[22m
+[31m[39m
+ [2m[90m↓[39m[22m tests/api/webhooks.test.ts[2m > [22mWebhooks API[2m > [22mshould update email on user.updated when verified
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/api/webhooks.test.ts[2m > [22mWebhooks API[2m > [22mshould accept verified emails on user.created
+[31m[1mAssertionError[22m: expected "vi.fn()" to be called with arguments: [ StringContaining "INSERT" ][90m
+
+Number of calls: [1m0[22m
+[31m[39m
+[36m [2m❯[22m tests/api/webhooks.test.ts:[2m106:29[22m[39m
+    [90m104| [39m        }[33m,[39m mockEnv)[33m;[39m
+    [90m105| [39m
+    [90m106| [39m        expect(mockPrepare).toHaveBeenCalledWith(expect.stringContaini…
+    [90m   | [39m                            [31m^[39m
+    [90m107| [39m        [34mexpect[39m(mockBind)[33m.[39m[34mtoHaveBeenCalledWith[39m(
+    [90m108| [39m            expect[33m.[39m[34many[39m([33mString[39m)[33m,[39m [90m// UUID[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[33m2 skipped[39m[90m (3)[39m
+[2m   Start at [22m 23:08:35
+[2m   Duration [22m 126ms[2m (transform 31ms, setup 0ms, import 46ms, tests 13ms, environment 0ms)[22m
+

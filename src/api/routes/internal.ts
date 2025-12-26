@@ -13,6 +13,10 @@ const auth = async (c: Context<{ Bindings: Bindings }>, next: Next) => {
     await next();
 };
 
+// Security: Validate Key Paths
+const isValidPrivateKey = (key: string) => /^pdfs\/[\w\-.]+$/.test(key);
+const isValidPublicKey = (key: string) => /^(thumbnails|og-images)\/[\w\-.]+$/.test(key);
+
 /**
  * Internal Upload Route for Containers - PRIVATE Bucket (PDFs, Sources)
  * PUT /api/internal/upload-private?key=xxx
@@ -31,6 +35,11 @@ app.put("/upload-private", auth, async (c) => {
         if (!key || !body || body.byteLength === 0) {
             console.error(`[Internal API] Invalid data: key=${key}, bodySize=${body?.byteLength}`);
             return c.json({ error: "Invalid data" }, 400);
+        }
+
+        if (!isValidPrivateKey(key)) {
+            console.error(`[Internal API] Rejected invalid PRIVATE key: ${key}`);
+            return c.json({ error: "Invalid key path" }, 403);
         }
 
         await c.env.ASSETS_PRIVATE.put(key, body, {
@@ -60,6 +69,11 @@ app.put("/upload-pdf", auth, async (c) => {
         if (!key || !body || body.byteLength === 0) {
             console.error(`[Internal API] Invalid data: key=${key}, bodySize=${body?.byteLength}`);
             return c.json({ error: "Invalid data" }, 400);
+        }
+
+        if (!isValidPrivateKey(key)) {
+            console.error(`[Internal API] Rejected invalid PDF key: ${key}`);
+            return c.json({ error: "Invalid key path" }, 403);
         }
 
         await c.env.ASSETS_PRIVATE.put(key, body, {
@@ -94,6 +108,11 @@ app.put("/upload-public", auth, async (c) => {
         if (!key || !body || body.byteLength === 0) {
             console.error(`[Internal API] Invalid data: key=${key}, bodySize=${body?.byteLength}`);
             return c.json({ error: "Invalid data" }, 400);
+        }
+
+        if (!isValidPublicKey(key)) {
+            console.error(`[Internal API] Rejected invalid PUBLIC key: ${key}`);
+            return c.json({ error: "Invalid key path" }, 403);
         }
 
         await c.env.ASSETS_PUBLIC.put(key, body, {
