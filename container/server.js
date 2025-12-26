@@ -1,7 +1,5 @@
 const express = require('express');
 const sharp = require('sharp');
-const puppeteer = require('puppeteer-core');
-const QRCode = require('qrcode');
 const cors = require('cors');
 
 const app = express();
@@ -705,8 +703,8 @@ app.post('/generate-all', async (req, res) => {
           const templateSvg = fs.readFileSync(templatePath, 'utf8');
           // Draw the template as background (full A4)
           SVGtoPDF(pdfDoc, templateSvg, 0, 0, {
-            width: A4_WIDTH,
-            height: A4_HEIGHT,
+            width: A4_WIDTH_PT,
+            height: A4_HEIGHT_PT,
             preserveAspectRatio: 'xMidYMid meet'
           });
           console.log(`[GenerateAll] Page 2: Background SVG added`);
@@ -721,7 +719,7 @@ app.post('/generate-all', async (req, res) => {
         // 1. Tagline (Under Logo)
         // Matches visual: "Therapy-Grade..." under HuePress logo
         pdfDoc.fontSize(12).font('Helvetica-Oblique').fillColor('#787878');
-        pdfDoc.text('Therapy-Grade Coloring Pages for Calm & Focus', 0, 120, { align: 'center', width: A4_WIDTH });
+        pdfDoc.text('Therapy-Grade Coloring Pages for Calm & Focus', 0, 120, { align: 'center', width: A4_WIDTH_PT });
         
         // 2. Section: Printing Tips
         // The header is ABOVE the first box in the screenshot
@@ -798,11 +796,11 @@ app.post('/generate-all', async (req, res) => {
         pdfDoc.text("Visit huepress.co to explore our full collection — animals, nature, holidays, and much more!", 75, discoverTextY + 20);
         
         // Footer
-        const footerY = A4_HEIGHT - 50;
+        const footerY = A4_HEIGHT_PT - 50;
         pdfDoc.fontSize(8).font('Helvetica').fillColor('#969696');
-        pdfDoc.text("Need help? Email us anytime: hello@huepress.co", 0, footerY, { align: 'center', width: A4_WIDTH });
-        pdfDoc.text(`© ${currentYear} HuePress. All rights reserved.`, 0, footerY + 12, { align: 'center', width: A4_WIDTH });
-        pdfDoc.text(`Asset ID: #${displayId}`, 0, footerY + 24, { align: 'center', width: A4_WIDTH });
+        pdfDoc.text("Need help? Email us anytime: hello@huepress.co", 0, footerY, { align: 'center', width: A4_WIDTH_PT });
+        pdfDoc.text(`© ${currentYear} HuePress. All rights reserved.`, 0, footerY + 12, { align: 'center', width: A4_WIDTH_PT });
+        pdfDoc.text(`Asset ID: #${displayId}`, 0, footerY + 24, { align: 'center', width: A4_WIDTH_PT });
         
         console.log(`[GenerateAll] Page 2: Hybrid Page generated (SVG Background + Native Text)`);
         
