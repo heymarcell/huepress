@@ -541,55 +541,62 @@ app.post('/generate-all', async (req, res) => {
       const height = 630;
       
       let ogImage = sharp({
-        create: { width, height, channels: 4, background: { r: 250, g: 250, b: 250, alpha: 1 } }
+        create: { width, height, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
       });
       
+      // 1. Base Layer: Generic Template Overlay
+      const templatePath = path.join(__dirname, 'og_template.svg');
+      let templateBuffer = null;
+      if (fs.existsSync(templatePath)) {
+        templateBuffer = fs.readFileSync(templatePath);
+      }
+
+      // 2. Prepare Layers
       const layers = [];
-      
-      // Add thumbnail on the right side if we generated it
+
+      // Layer A: Thumbnail (Placed on the RIGHT side, under the gradient)
       if (thumbnailBuffer) {
         try {
-          const thumbnail = await sharp(thumbnailBuffer)
-            .resize(500, 500, { 
-              fit: 'contain', 
-              background: { r: 250, g: 250, b: 250, alpha: 1 } // Match OG background
-            })
-            .png()
+          // Resize thumbnail to fill the right side nicely
+          const thumb = await sharp(thumbnailBuffer)
+            .resize({ height: 630, fit: 'cover' })
             .toBuffer();
-          layers.push({ input: thumbnail, top: 65, left: 650 });
+            
+          // Place it on the right side (x=500 starts moving into the gradient zone)
+          layers.push({ input: thumb, left: 500, top: 0 });
         } catch (e) {
           console.error('[GenerateAll] OG thumbnail processing error:', e.message);
         }
       }
-      
-      // Text overlay
+
+      // Layer B: Template Overlay (Gradient + Logo + Badge) - ON TOP of Thumbnail
+      if (templateBuffer) {
+        layers.push({ input: templateBuffer, top: 0, left: 0 });
+      }
+
+      // Layer C: Dynamic Text
       const safeTitle = title ? escapeXml(truncate(title, 35)) : 'Coloring Page';
+      const safeDescription = "Printable Coloring Page"; 
+      
       const textSvg = `
         <svg width="${width}" height="${height}">
-          <defs>
-            <linearGradient id="overlay" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" style="stop-color:white;stop-opacity:1" />
-              <stop offset="60%" style="stop-color:white;stop-opacity:0.95" />
-              <stop offset="100%" style="stop-color:white;stop-opacity:0" />
-            </linearGradient>
-          </defs>
-          <rect fill="url(#overlay)" width="700" height="${height}"/>
           <style>
-            .logo { font: bold 32px sans-serif; fill: #0f766e; }
-            .title { font: bold 48px sans-serif; fill: #0f766e; }
-            .subtitle { font: 24px sans-serif; fill: #374151; }
-            .badge-text { font: bold 18px sans-serif; fill: white; }
+             .title { font: bold 48px sans-serif; fill: #0f766e; }
+             .subtitle { font: 24px sans-serif; fill: #374151; }
           </style>
-          <text x="60" y="100" class="logo">HuePress</text>
           <text x="60" y="280" class="title">${safeTitle}</text>
-          <text x="60" y="340" class="subtitle">Printable Coloring Page</text>
-          <rect fill="#0f766e" x="60" y="490" width="180" height="50" rx="10"/>
-          <text x="100" y="523" class="badge-text">✓ HuePress</text>
+          <text x="60" y="340" class="subtitle">${safeDescription}</text>
         </svg>
       `;
       layers.push({ input: Buffer.from(textSvg), top: 0, left: 0 });
       
-      const ogBuffer = await ogImage.composite(layers).png().toBuffer();
+      // Composite all: White Base -> Thumbnail -> Template -> Text
+      const ogBuffer = await sharp({
+        create: { width, height, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
+      })
+      .composite(layers)
+      .png()
+      .toBuffer();
       console.log(`[GenerateAll] OG generated: ${ogBuffer.length} bytes. Uploading...`);
       
       const ogRes = await fetch(`${ogUploadUrl}?key=${encodeURIComponent(ogUploadKey)}`, {
@@ -619,25 +626,12 @@ app.post('/generate-all', async (req, res) => {
       const path = require('path');
       
       try {
-        // A4 dimensions in points (72 dpi): 595.28 x 841.89
-        const A4_WIDTH = 595.28;
-        const A4_HEIGHT = 841.89;
-        const MARGIN = 28.35; // 10mm margin
-        
-        // Create PDF document with streaming to buffer
-        const chunks = [];
-        const pdfDoc = new PDFDocument({
-          size: 'A4',
-          margin: MARGIN,
-          autoFirstPage: true
-        });
-        
-        pdfDoc.on('data', chunk => chunks.push(chunk));
-        
-        // Page 1: Artwork SVG (TRUE VECTOR!)
-        console.log(`[GenerateAll] Converting SVG to vector PDF...`);
-        
-        // Parse SVG to get dimensions for proper scaling
+        // A4 dimensions in points (72 dpi)
+        const A4_WIDTH_PT = 595.28;
+        const A4_HEIGHT_PT = 841.89;
+        const MARGIN = 28.35; // 10mm margin safe for most printers
+
+        // 1. Parse SVG Dimensions FIRST to determine orientation
         const svgWidthMatch = svgContent.match(/width=["']?(\d+(?:\.\d+)?)/);
         const svgHeightMatch = svgContent.match(/height=["']?(\d+(?:\.\d+)?)/);
         const viewBoxMatch = svgContent.match(/viewBox=["']([^"']+)/);
@@ -653,19 +647,44 @@ app.post('/generate-all', async (req, res) => {
           }
         }
         
-        // Calculate scale to fit within page margins
-        const availWidth = A4_WIDTH - (2 * MARGIN);
-        const availHeight = A4_HEIGHT - (2 * MARGIN);
+        // 2. Determine best orientation to maximize size
+        // If wider than tall, rotate page to Landscape
+        const isLandscape = svgWidth > svgHeight;
+        const pageLayout = isLandscape ? 'landscape' : 'portrait';
+        
+        console.log(`[GenerateAll] SVG Size: ${svgWidth}x${svgHeight}. selecting layout: ${pageLayout}`);
+
+        // Create PDF document with determined layout
+        const chunks = [];
+        const pdfDoc = new PDFDocument({
+          size: 'A4',
+          layout: pageLayout, // Dynamic layout
+          margin: MARGIN,
+          autoFirstPage: true
+        });
+        
+        pdfDoc.on('data', chunk => chunks.push(chunk));
+        
+        // 3. Calculate scaling to fit within SAFE MARGINS
+        // Determine available page width/height based on orientation
+        const pageWidth = isLandscape ? A4_HEIGHT_PT : A4_WIDTH_PT; // Width is 842 in landscape
+        const pageHeight = isLandscape ? A4_WIDTH_PT : A4_HEIGHT_PT; // Height is 595 in landscape
+        
+        const availWidth = pageWidth - (2 * MARGIN);
+        const availHeight = pageHeight - (2 * MARGIN);
+        
         const scaleX = availWidth / svgWidth;
         const scaleY = availHeight / svgHeight;
         const scale = Math.min(scaleX, scaleY);
         
         const scaledWidth = svgWidth * scale;
         const scaledHeight = svgHeight * scale;
+        
+        // Center content in the safe area
         const x = MARGIN + (availWidth - scaledWidth) / 2;
         const y = MARGIN + (availHeight - scaledHeight) / 2;
         
-        console.log(`[GenerateAll] SVG: ${svgWidth}x${svgHeight} -> scaled to ${scaledWidth.toFixed(1)}x${scaledHeight.toFixed(1)}`);
+        console.log(`[GenerateAll] Scaling to fit ${availWidth.toFixed(1)}x${availHeight.toFixed(1)} safe area. Scale: ${scale.toFixed(3)}`);
         
         // Convert SVG to PDF (TRUE VECTOR CONVERSION!)
         SVGtoPDF(pdfDoc, svgContent, x, y, {
@@ -674,12 +693,12 @@ app.post('/generate-all', async (req, res) => {
           preserveAspectRatio: 'xMidYMid meet'
         });
         
-        console.log(`[GenerateAll] Page 1: SVG converted to vector paths`);
+        console.log(`[GenerateAll] Page 1: Vector artwork added (${pageLayout})`);
         
-        // Page 2: Marketing page (HYBRID APPROACH)
-        // Layer 1: Vector Graphics from SVG (Logo, Boxes, Lines, Icons)
-        // Layer 2: Native Text Overlay (Sharp, Editable, Searchable)
-        pdfDoc.addPage({ size: 'A4', margin: 0 });
+        // Page 2: Marketing page (ALWAYS PORTRAIT)
+        // Layer 1: Vector Background
+        // Note: Intentionally switching back to Portrait for standardized marketing page
+        pdfDoc.addPage({ size: 'A4', layout: 'portrait', margin: 0 });
         
         const templatePath = path.join(__dirname, 'marketing_template.svg');
         if (fs.existsSync(templatePath)) {

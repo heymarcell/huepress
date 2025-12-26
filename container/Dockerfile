@@ -1,7 +1,7 @@
 FROM node:20-slim
 
 # Force rebuild - increment to bust cache
-ARG CACHEBURST=15
+ARG CACHEBURST=19
 # Install Chromium and dependencies
 # We use chromium from Debian repos which is stable
 RUN apt-get update && apt-get install -y \
