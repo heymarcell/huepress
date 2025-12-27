@@ -1,4 +1,6 @@
 # SPA fallback - serve index.html for all routes
+# IndexNow key file (must be served as-is)
+/6036370EF1A6D786631BBA0C2FE92864.txt  /6036370EF1A6D786631BBA0C2FE92864.txt  200
 /*    /index.html   200
 
 # Redirects
