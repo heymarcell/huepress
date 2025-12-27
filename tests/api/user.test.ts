@@ -41,9 +41,7 @@ describe("User API", () => {
     });
 
     it("GET /likes/:assetId/status should return true if liked", async () => {
-        // Mock internal user lookup (SELECT id FROM users ...)
-        mockFirst.mockResolvedValueOnce({ id: "db_user_123" });
-        // Mock like existence lookup
+        // Mock single JOIN query result
         mockFirst.mockResolvedValueOnce({ 1: 1 });
 
         const res = await app.request("http://localhost/likes/asset_1/status", {}, mockEnv);
@@ -53,9 +51,7 @@ describe("User API", () => {
     });
 
     it("GET /likes/:assetId/status should return false if not liked", async () => {
-        // Mock internal user lookup
-        mockFirst.mockResolvedValueOnce({ id: "db_user_123" });
-        // Mock like existence lookup (null)
+        // Mock single JOIN query result (null)
         mockFirst.mockResolvedValueOnce(null);
 
         const res = await app.request("http://localhost/likes/asset_1/status", {}, mockEnv);

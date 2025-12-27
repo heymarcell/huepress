@@ -18,19 +18,20 @@ app.get("/likes/:assetId/status", async (c) => {
   if (!auth?.userId) return c.json({ liked: false });
 
   const userId = auth.userId;
-  // Use a fast query to get internal user ID first (cached potentially in future, but fast index lookup now)
-  const user = await c.env.DB.prepare("SELECT id FROM users WHERE clerk_id = ?").bind(userId).first<{ id: string }>();
-  
-  if (!user) return c.json({ liked: false });
-
+  /* 
+    Optimization: Single query with JOIN instead of 2 sequential queries.
+    This avoids the round-trip penalty of looking up the internal user ID first.
+  */
   const assetId = c.req.param("assetId");
   
-  // Check existence only
-  const existing = await c.env.DB.prepare(
-    "SELECT 1 FROM likes WHERE user_id = ? AND asset_id = ?"
-  ).bind(user.id, assetId).first();
+  const exists = await c.env.DB.prepare(`
+    SELECT 1 
+    FROM likes l
+    JOIN users u ON l.user_id = u.id
+    WHERE u.clerk_id = ? AND l.asset_id = ?
+  `).bind(userId, assetId).first();
 
-  return c.json({ liked: !!existing });
+  return c.json({ liked: !!exists });
 });
 
 // GET /likes - List liked assets
