@@ -111,7 +111,9 @@ export default function AdminAssetForm() {
                console.warn("No source file found for this asset.");
             }
           } catch (e) {
-             console.warn("Could not fetch source SVG", e);
+             console.error("DEBUG: Could not fetch source SVG. Possible reasons: Key missing, file missing in R2, or CORS.", e);
+             // Verify if we have a key?
+             // We can't easily check the key here without another call, but the error helps.
           }
         }
       } catch (err) {
@@ -463,6 +465,41 @@ export default function AdminAssetForm() {
               Cancel
             </Button>
           </Link>
+          {isEditing && (
+             <Button
+                type="button"
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const token = await getToken();
+                    if (!token) throw new Error("No token");
+                    setAlertState({
+                      isOpen: true,
+                      title: "Regenerating OG...",
+                      message: "Requesting new OG image...",
+                      variant: "info"
+                    });
+                    await apiClient.admin.regenerateOg(id!, token);
+                    setAlertState({
+                      isOpen: true,
+                      title: "Success",
+                      message: "OG Image regeneration started.",
+                      variant: "success"
+                    });
+                  } catch (e) {
+                    setAlertState({
+                      isOpen: true,
+                      title: "Error",
+                      message: "Failed to regenerate OG image",
+                      variant: "error"
+                    });
+                  }
+                }}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Regen OG
+              </Button>
+          )}
           <Button onClick={handleSubmit} variant="primary" isLoading={isSubmitting}>
             <Save className="w-4 h-4" />
             {isEditing ? "Update" : "Save Asset"}
