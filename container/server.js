@@ -164,8 +164,8 @@ app.post('/og-image', async (req, res) => {
             .badge-text { font: bold 18px sans-serif; fill: white; }
           </style>
           <text x="60" y="100" class="logo">HuePress</text>
-          <text x="60" y="280" class="title">${escapeXml(truncate(title, 35))}</text>
-          <text x="60" y="340" class="subtitle">Printable Coloring Page</text>
+          <text x="60" y="280" class="title">${wrapTextToSvg(title, 22, 60, 280, 55)}</text>
+          <text x="60" y="420" class="subtitle">Printable Coloring Page</text>
           <rect fill="#0f766e" x="60" y="490" width="180" height="50" rx="10"/>
           <text x="100" y="523" class="badge-text">✓ HuePress</text>
         </svg>
@@ -696,8 +696,8 @@ app.post('/generate-all', async (req, res) => {
              .title { font: bold 48px 'Inter', 'FreeSans', sans-serif; fill: #0f766e; }
              .subtitle { font: 24px 'Inter', 'FreeSans', sans-serif; fill: #374151; }
           </style>
-          <text x="60" y="280" class="title">${safeTitle}</text>
-          <text x="60" y="340" class="subtitle">${safeDescription}</text>
+          <text x="60" y="280" class="title">${wrapTextToSvg(title || 'Coloring Page', 22, 60, 280, 55)}</text>
+          <text x="60" y="420" class="subtitle">${safeDescription}</text>
         </svg>
       `;
       layers.push({ input: Buffer.from(textSvg), top: 0, left: 0 });
@@ -998,6 +998,35 @@ function escapeXml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+function wrapTextToSvg(text, maxLength, x, startY, lineHeight) {
+  if (!text) return "";
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const word = words[i];
+    if ((currentLine + " " + word).length < maxLength) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  lines.push(currentLine);
+
+  // Return tspan elements
+  // We limit to 3 lines max to prevent overflow
+  const maxLines = 3;
+  return lines.slice(0, maxLines).map((line, i) => {
+     // If it's the last allowed line but we have more, append ...
+     if (i === maxLines - 1 && lines.length > maxLines) {
+        line += "...";
+     }
+     return `<tspan x="${x}" y="${startY + (i * lineHeight)}">${escapeXml(line)}</tspan>`;
+  }).join('');
 }
 
 // Start server

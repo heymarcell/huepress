@@ -719,6 +719,44 @@ export default function AdminAssetForm() {
               </a>
             )}
 
+            {/* Regenerate OG Button */}
+            {isEditing && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const token = await getToken();
+                    if (!token) throw new Error("No token");
+                    setAlertState({
+                      isOpen: true,
+                      title: "Regenerating OG...",
+                      message: "Requesting new OG image...",
+                      variant: "info"
+                    });
+                    await apiClient.admin.regenerateOg(id!, token);
+                    setAlertState({
+                      isOpen: true,
+                      title: "Success",
+                      message: "OG Image regeneration started. Please wait a few seconds.",
+                      variant: "success"
+                    });
+                  } catch (e) {
+                    setAlertState({
+                      isOpen: true,
+                      title: "Error",
+                      message: "Failed to regenerate OG image",
+                      variant: "error"
+                    });
+                  }
+                }}
+                className="w-full"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Regenerate OG Preview
+              </Button>
+            )}
+
             {/* Master SVG Upload (Magic) */}
             <div className="bg-gradient-to-br from-primary/5 to-secondary/5 p-4 rounded-xl border border-primary/10">
               <label className="flex items-center gap-2 text-sm font-bold text-ink mb-1">

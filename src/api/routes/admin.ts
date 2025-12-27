@@ -742,6 +742,83 @@ app.post("/assets/bulk-delete", async (c) => {
   }
 });
 
+// ADMIN: Regenerate OG Image
+app.post("/assets/:id/regenerate-og", async (c) => {
+  const isAdminUser = await verifyAdmin(c);
+  if (!isAdminUser) return c.json({ error: "Unauthorized" }, 401);
+
+  const { id } = c.req.param();
+
+  try {
+    const asset = await c.env.DB.prepare(
+      "SELECT * FROM assets WHERE id = ?"
+    ).bind(id).first<{ 
+      title: string; 
+      asset_id: string;
+      r2_key_public: string | null; 
+      r2_key_og: string | null;
+    }>();
+
+    if (!asset) {
+      return c.json({ error: "Asset not found" }, 404);
+    }
+
+    if (!asset.r2_key_public) {
+      return c.json({ error: "No thumbnail available to generate OG image" }, 400);
+    }
+
+    // Fetch thumbnail content
+    const thumbObject = await c.env.ASSETS_PUBLIC.get(asset.r2_key_public);
+    if (!thumbObject) {
+       return c.json({ error: "Thumbnail file missing in storage" }, 404);
+    }
+    
+    const thumbBuffer = await thumbObject.arrayBuffer();
+    const thumbBase64 = btoa(String.fromCharCode(...new Uint8Array(thumbBuffer)));
+
+    // Prepare target OG key
+    let ogKey = asset.r2_key_og;
+    if (!ogKey) {
+       ogKey = `og-images/${id}.png`;
+       // Update DB with new key
+       await c.env.DB.prepare("UPDATE assets SET r2_key_og = ? WHERE id = ?").bind(ogKey, id).run();
+    }
+
+    // Call Container
+    const apiBaseUrl = c.env.API_URL || 'https://api.huepress.co';
+    const container = (await import("@cloudflare/containers")).getContainer(c.env.PROCESSING, "main");
+    
+    // Fire and forget (async) or wait?
+    // User expects feedback, but generation is fast.
+    // The container supports async upload if uploadUrl is provided.
+    
+    const response = await fetchWithRetry(() => container.fetch("http://container/og-image", {
+        method: "POST",
+        headers: { 
+            "Content-Type": "application/json",
+            "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET || ""
+        },
+        body: JSON.stringify({
+            title: asset.title,
+            thumbnailBase64: thumbBase64,
+            uploadUrl: `${apiBaseUrl}/api/internal/upload-public`,
+            uploadKey: ogKey,
+            uploadToken: c.env.INTERNAL_API_TOKEN
+        })
+    }));
+
+    if (!response.ok) {
+        throw new Error(`Container error: ${response.status}`);
+    }
+
+    return c.json({ success: true, message: "OG regeneration started" });
+
+  } catch (error) {
+    console.error("Regenerate OG error:", error);
+    return c.json({ error: "Failed to regenerate OG" }, 500);
+  }
+});
+
 
 // ADMIN: Get Design Requests
 app.get("/requests", async (c) => {

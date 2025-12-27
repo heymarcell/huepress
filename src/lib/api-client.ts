@@ -214,6 +214,20 @@ export const apiClient = {
       if (!response.ok || data.error) {
         throw new Error(data.error || "Failed to update status");
       }
+    return data;
+    },
+    regenerateOg: async (id: string, token: string) => {
+      const cleanBase = API_URL.replace(/\/$/, "");
+      const response = await fetch(`${cleanBase}/api/admin/assets/${id}/regenerate-og`, {
+        method: "POST",
+        headers: { 
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const data = await response.json() as { success?: boolean; error?: string };
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Failed to regenerate OG image");
+      }
       return data;
     }
   },

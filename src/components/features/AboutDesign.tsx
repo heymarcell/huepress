@@ -122,10 +122,10 @@ export function AboutDesign({
               )}
               
               {section.type === 'list' && (
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {(section.content as string[]).map((item, i) => (
-                    <li key={i} className="text-gray-700 flex gap-2">
-                      <span className="text-amber-500 mt-1">•</span>
+                    <li key={i} className="text-gray-700 flex gap-3 text-base leading-relaxed">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2.5 shrink-0" />
                       <span>{item}</span>
                     </li>
                   ))}
