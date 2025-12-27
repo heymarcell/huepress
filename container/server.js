@@ -609,7 +609,7 @@ app.post('/generate-all', async (req, res) => {
     } = req.body;
 
     const displayId = (assetId || "").replace(/^HP-[A-Z]+-/, '');
-    const publicUrl = slug ? `https://huepress.co/assets/${slug}` : `https://huepress.co`;
+    const publicUrl = slug ? `https://huepress.co/coloring-pages/${slug}-${assetId}` : `https://huepress.co`;
 
     if (!svgContent) {
       return res.status(400).json({ error: 'Missing svgContent' });
@@ -870,7 +870,7 @@ app.post('/generate-all', async (req, res) => {
           info: {
             Title: title || 'Coloring Page',
             Author: 'HuePress',
-            Subject: (truncate(description, 250) || 'Therapy-Grade Coloring Page') + ` • ID: #${displayId} • ${publicUrl}`,
+            Subject: (description || 'Therapy-Grade Coloring Page') + ` • ID: #${displayId} • ${publicUrl}`,
             Keywords: `coloring, page, printable, kids, art, huepress, therapy, vector, #${displayId}`,
             Creator: 'HuePress',
             Producer: 'HuePress'

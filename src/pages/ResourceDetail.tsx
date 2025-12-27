@@ -581,7 +581,7 @@ export default function ResourceDetailPage() {
               </div>
 
               {/* Value Props / Trust Badges */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mb-6">
                 {trustBadges.map((badge, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary/5 flex items-center justify-center text-primary flex-shrink-0">

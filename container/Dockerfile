@@ -1,7 +1,7 @@
 FROM node:20-slim
 
 # Force rebuild - increment to bust cache
-ARG CACHEBURST=49
+ARG CACHEBURST=51
 
 # Install fonts and fontconfig for proper font rendering
 RUN apt-get update && apt-get install -y \
