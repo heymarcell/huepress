@@ -88,7 +88,7 @@ export function Navbar() {
     ...(!isSubscriber ? [{ to: "/pricing", label: "Pricing" }] : []),
     // Only show Request a Design if subscribed
     ...(isSubscriber ? [
-      { to: "/request-design", label: "Request a Design" },
+      { to: "/request-design", label: "Request a Design", isPrimary: true },
       { to: "/dashboard", label: "My Dashboard" }
     ] : []),
   ];
@@ -108,7 +108,12 @@ export function Navbar() {
               <Link
                 key={link.to}
                 to={link.to}
-                className="text-ink/70 hover:text-primary font-medium transition-colors"
+                className={`font-medium transition-colors ${
+                  // @ts-expect-error - isPrimary is a custom property not in the text link type
+                  link.isPrimary 
+                    ? "text-primary bg-primary/10 px-4 py-2 rounded-full hover:bg-primary/20" 
+                    : "text-ink/70 hover:text-primary"
+                }`}
                 style={{ fontSize: '15px' }} 
               >
                 {link.label}

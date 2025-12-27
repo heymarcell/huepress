@@ -14,7 +14,10 @@ import {
   Download,
   Unlock,
   ImageIcon,
-  ArrowRight
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  ChevronRight
 } from "lucide-react";
 import SEO from "@/components/SEO";
 import { apiClient } from "@/lib/api-client";
@@ -67,6 +70,7 @@ function RatingSummary({ assetId }: { assetId: string }) {
 // Reviews section component
 function ReviewsSection({ assetId }: { assetId: string }) {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isOpen, setIsOpen] = useState(false);
   const { isSubscriber } = useSubscription();
 
   const handleReviewSubmitted = () => {
@@ -74,16 +78,26 @@ function ReviewsSection({ assetId }: { assetId: string }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 lg:p-8 mt-6">
-      <h2 className="font-serif text-h3 restext-ink mb-4">Reviews</h2>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-6">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-6 lg:p-8 hover:bg-gray-50 transition-colors"
+      >
+        <h2 className="font-serif text-h3 text-ink">Reviews</h2>
+        {isOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+      </button>
       
-      {/* Review List */}
-      <ReviewList assetId={assetId} refreshTrigger={refreshTrigger} />
-      
-      {/* Review Form (subscribers only) */}
-      {isSubscriber && (
-        <div className="mt-6 pt-4 border-t border-gray-100">
-          <ReviewForm assetId={assetId} onReviewSubmitted={handleReviewSubmitted} />
+      {isOpen && (
+        <div className="px-6 lg:px-8 pb-8 animate-in slide-in-from-top-2 duration-200">
+          {/* Review List */}
+          <ReviewList assetId={assetId} refreshTrigger={refreshTrigger} />
+          
+          {/* Review Form (subscribers only) */}
+          {isSubscriber && (
+            <div className="mt-6 pt-4 border-t border-gray-100">
+              <ReviewForm assetId={assetId} onReviewSubmitted={handleReviewSubmitted} />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -242,17 +256,19 @@ function DownloadSection({ assetId, formattedAssetId, title }: { assetId: string
       {/* Value Prop */}
       <div className="flex items-center justify-center gap-1.5 mt-2 mb-1">
         <Sparkles className="w-3.5 h-3.5 text-primary" />
-        <span className="text-sm font-medium text-ink">Therapy-grade quality</span>
+        <span className="text-sm font-medium text-ink">Instant access to 500+ therapy-grade designs</span>
       </div>
       
-      {/* 3-Step Reassurance Micro-row */}
-      <div className="flex items-center justify-center gap-2 mt-3 text-xs text-gray-500 font-medium text-center">
-         <span className="flex items-center">Join</span>
-         <span className="text-gray-300">→</span>
-         <span className="flex items-center">Download</span>
-         <span className="text-gray-300">→</span>
-         <span className="flex items-center">Print & Color</span>
+      {/* Social Proof - NEW */}
+      <div className="flex items-center justify-center gap-2 mb-4">
+         <div className="flex -space-x-1">
+            {[1,2,3,4].map(i => (
+               <div key={i} className="w-5 h-5 rounded-full bg-gray-200 border-2 border-white" />
+            ))}
+         </div>
+         <span className="text-xs text-gray-500 font-medium">Trusted by 1,000+ parents & therapists</span>
       </div>
+
       <p className="text-center text-xs text-gray-400">
         $5/mo, cancel anytime
       </p>
@@ -271,9 +287,9 @@ function DownloadSection({ assetId, formattedAssetId, title }: { assetId: string
       {!showEmailCapture ? (
         <button
           onClick={() => setShowEmailCapture(true)}
-          className="w-full py-3 px-4 border-2 border-dashed border-gray-200 rounded-md text-gray-500 hover:border-primary hover:text-primary transition-colors text-sm font-medium flex items-center justify-center gap-2"
+          className="w-full py-3 px-4 bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-sm rounded-md transition-colors text-sm font-bold flex items-center justify-center gap-2"
         >
-          Get 3 Free Pages
+          🎁 Get 3 Free Pages
         </button>
       ) : (
         <div className="pt-2">
@@ -347,11 +363,28 @@ export default function ResourceDetailPage() {
              .catch(() => {});
         }
 
-        // Fetch related items
-        if (data.category) {
+        // Fetch related items - prioritize tags for visual similarity (e.g. "robot" > "animals")
+        if (data.tags && data.tags.length > 0) {
+            try {
+              // Try to find items with the first tag (usually specific like "robot" or "cat")
+              const related = await apiClient.assets.list({ tag: data.tags[0], limit: 4 });
+              let filtered = related.assets?.filter(a => a.id !== data.id) || [];
+              
+              // Fallback to category if not enough tag matches
+              if (filtered.length < 3 && data.category) {
+                 const catRelated = await apiClient.assets.list({ category: data.category, limit: 4 });
+                 const catFiltered = catRelated.assets?.filter(a => a.id !== data.id && !filtered.find(f => f.id === a.id)) || [];
+                 filtered = [...filtered, ...catFiltered];
+              }
+              
+              setRelatedItems(filtered.slice(0, 4));
+            } catch(e) {
+               console.error("Failed to load related items by tag", e);
+            }
+        } else if (data.category) {
            try {
              const related = await apiClient.assets.list({ category: data.category, limit: 4 });
-             setRelatedItems(related.assets?.filter(a => a.id !== data.id).slice(0, 3) || []);
+             setRelatedItems(related.assets?.filter(a => a.id !== data.id).slice(0, 4) || []);
            } catch(e) {
              console.error("Failed to load related items", e);
            }
@@ -473,6 +506,23 @@ export default function ResourceDetailPage() {
       {/* Hero Section */}
       <div className="pt-24 lg:pt-32 pb-8">
         <div className="container mx-auto px-6">
+          <div className="max-w-7xl mx-auto mb-6">
+             {/* Breadcrumbs */}
+             <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Link to="/" className="hover:text-primary transition-colors">Home</Link>
+                <ChevronRight className="w-4 h-4 text-gray-300" />
+                <Link to="/vault" className="hover:text-primary transition-colors">Library</Link>
+                {asset.category && (
+                  <>
+                    <ChevronRight className="w-4 h-4 text-gray-300" />
+                    <Link to={`/vault?category=${asset.category}`} className="hover:text-primary transition-colors capitalize">{asset.category}</Link>
+                  </>
+                )}
+                <ChevronRight className="w-4 h-4 text-gray-300" />
+                <span className="text-gray-900 font-medium truncate max-w-[200px]">{asset.title}</span>
+             </div>
+          </div>
+
           <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 max-w-7xl mx-auto">
             
             {/* Left Column: Product Image */}
@@ -480,13 +530,13 @@ export default function ResourceDetailPage() {
                <div className="sticky top-32">
                  <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 group">
                    {/* 1:1 container - clips bottom banner using clip-path */}
-                   <div className="aspect-square w-full bg-white overflow-hidden flex items-center justify-center p-4">
+                   <div className="aspect-square w-full bg-slate-50 overflow-hidden flex items-center justify-center p-8 lg:p-12 relative">
+                     {/* Paper Texture overlay effect could go here */}
                      {asset.image_url && !asset.image_url.includes("__draft__") && !imageError ? (
                        <img 
                          src={asset.image_url} 
                          alt={asset.title}
-                         className="max-w-full max-h-full object-contain group-hover:scale-[1.02] transition-transform duration-500 select-none"
-                         style={{ clipPath: 'inset(0 0 8% 0)', transform: 'translateY(4%)' }} /* Clip bottom + shift down */
+                         className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500 select-none shadow-xl"
                          onError={() => setImageError(true)}
                          onContextMenu={(e) => e.preventDefault()}
                          onDragStart={(e) => e.preventDefault()}
@@ -564,7 +614,7 @@ export default function ResourceDetailPage() {
               )}
 
               {/* Dynamic Right Column Card */}
-              {isSubscriber ? (
+            {isSubscriber && (
                 // Subscriber View: "Request a Design" or Value Reinforcement
                 <div className="mt-8 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
                   <div className="flex items-start gap-4">
@@ -580,24 +630,6 @@ export default function ResourceDetailPage() {
                            Request a Design <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </Link>
                      </div>
-                  </div>
-                </div>
-              ) : (
-                // Non-Subscriber View: Upsell
-                <div className="mt-8 p-5 bg-gradient-to-br from-primary/5 to-purple-500/5 rounded-2xl border border-primary/10">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
-                      <Sparkles className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-serif text-lg text-ink mb-1">Unlock All 500+ Designs</h4>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Get unlimited access to the entire HuePress library, including premium collections and exclusive PDFs.
-                      </p>
-                      <Link to="/pricing" className="text-sm font-bold text-primary hover:text-primary-dark transition-colors flex items-center gap-1 group">
-                        Get All Access <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </Link>
-                    </div>
                   </div>
                 </div>
               )}
