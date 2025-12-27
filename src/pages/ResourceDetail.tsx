@@ -257,7 +257,7 @@ function DownloadSection({ assetId, formattedAssetId, title }: { assetId: string
       {/* Value Prop */}
       <div className="flex items-center justify-center gap-1.5 mt-2 mb-1">
         <Sparkles className="w-3.5 h-3.5 text-primary" />
-        <span className="text-sm font-medium text-ink">Instant access to 1,000+ therapy-grade designs</span>
+        <span className="text-sm font-medium text-ink">Instant access to 500+ therapy-grade designs</span>
       </div>
       
       {/* Social Proof - NEW */}
@@ -629,9 +629,9 @@ export default function ResourceDetailPage() {
                         <Sparkles className="w-5 h-5" />
                      </div>
                      <div>
-                        <h4 className="font-serif text-lg text-ink mb-1">Unlock All 1,000+ Designs</h4>
+                        <h4 className="font-serif text-lg text-ink mb-1">Unlock All 500+ Designs</h4>
                       <p className="text-sm text-gray-600 mb-3">
-                        Get unlimited access to the entire HuePress library, including premium collections and exclusive PDFs.s to new releases every week.
+                        Get unlimited access to the entire HuePress library, including premium collections and exclusive PDFs.
                         </p>
                         <Link to="/request-design" className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-1 group">
                            Request a Design <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

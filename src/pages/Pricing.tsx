@@ -20,7 +20,7 @@ const plans = [
     price: "$5",
     period: "/month",
     description: "Perfect for trying us out",
-    features: ["Unlimited downloads", "1,000+ bold designs", "New drops every Sunday", "High-res vector PDFs", "No watermarks", "Cancel anytime"],
+    features: ["Unlimited downloads", "500+ bold designs", "New drops every Sunday", "High-res vector PDFs", "No watermarks", "Cancel anytime"],
     priceId: "price_1Sh99kRzWblq3ch1ACXHv20y",
     popular: false,
     cta: "Join for $5/mo",
@@ -125,7 +125,7 @@ export default function PricingPage() {
     <>
       <SEO 
         title="Pricing | $5/mo Unlimited Downloads | HuePress"
-        description="Join The Club for $5/month. Unlimited access to 1,000+ therapy-grade coloring pages. Cancel anytime, no questions asked."
+        description="Join The Club for $5/month. Unlimited access to 500+ therapy-grade coloring pages. Cancel anytime, no questions asked."
       />
       {/* Hero */}
       <Section background="accent" className="text-center" size="md">

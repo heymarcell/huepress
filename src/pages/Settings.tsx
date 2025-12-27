@@ -94,7 +94,7 @@ export default function Settings() {
               <p className="text-sm text-gray-500 mt-1">
                 {isSubscriber 
                   ? "You have full access to all designs and features." 
-                  : "Upgrade to unlock all 1,000+ designs and features."}
+                  : "Upgrade to unlock all 500+ designs and features."}
               </p>
             </div>
             

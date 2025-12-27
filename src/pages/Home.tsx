@@ -27,7 +27,8 @@ import {
   Heart,
   Star,
   Check,
-  PartyPopper
+  PartyPopper,
+  Unlock
 } from "lucide-react";
 
 // Featured items with real thumbnails
@@ -252,7 +253,7 @@ export default function HomePage() {
       <Section>
           <div className="text-center mb-12">
             <Heading as="h2" variant="h1" className="mb-4">Peek Inside The Vault</Heading>
-            <Text variant="large" className="max-w-2xl mx-auto">Over 1,000 bold, curated designs across trending themes. New drops every Sunday.</Text>
+            <Text variant="large" className="max-w-2xl mx-auto">Over 500 bold, curated designs across trending themes. New drops every Sunday.</Text>
           </div>
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
              {featuredItems.length > 0 ? (
@@ -290,7 +291,10 @@ export default function HomePage() {
                    <Link to="/vault">
                      <Button variant="primary" size="lg">Explore Your Vault</Button>
                    </Link>
-                   <Text variant="muted">All 1,000+ designs unlocked for you</Text>
+                   <div className="flex items-center justify-center gap-2 text-sm mt-3">
+                   <Unlock className="w-4 h-4 text-gray-400" />
+                   <Text variant="muted">All 500+ designs unlocked for you</Text>
+                </div>
                  </>
                ) : (
                  // Non-subscriber CTAs
@@ -303,7 +307,10 @@ export default function HomePage() {
                        <Button variant="outline" size="lg">Browse the Vault</Button>
                      </Link>
                    </div>
-                   <Text variant="muted">Instant access to 1,000+ designs</Text>
+                   <div className="flex items-center justify-center gap-2 text-sm mt-3">
+                   <Sparkles className="w-4 h-4 text-gray-400" />
+                   <Text variant="muted">Instant access to 500+ designs</Text>
+                </div>
                  </>
                )}
             </div>

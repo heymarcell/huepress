@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
 import { apiClient } from "@/lib/api-client";
 import { Asset, Tag } from "@/api/types";
-import { ResourceCard, ResourceCardSkeleton, SearchBar, Button } from "@/components/ui";
+import { ResourceCard, ResourceCardSkeleton, SearchBar, Button, Heading } from "@/components/ui";
 import { ArrowUpDown, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -111,15 +111,17 @@ export default function VaultPage() {
   return (
     <div className="bg-gray-50 min-h-screen">
       <SEO 
-        title="The Vault | 1,000+ Coloring Pages | HuePress"
-        description="Browse our curated collection of 1,000+ therapy-grade coloring pages. Bold lines, trending themes, instant PDF downloads."
+        title="The Vault | 500+ Coloring Pages | HuePress"
+        description="Browse our curated collection of 500+ therapy-grade coloring pages. Bold lines, trending themes, instant PDF downloads."
+        keywords="coloring pages, bold lines, therapy grade, printable pdf, autism friendly, adhd friendly"
       />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="font-serif text-h1 text-ink mb-2">The Vault</h1>
-          <p className="text-gray-500">1,000+ fridge-worthy designs, ready to print</p>
-        </div>
+      
+      <div className="container mx-auto px-6 py-12 lg:py-16">
+        <div className="flex flex-col md:flex-row items-end justify-between gap-6 mb-10">
+          <div>
+            <Heading as="h1" variant="h1" className="mb-2">The Vault</Heading>
+            <p className="text-gray-500">500+ fridge-worthy designs, ready to print</p>
+          </div>
 
         {/* Search Bar */}
         <SearchBar onSearch={handleSearch} placeholder="Try 'Dinosaur', 'Space', or 'Calm'..." />
@@ -263,8 +265,9 @@ export default function VaultPage() {
             </div>
           )}
         </div>
+      </div>
 
-        {/* Grid with Injected Banner */}
+      {/* Grid with Injected Banner */}
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[...Array(8)].map((_, i) => (
