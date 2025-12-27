@@ -95,7 +95,7 @@ app.post("/clerk", async (c) => {
           .bind(crypto.randomUUID(), email, user.id)
           .run();
 
-        console.log(`User created: ${user.id} (Email: ${email || 'Unverified'})`);
+        console.log(`User created: ${user.id}`);
 
         // Track signup in GA4 (Only if we have email? Or track generic signup?)
         // Tracking generic signup is fine, but email match requires email.
@@ -106,7 +106,7 @@ app.post("/clerk", async (c) => {
             { userId: user.id, method: 'email' }
           );
           if (ga4Result.success) {
-            console.log('GA4 SignUp event sent for:', email);
+            console.log(`GA4 SignUp event sent for user: ${user.id}`);
           }
         }
 
@@ -119,7 +119,7 @@ app.post("/clerk", async (c) => {
             { email, externalId: user.id }
           );
           if (metaResult.success) {
-            console.log('Meta CompleteRegistration event sent for:', email);
+            console.log(`Meta CompleteRegistration event sent for user: ${user.id}`);
           }
         }
         break;
@@ -135,7 +135,7 @@ app.post("/clerk", async (c) => {
             .bind(email, user.id)
             .run();
             
-          console.log(`User updated: ${user.id} (Email: ${email || 'Unverified'})`);
+          console.log(`User updated: ${user.id}`);
           break;
       }
 

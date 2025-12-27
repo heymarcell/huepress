@@ -16,14 +16,43 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Reduced from 50MB for DoS protection [F-004]
 
-// SECURITY [F-001]: Validate uploadUrl against whitelist to prevent SSRF
+// SECURITY [F-001]: Container Authentication
+// Validates X-Internal-Secret header against CONTAINER_AUTH_SECRET env var
+const CONTAINER_SECRET = process.env.CONTAINER_AUTH_SECRET;
+
+function validateAuthSecret(req, res, next) {
+  // Skip auth for health checks
+  if (req.path === '/health') return next();
+  
+  // If secret not configured, log warning but allow (for backwards compatibility during rollout)
+  if (!CONTAINER_SECRET) {
+    console.warn('[Security] CONTAINER_AUTH_SECRET not set - authentication disabled');
+    return next();
+  }
+  
+  const providedSecret = req.headers['x-internal-secret'];
+  if (providedSecret !== CONTAINER_SECRET) {
+    console.error('[Security] Unauthorized request - invalid or missing X-Internal-Secret');
+    return res.status(401).json({ error: 'Unauthorized: Invalid or missing X-Internal-Secret' });
+  }
+  
+  next();
+}
+
+app.use(validateAuthSecret);
+
+// SECURITY [F-001/F-003]: Validate uploadUrl against whitelist to prevent SSRF
 function validateUploadUrl(url) {
   if (!url) return true; // null/undefined is fine (sync mode)
   
   const ALLOWED_PREFIXES = [
     'https://api.huepress.co/',
-    'http://localhost:',  // Dev only
   ];
+  
+  // SECURITY [F-003]: Only allow localhost in non-production environments
+  if (process.env.NODE_ENV !== 'production') {
+    ALLOWED_PREFIXES.push('http://localhost:');
+  }
   
   const isAllowed = ALLOWED_PREFIXES.some(prefix => url.startsWith(prefix));
   if (!isAllowed) {
@@ -544,17 +573,17 @@ app.post('/generate-all', async (req, res) => {
 
     console.log(`[GenerateAll] Starting for "${title}" (assetId: ${assetId})`);
 
-    // 1. THUMBNAIL - Generate 1:1 with hidden copyright banner
-    // Final image: 600x650 (600x600 art + 50px banner)
-    // On website, CSS clips to square, hiding the banner
-    // If image is saved directly, banner is visible with copyright info
-    let thumbnailBuffer = null;
-    const thumbSize = 600;
-    const bannerHeight = 50;
-    const totalHeight = thumbSize + bannerHeight;
+    // [F-004] PARALLEL PROCESSING: Thumbnail and OG are independent - run in parallel
+    // PDF generation follows after (depends on safeSvgContent being ready, which it already is)
     
-    if (thumbnailUploadUrl && thumbnailUploadKey) {
-      console.log(`[GenerateAll] Step 1: Generating Thumbnail (${thumbSize}x${totalHeight} with banner)...`);
+    // Define async generators that return results
+    const generateThumbnail = async () => {
+      if (!thumbnailUploadUrl || !thumbnailUploadKey) return null;
+      
+      console.log(`[GenerateAll] Generating Thumbnail...`);
+      const thumbSize = 600;
+      const bannerHeight = 50;
+      const totalHeight = thumbSize + bannerHeight;
       
       // Step 1a: Resize SVG to 1:1 square
       const artBuffer = await sharp(Buffer.from(safeSvgContent))
@@ -563,7 +592,7 @@ app.post('/generate-all', async (req, res) => {
         .png()
         .toBuffer();
       
-      // Step 1b: Create banner SVG with copyright info and anti-piracy message
+      // Step 1b: Create banner SVG with copyright info
       const displayId = (assetId || "").replace(/^HP-[A-Z]+-/, '');
       const currentYear = new Date().getFullYear();
       const bannerSvg = `
@@ -583,7 +612,7 @@ app.post('/generate-all', async (req, res) => {
       `;
       
       // Step 1c: Composite art + banner
-      thumbnailBuffer = await sharp({
+      const thumbnailBuffer = await sharp({
         create: { width: thumbSize, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
       })
       .composite([
@@ -607,20 +636,16 @@ app.post('/generate-all', async (req, res) => {
       if (!thumbRes.ok) {
         throw new Error(`Thumbnail upload failed: ${thumbRes.status}`);
       }
-      results.thumbnail = { success: true, size: thumbnailBuffer.length };
       console.log(`[GenerateAll] Thumbnail uploaded successfully`);
-    }
-
-    // 2. OG IMAGE - Generate using thumbnail and upload
-    if (ogUploadUrl && ogUploadKey) {
-      console.log(`[GenerateAll] Step 2: Generating OG Image...`);
+      return { success: true, size: thumbnailBuffer.length };
+    };
+    
+    const generateOgImage = async () => {
+      if (!ogUploadUrl || !ogUploadKey) return null;
       
+      console.log(`[GenerateAll] Generating OG Image...`);
       const width = 1200;
       const height = 630;
-      
-      let ogImage = sharp({
-        create: { width, height, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
-      });
       
       // 1. Base Layer: Generic Template Overlay
       const templatePath = path.join(__dirname, 'og_template.svg');
@@ -633,11 +658,8 @@ app.post('/generate-all', async (req, res) => {
       const layers = [];
 
       // Layer A: Art from SVG (NO banner) - placed on the RIGHT side
-      // The right area is from x=650 to x=1150, y-centered at 315
-      // Use fresh render from SVG content, not the thumbnail with banner
       if (safeSvgContent) {
         try {
-          // Render SVG directly for OG (no banner)
           const ogArt = await sharp(Buffer.from(safeSvgContent))
             .resize(450, 500, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 1 } })
             .flatten({ background: { r: 255, g: 255, b: 255 } })
@@ -648,8 +670,6 @@ app.post('/generate-all', async (req, res) => {
           const artW = artMeta.width || 450;
           const artH = artMeta.height || 500;
           
-          // Center in the right area (x: 650-1150, y: 0-630)
-          // Center point = x: 900, y: 315
           const artLeft = 900 - Math.round(artW / 2);
           const artTop = 315 - Math.round(artH / 2);
           
@@ -661,7 +681,7 @@ app.post('/generate-all', async (req, res) => {
         }
       }
 
-      // Layer B: Template Overlay (Gradient + Logo + Badge) - ON TOP of Thumbnail
+      // Layer B: Template Overlay
       if (templateBuffer) {
         layers.push({ input: templateBuffer, top: 0, left: 0 });
       }
@@ -682,7 +702,7 @@ app.post('/generate-all', async (req, res) => {
       `;
       layers.push({ input: Buffer.from(textSvg), top: 0, left: 0 });
       
-      // Composite all: White Base -> Thumbnail -> Template -> Text
+      // Composite all
       const ogBuffer = await sharp({
         create: { width, height, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
       })
@@ -703,9 +723,20 @@ app.post('/generate-all', async (req, res) => {
       if (!ogRes.ok) {
         throw new Error(`OG upload failed: ${ogRes.status}`);
       }
-      results.og = { success: true, size: ogBuffer.length };
       console.log(`[GenerateAll] OG uploaded successfully`);
-    }
+      return { success: true, size: ogBuffer.length };
+    };
+    
+    // [F-004] Execute Thumbnail and OG in parallel
+    console.log(`[GenerateAll] Starting parallel image generation...`);
+    const [thumbnailResult, ogResult] = await Promise.all([
+      generateThumbnail().catch(err => ({ success: false, error: err.message })),
+      generateOgImage().catch(err => ({ success: false, error: err.message }))
+    ]);
+    
+    results.thumbnail = thumbnailResult;
+    results.og = ogResult;
+    console.log(`[GenerateAll] Parallel generation complete. Thumbnail: ${thumbnailResult?.success}, OG: ${ogResult?.success}`);
 
     // 3. PDF - Generate TRUE VECTOR PDF using pdfkit + svg-to-pdfkit
     // This converts SVG paths directly to PDF vector drawing commands - no rasterization!

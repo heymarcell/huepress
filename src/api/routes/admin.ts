@@ -442,7 +442,10 @@ app.post("/assets", async (c) => {
                     
                     const response = await fetchWithRetry(() => container.fetch("http://container/generate-all", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: { 
+                            "Content-Type": "application/json",
+                            "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET || ""
+                        },
                         body: JSON.stringify({
                             svgContent,
                             title: (title as string) || "",
