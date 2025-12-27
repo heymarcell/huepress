@@ -16,8 +16,6 @@ import {
   Unlock,
   ImageIcon,
   ArrowRight,
-  ChevronDown,
-  ChevronUp,
   ChevronRight
 } from "lucide-react";
 import SEO from "@/components/SEO";
@@ -71,7 +69,6 @@ function RatingSummary({ assetId }: { assetId: string }) {
 // Reviews section component
 function ReviewsSection({ assetId }: { assetId: string }) {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [isOpen, setIsOpen] = useState(false);
   const { isSubscriber } = useSubscription();
 
   const handleReviewSubmitted = () => {
@@ -80,27 +77,19 @@ function ReviewsSection({ assetId }: { assetId: string }) {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-6">
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-6 lg:p-8 hover:bg-gray-50 transition-colors"
-      >
-        <h2 className="font-serif text-h3 text-ink">Reviews</h2>
-        {isOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-      </button>
-      
-      {isOpen && (
-        <div className="px-6 lg:px-8 pb-8 animate-in slide-in-from-top-2 duration-200">
-          {/* Review List */}
-          <ReviewList assetId={assetId} refreshTrigger={refreshTrigger} />
-          
-          {/* Review Form (subscribers only) */}
-          {isSubscriber && (
-            <div className="mt-6 pt-4 border-t border-gray-100">
-              <ReviewForm assetId={assetId} onReviewSubmitted={handleReviewSubmitted} />
-            </div>
-          )}
-        </div>
-      )}
+      <div className="p-6 lg:p-8">
+        <h2 className="font-serif text-h3 text-ink mb-6">Reviews</h2>
+        
+        {/* Review List */}
+        <ReviewList assetId={assetId} refreshTrigger={refreshTrigger} />
+        
+        {/* Review Form (subscribers only) */}
+        {isSubscriber && (
+          <div className="mt-6 pt-4 border-t border-gray-100">
+            <ReviewForm assetId={assetId} onReviewSubmitted={handleReviewSubmitted} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
