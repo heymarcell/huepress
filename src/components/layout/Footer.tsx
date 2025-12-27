@@ -15,8 +15,9 @@ const footerLinks = {
     // { to: "/privacy#choices", label: "Your Privacy Choices" }, // Replaced by dynamic button in component
   ],
   social: [
-    { href: "https://pinterest.com/huepress", label: "Pinterest" },
-    { href: "https://instagram.com/huepress", label: "Instagram" },
+    { href: "https://pinterest.com/huepressco", label: "Pinterest" },
+    { href: "https://instagram.com/huepressco", label: "Instagram" },
+    { href: "https://facebook.com/huepressco", label: "Facebook" },
   ],
 };
 
