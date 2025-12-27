@@ -874,14 +874,19 @@ describe("Admin API", () => {
 
         it("GET /requests should return all design requests", async () => {
             mockAll.mockResolvedValue({ results: [{ id: "1", status: "pending" }] });
+            mockFirst.mockResolvedValueOnce({ total: 1 });
             
             const res = await app.request("http://localhost/requests", {}, mockEnv);
             
             expect(res.status).toBe(200);
+            const data = await res.json() as { requests: unknown[]; total: number };
+            expect(data.requests).toHaveLength(1);
+            expect(data.total).toBe(1);
         });
 
         it("GET /requests should filter by status", async () => {
             mockAll.mockResolvedValue({ results: [] });
+            mockFirst.mockResolvedValueOnce({ total: 0 });
             
             const res = await app.request("http://localhost/requests?status=approved", {}, mockEnv);
             

@@ -17,19 +17,24 @@ app.get("/likes/:assetId/status", async (c) => {
   // If not logged in, clearly not liked
   if (!auth?.userId) return c.json({ liked: false });
 
-  const userId = auth.userId;
   /* 
-    Optimization: Single query with JOIN instead of 2 sequential queries.
-    This avoids the round-trip penalty of looking up the internal user ID first.
+    Optimization: Split JOIN into two fast, indexed queries.
+    1. Resolve DB User ID from Clerk ID (Index: idx_users_clerk)
+    2. Check Likes table (Index: Primary Key composite user_id + asset_id)
+    
+    This avoids potential query planner issues with distributed SQLite JOINS
+    that were causing 30s+ latency.
   */
+  const user = await getDbUser(c, auth.userId);
+  if (!user) return c.json({ liked: false });
+
   const assetId = c.req.param("assetId");
   
   const exists = await c.env.DB.prepare(`
     SELECT 1 
-    FROM likes l
-    JOIN users u ON l.user_id = u.id
-    WHERE u.clerk_id = ? AND l.asset_id = ?
-  `).bind(userId, assetId).first();
+    FROM likes 
+    WHERE user_id = ? AND asset_id = ?
+  `).bind(user.id, assetId).first();
 
   return c.json({ liked: !!exists });
 });
@@ -39,19 +44,27 @@ app.get("/likes", async (c) => {
   const auth = getAuth(c);
   if (!auth?.userId) return c.json({ error: "Unauthorized" }, 401);
 
+  const limit = parseInt(c.req.query("limit") || "20");
+  const offset = parseInt(c.req.query("offset") || "0");
+
   const user = await getDbUser(c, auth.userId);
   if (!user) return c.json({ error: "User not found" }, 404);
 
-  const { results } = await c.env.DB.prepare(`
-    SELECT a.*, l.created_at as liked_at
-    FROM likes l
-    JOIN assets a ON l.asset_id = a.id
-    WHERE l.user_id = ?
-    ORDER BY l.created_at DESC
-  `).bind(user.id).all();
+  const [likesResult, countResult] = await Promise.all([
+    c.env.DB.prepare(`
+      SELECT a.*, l.created_at as liked_at
+      FROM likes l
+      JOIN assets a ON l.asset_id = a.id
+      WHERE l.user_id = ?
+      ORDER BY l.created_at DESC
+      LIMIT ? OFFSET ?
+    `).bind(user.id, limit, offset).all(),
+    
+    c.env.DB.prepare("SELECT COUNT(*) as total FROM likes WHERE user_id = ?").bind(user.id).first<{ total: number }>()
+  ]);
 
   const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
-  const likes = results.map((row: Record<string, unknown>) => {
+  const likes = (likesResult.results || []).map((row: Record<string, unknown>) => {
     const r2Key = row.r2_key_public as string | undefined;
     let imageUrl = row.image_url as string | undefined;
     
@@ -66,7 +79,12 @@ app.get("/likes", async (c) => {
     };
   });
 
-  return c.json({ likes });
+  return c.json({ 
+    likes,
+    total: countResult?.total || 0,
+    limit,
+    offset
+  });
 });
 
 // POST /likes/:assetId - Toggle like
@@ -104,19 +122,27 @@ app.get("/history", async (c) => {
   const auth = getAuth(c);
   if (!auth?.userId) return c.json({ error: "Unauthorized" }, 401);
 
+  const limit = parseInt(c.req.query("limit") || "20");
+  const offset = parseInt(c.req.query("offset") || "0");
+
   const user = await getDbUser(c, auth.userId);
   if (!user) return c.json({ error: "User not found" }, 404);
 
-  const { results } = await c.env.DB.prepare(`
-    SELECT a.*, d.downloaded_at, d.type
-    FROM downloads d
-    JOIN assets a ON d.asset_id = a.id
-    WHERE d.user_id = ?
-    ORDER BY d.downloaded_at DESC
-  `).bind(user.id).all();
+  const [historyResult, countResult] = await Promise.all([
+    c.env.DB.prepare(`
+      SELECT a.*, d.downloaded_at, d.type
+      FROM downloads d
+      JOIN assets a ON d.asset_id = a.id
+      WHERE d.user_id = ?
+      ORDER BY d.downloaded_at DESC
+      LIMIT ? OFFSET ?
+    `).bind(user.id, limit, offset).all(),
+    
+    c.env.DB.prepare("SELECT COUNT(*) as total FROM downloads WHERE user_id = ?").bind(user.id).first<{ total: number }>()
+  ]);
 
   const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
-  const history = results.map((row: Record<string, unknown>) => {
+  const history = (historyResult.results || []).map((row: Record<string, unknown>) => {
     const r2Key = row.r2_key_public as string | undefined;
     let imageUrl = row.image_url as string | undefined;
     
@@ -131,7 +157,12 @@ app.get("/history", async (c) => {
     };
   });
 
-  return c.json({ history });
+  return c.json({ 
+    history, 
+    total: countResult?.total || 0,
+    limit, 
+    offset 
+  });
 });
 
 // POST /activity - Record download or print

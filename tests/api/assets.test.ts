@@ -162,12 +162,12 @@ describe("Assets API", () => {
         expect(res.status).toBe(200);
     });
 
-    it("GET /assets/:id should handle numeric ID suffix lookup", async () => {
-        const mockAsset = { id: "1", asset_id: "HP-ANM-12345", tags: '[]', status: 'published' };
-        mockFirst.mockResolvedValue(mockAsset);
+    it("GET /assets/:id should require exact match (no wildcard suffix)", async () => {
+        // Optimization: prevent expensive wildcard searches
+        mockFirst.mockResolvedValue(null); // Should not be found with partial ID
 
         const res = await app.request("http://localhost/assets/12345", {}, mockEnv);
-        expect(res.status).toBe(200);
+        expect(res.status).toBe(404);
     });
 
     it("GET /assets/:id should return 404 for unpublished asset", async () => {

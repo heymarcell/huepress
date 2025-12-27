@@ -88,18 +88,25 @@ async function verifyAdmin(c: Context<{ Bindings: Bindings }>): Promise<boolean>
   }
 }
 
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
+
 // ADMIN: Create Draft Asset (called on SVG upload)
 // Saves all current form data and returns the generated assetId & slug
-app.post("/create-draft", async (c) => {
+app.post("/create-draft", 
+  zValidator("form", z.object({
+    title: z.string().min(1, "Title is required"),
+    description: z.string().optional(),
+    category: z.string().min(1, "Category is required"),
+    skill: z.string().optional(),
+    tags: z.string().optional(),
+  })),
+  async (c) => {
   const isAdminUser = await verifyAdmin(c);
   if (!isAdminUser) return c.json({ error: "Unauthorized" }, 401);
 
-  const body = await c.req.parseBody() as Record<string, string>;
-  const { title, description, category, skill, tags } = body;
-  
-  if (!title || !category) {
-    return c.json({ error: "Title and Category are required" }, 400);
-  }
+  const { title, description, category, skill, tags } = c.req.valid("form");
+
 
   // Generate Asset ID: Use sequences table for guaranteed unique, never-reused IDs
   // Atomic increment: ensures no duplicates even with concurrent requests
@@ -158,17 +165,44 @@ app.get("/assets", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
+  const limit = parseInt(c.req.query("limit") || "50");
+  const offset = parseInt(c.req.query("offset") || "0");
+  const search = c.req.query("q") || "";
+
   try {
-    const { results } = await c.env.DB.prepare(
-      "SELECT * FROM assets ORDER BY created_at DESC"
-    ).all();
+    let query = "SELECT * FROM assets";
+    let countQuery = "SELECT COUNT(*) as total FROM assets";
+    const params: unknown[] = [];
+    const countParams: unknown[] = [];
+
+    if (search) {
+      const term = `%${search}%`;
+      const whereClause = " WHERE title LIKE ? OR asset_id LIKE ?";
+      query += whereClause;
+      countQuery += whereClause;
+      params.push(term, term);
+      countParams.push(term, term);
+    }
+
+    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+    params.push(limit, offset);
+
+    const [assetsResult, countResult] = await Promise.all([
+      c.env.DB.prepare(query).bind(...params).all(),
+      c.env.DB.prepare(countQuery).bind(...countParams).first<{ total: number }>()
+    ]);
     
-    const assets = results?.map((asset: Record<string, unknown>) => ({
+    const assets = assetsResult.results?.map((asset: Record<string, unknown>) => ({
       ...asset,
       tags: asset.tags ? JSON.parse(asset.tags as string) : [],
     }));
 
-    return c.json({ assets });
+    return c.json({ 
+      assets,
+      total: countResult?.total || 0,
+      limit,
+      offset
+    });
   } catch (error) {
     console.error("Database error:", error);
     return c.json({ error: "Failed to fetch assets" }, 500);
@@ -950,19 +984,36 @@ app.get("/requests", async (c) => {
   if (!isAdminUser) return c.json({ error: "Unauthorized" }, 401);
 
   const { status } = c.req.query();
+  const limit = parseInt(c.req.query("limit") || "50");
+  const offset = parseInt(c.req.query("offset") || "0");
   
   let query = "SELECT * FROM design_requests";
-  const params: string[] = [];
+  let countQuery = "SELECT COUNT(*) as total FROM design_requests";
+  const params: unknown[] = [];
+  const countParams: unknown[] = [];
   
   if (status) {
-    query += " WHERE status = ?";
+    const where = " WHERE status = ?";
+    query += where;
+    countQuery += where;
     params.push(status);
+    countParams.push(status);
   }
   
-  query += " ORDER BY created_at DESC";
+  query += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+  params.push(limit, offset);
   
-  const { results } = await c.env.DB.prepare(query).bind(...params).all();
-  return c.json(results);
+  const [requestsResult, countResult] = await Promise.all([
+     c.env.DB.prepare(query).bind(...params).all(),
+     c.env.DB.prepare(countQuery).bind(...countParams).first<{ total: number }>()
+  ]);
+
+  return c.json({
+    requests: requestsResult.results || [],
+    total: countResult?.total || 0,
+    limit,
+    offset
+  });
 });
 
 // ADMIN: Update Design Request

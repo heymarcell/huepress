@@ -1,22 +1,18 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
 import { apiClient } from "@/lib/api-client";
-import { Asset, Tag } from "@/api/types";
 import { ResourceCard, ResourceCardSkeleton, SearchBar, Button, Heading, Combobox } from "@/components/ui";
 import { ArrowUpDown, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 
 import { FreeSampleBanner } from "@/components/features/FreeSampleBanner";
-
-
 
 export default function VaultPage() {
   const { isSubscriber } = useSubscription();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [tags, setTags] = useState<Record<string, Tag[]>>({});
   
   // Filter States - Initialize from URL query params
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "");
@@ -28,11 +24,11 @@ export default function VaultPage() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const debouncedSearch = useDebounce(searchQuery, 500);
 
-  const [isLoading, setIsLoading] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  useEffect(() => {
+  // Sync scroll listener
+  React.useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 150);
     };
@@ -41,7 +37,7 @@ export default function VaultPage() {
   }, []);
 
   // Sync filters to URL
-  useEffect(() => {
+  React.useEffect(() => {
     const params = new URLSearchParams();
     if (selectedCategory) params.set("category", selectedCategory);
     if (selectedSkill) params.set("skill", selectedSkill);
@@ -52,42 +48,29 @@ export default function VaultPage() {
     setSearchParams(params, { replace: true });
   }, [selectedCategory, selectedSkill, selectedTags, debouncedSearch, sortBy, setSearchParams]);
 
-  // Fetch Tags on mount
-  useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const data = await apiClient.tags.list();
-        setTags(data.grouped);
-      } catch (err) {
-        console.error("Failed to load tags", err);
-      }
-    };
-    fetchTags();
-  }, []);
+  // Query: Tags
+  const { data: tagsData } = useQuery({
+    queryKey: ['tags'],
+    queryFn: () => apiClient.tags.list(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  const tags = tagsData?.grouped || {};
 
-  // Fetch Assets when filters change
-  useEffect(() => {
-    const fetchAssets = async () => {
-      setIsLoading(true);
-      try {
-        const data = await apiClient.assets.list({
-            category: selectedCategory || undefined,
-            skill: selectedSkill || undefined,
-            tag: selectedTags.length > 0 ? selectedTags.join(",") : undefined,
-            search: debouncedSearch || undefined,
-            limit: 100 
-        });
-        setAssets(data.assets || []);
-      } catch (err) {
-        console.error("Failed to load assets", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Query: Assets
+  const { data: assetsData, isLoading } = useQuery({
+    queryKey: ['assets', { selectedCategory, selectedSkill, selectedTags, debouncedSearch }],
+    queryFn: () => apiClient.assets.list({
+      category: selectedCategory || undefined,
+      skill: selectedSkill || undefined,
+      tag: selectedTags.length > 0 ? selectedTags.join(",") : undefined,
+      search: debouncedSearch || undefined,
+      limit: 100 
+    }),
+    placeholderData: keepPreviousData,
+  });
 
-    fetchAssets();
-  }, [selectedCategory, selectedSkill, selectedTags, debouncedSearch]);
-
+  const assets = assetsData?.assets || [];
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -102,7 +85,6 @@ export default function VaultPage() {
   }, [assets, sortBy]);
 
   const showFreeSampleBanner = !isSubscriber;
-
 
   // assets.category column stores "Animals".
   // So value should be t.name!

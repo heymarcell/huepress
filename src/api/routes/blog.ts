@@ -95,14 +95,27 @@ app.get("/admin/posts", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
   
+  const limit = parseInt(c.req.query("limit") || "50");
+  const offset = parseInt(c.req.query("offset") || "0");
+
   try {
-    const { results } = await c.env.DB.prepare(`
-      SELECT id, title, slug, excerpt, cover_image, status, published_at, created_at, updated_at
-      FROM posts
-      ORDER BY updated_at DESC
-    `).all();
+    const [postsResult, countResult] = await Promise.all([
+      c.env.DB.prepare(`
+        SELECT id, title, slug, excerpt, cover_image, status, published_at, created_at, updated_at
+        FROM posts
+        ORDER BY updated_at DESC
+        LIMIT ? OFFSET ?
+      `).bind(limit, offset).all(),
+      
+      c.env.DB.prepare("SELECT COUNT(*) as total FROM posts").first<{ total: number }>()
+    ]);
     
-    return c.json({ posts: results || [] });
+    return c.json({ 
+      posts: postsResult.results || [],
+      total: countResult?.total || 0,
+      limit,
+      offset
+    });
   } catch (error) {
     console.error("Failed to fetch admin posts:", error);
     return c.json({ error: "Failed to fetch posts" }, 500);

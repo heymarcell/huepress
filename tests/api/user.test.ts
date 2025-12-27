@@ -34,11 +34,14 @@ describe("User API", () => {
         mockFirst.mockResolvedValueOnce({ id: "db_user_123" });
         // Mock list query
         mockAll.mockResolvedValue({ results: [{ id: "asset_1" }] });
+        // Mock count query
+        mockFirst.mockResolvedValueOnce({ total: 1 });
 
         const res = await app.request("http://localhost/likes", {}, mockEnv);
         expect(res.status).toBe(200);
-        const data = await res.json() as { likes: unknown[] };
+        const data = await res.json() as { likes: unknown[]; total: number };
         expect(data.likes).toHaveLength(1);
+        expect(data.total).toBe(1);
     });
 
     it("GET /likes should return 404 if user not found", async () => {
@@ -49,7 +52,9 @@ describe("User API", () => {
     });
 
     it("GET /likes/:assetId/status should return true if liked", async () => {
-        // Mock single JOIN query result
+        // Mock getDbUser
+        mockFirst.mockResolvedValueOnce({ id: "db_user_123" });
+        // Mock single check query result
         mockFirst.mockResolvedValueOnce({ 1: 1 });
 
         const res = await app.request("http://localhost/likes/asset_1/status", {}, mockEnv);
@@ -59,7 +64,19 @@ describe("User API", () => {
     });
 
     it("GET /likes/:assetId/status should return false if not liked", async () => {
-        // Mock single JOIN query result (null)
+        // Mock getDbUser
+        mockFirst.mockResolvedValueOnce({ id: "db_user_123" });
+        // Mock single check query result (null)
+        mockFirst.mockResolvedValueOnce(null);
+
+        const res = await app.request("http://localhost/likes/asset_1/status", {}, mockEnv);
+        expect(res.status).toBe(200);
+        const data = await res.json() as { liked: boolean };
+        expect(data.liked).toBe(false);
+    });
+
+    it("GET /likes/:assetId/status should return false if user not found", async () => {
+        // Mock getDbUser (null)
         mockFirst.mockResolvedValueOnce(null);
 
         const res = await app.request("http://localhost/likes/asset_1/status", {}, mockEnv);
@@ -113,11 +130,14 @@ describe("User API", () => {
                 tags: '["animals"]'
             }] 
         });
+        // Mock count query
+        mockFirst.mockResolvedValueOnce({ total: 1 });
 
         const res = await app.request("http://localhost/history", {}, mockEnv);
         expect(res.status).toBe(200);
-        const data = await res.json() as { history: unknown[] };
+        const data = await res.json() as { history: unknown[]; total: number };
         expect(data.history).toHaveLength(1);
+        expect(data.total).toBe(1);
     });
 
     it("GET /history should return 404 if user not found", async () => {
@@ -136,6 +156,7 @@ describe("User API", () => {
                 tags: null
             }] 
         });
+        mockFirst.mockResolvedValueOnce({ total: 1 });
 
         const res = await app.request("http://localhost/history", {}, mockEnv);
         expect(res.status).toBe(200);

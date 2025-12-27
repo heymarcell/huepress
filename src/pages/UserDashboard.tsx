@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
+import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { Asset } from "@/api/types";
 import { ResourceCard } from "@/components/ui/ResourceCard";
 import { Loader2, Heart, History, User } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -13,31 +13,22 @@ export default function UserDashboard() {
   const { user, isLoaded, isSignedIn } = useUser();
   const [activeTab, setActiveTab] = useState<Tab>("likes");
   
-  const [likes, setLikes] = useState<Asset[]>([]);
-  const [history, setHistory] = useState<(Asset & { downloaded_at: string, type: string })[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Replace manual state with React Query
+  const { data: likesData, isLoading: likesLoading } = useQuery({
+    queryKey: ['user', 'likes'],
+    queryFn: () => apiClient.user.getLikes(),
+    enabled: !!isSignedIn,
+  });
 
-  useEffect(() => {
-    if (!isSignedIn) return;
+  const { data: historyData, isLoading: historyLoading } = useQuery({
+    queryKey: ['user', 'history'],
+    queryFn: () => apiClient.user.getHistory(),
+    enabled: !!isSignedIn,
+  });
 
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [likesRes, historyRes] = await Promise.all([
-          apiClient.user.getLikes(),
-          apiClient.user.getHistory()
-        ]);
-        setLikes(likesRes.likes);
-        setHistory(historyRes.history);
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [isSignedIn]);
+  const likes = likesData?.likes || [];
+  const history = historyData?.history || [];
+  const loading = likesLoading || historyLoading;
 
   if (!isLoaded) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   

@@ -7,30 +7,43 @@ const app = new Hono<{ Bindings: Bindings }>();
 // GET /reviews/:assetId - Get all reviews for an asset
 app.get("/:assetId", async (c) => {
   const assetId = c.req.param("assetId");
+  const limit = parseInt(c.req.query("limit") || "50");
+  const offset = parseInt(c.req.query("offset") || "0");
   
   try {
-    // Combined query: reviews + aggregate stats in one round-trip
-    const result = await c.env.DB.prepare(`
-      SELECT r.*, u.email as user_email,
-        (SELECT AVG(rating) FROM reviews WHERE asset_id = ?) as avg_rating,
-        (SELECT COUNT(*) FROM reviews WHERE asset_id = ?) as total_count
-      FROM reviews r
-      LEFT JOIN users u ON r.user_id = u.id
-      WHERE r.asset_id = ?
-      ORDER BY r.created_at DESC
-      LIMIT 50
-    `).bind(assetId, assetId, assetId).all<Review & { avg_rating: number | null; total_count: number }>();
+    // Optimization: Run independent queries in parallel
+    // 1. Fetch paginated reviews list (no subqueries)
+    // 2. Fetch aggregate stats once
     
-    const avgRating = (result.results?.[0] as { avg_rating?: number | null })?.avg_rating || null;
-    const totalReviews = (result.results?.[0] as { total_count?: number })?.total_count || 0;
+    const [listResult, statsResult] = await Promise.all([
+      c.env.DB.prepare(`
+        SELECT r.*, u.email as user_email
+        FROM reviews r
+        LEFT JOIN users u ON r.user_id = u.id
+        WHERE r.asset_id = ?
+        ORDER BY r.created_at DESC
+        LIMIT ? OFFSET ?
+      `).bind(assetId, limit, offset).all<Review>(),
+
+      c.env.DB.prepare(`
+        SELECT COUNT(*) as total_count, AVG(rating) as avg_rating
+        FROM reviews
+        WHERE asset_id = ?
+      `).bind(assetId).first<{ total_count: number; avg_rating: number | null }>()
+    ]);
+    
+    const avgRating = statsResult?.avg_rating || null;
+    const totalReviews = statsResult?.total_count || 0;
     
     // Cache reviews for short period
     c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
     
     return c.json({
-      reviews: result.results || [],
+      reviews: listResult.results || [],
       averageRating: avgRating ? Math.round(avgRating * 10) / 10 : null,
-      totalReviews
+      totalReviews,
+      limit,
+      offset
     });
   } catch (error) {
     console.error("Error fetching reviews:", error);

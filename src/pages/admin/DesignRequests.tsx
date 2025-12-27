@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Check, Clock, X } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
 
 interface DesignRequest {
   id: string;
@@ -12,48 +14,31 @@ interface DesignRequest {
 }
 
 export default function AdminDesignRequests() {
-  const [requests, setRequests] = useState<DesignRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
+  const queryClient = useQueryClient();
 
-  const fetchRequests = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const url = filter === "all" ? "/api/admin/requests" : "/api/admin/requests?status=pending";
-      const response = await fetch(url, {
-        headers: {
-            "X-Admin-Email": "marcell@neongod.io" // Identifying as admin (in a real app, this is handled by session/middleware)
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setRequests(data as DesignRequest[]);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [filter]);
+  // fetchRequests replaced by useQuery
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'requests', filter],
+    queryFn: () => apiClient.admin.listRequests(filter),
+  });
 
-  useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
+  const requests = (data?.requests || []) as DesignRequest[];
 
-  const updateStatus = async (id: string, newStatus: string) => {
-    try {
-      await fetch(`/api/admin/requests/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Email": "marcell@neongod.io"
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      fetchRequests(); // Refresh
-    } catch (err) {
+  // updateStatus replaced by useMutation
+  const mutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) => 
+      apiClient.admin.updateRequestStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'requests'] });
+    },
+    onError: (err) => {
       console.error("Failed to update status", err);
     }
+  });
+
+  const updateStatus = (id: string, newStatus: string) => {
+    mutation.mutate({ id, status: newStatus });
   };
 
   return (

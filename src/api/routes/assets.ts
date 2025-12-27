@@ -89,21 +89,20 @@ app.get("/assets/:id", async (c) => {
     
     let asset: Record<string, unknown> | null = null;
 
-    // Optimized: Single query instead of up to 4 sequential queries
-    // Use specific indexed queries for known ID formats
+    // Optimized: Use specific indexed queries where possible
     if (isUUID) {
        asset = await c.env.DB.prepare("SELECT * FROM assets WHERE id = ?").bind(id).first();
     } else if (isAssetId) {
        asset = await c.env.DB.prepare("SELECT * FROM assets WHERE asset_id = ?").bind(id).first();
     } else {
-       // For slugs and legacy IDs: single query with OR conditions
-       // SQLite evaluates conditions left-to-right and short-circuits
-       const suffixPattern = /^\d+$/.test(id) ? `%${id}` : null;
+       // For slugs and legacy IDs: Check strict equality matches only.
+       // We removed the `LIKE %id` wildcard fallback as it causes full table scans.
+       // If a user wants to search, they should use the search endpoint.
        asset = await c.env.DB.prepare(`
          SELECT * FROM assets 
-         WHERE slug = ? OR asset_id = ? ${suffixPattern ? 'OR asset_id LIKE ?' : ''}
+         WHERE slug = ? OR asset_id = ?
          LIMIT 1
-       `).bind(...(suffixPattern ? [id, id, suffixPattern] : [id, id])).first();
+       `).bind(id, id).first();
     }
 
     if (!asset || asset.status !== 'published') {

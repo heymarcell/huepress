@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
 import { AlertModal } from "@/components/ui/AlertModal";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface AdminAsset {
   id: string;
@@ -19,13 +20,10 @@ interface AdminAsset {
 export default function AdminAssets() {
   const { user } = useUser();
   const { getToken } = useAuth();
-  const [assets, setAssets] = useState<AdminAsset[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isRegenerating, setIsRegenerating] = useState(false);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   
   // Delete confirmation modal state
   const [deleteModal, setDeleteModal] = useState<{ 
@@ -51,59 +49,110 @@ export default function AdminAssets() {
     variant: 'success'
   });
 
-  useEffect(() => {
-    if (!user) return;
+  // Fetch Assets
+  const { data: assetsData, isLoading: loading } = useQuery({
+    queryKey: ['admin', 'assets'],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) throw new Error("No token");
+      return apiClient.admin.listAssets(token);
+    },
+    enabled: !!user,
+  });
 
-      const fetchAssets = async () => {
-        try {
-          const token = await getToken();
-          if (!token) return;
-          const data = await apiClient.admin.listAssets(token);
-          setAssets(data.assets || []);
-        } catch (error) {
-        console.error("Failed to fetch assets:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAssets();
-  }, [user, getToken]);
-
-  if (loading) {
-    return <div className="p-8 text-center text-gray-500">Loading assets...</div>;
-  }
+  const assets = (assetsData?.assets || []) as AdminAsset[];
 
   const filteredAssets = assets.filter((asset) => {
     if (filter === "all") return true;
     return asset.status === filter;
   });
 
-  const toggleStatus = async (id: string) => {
-    if (!user) return;
-    const token = await getToken();
-    if (!token) return;
+  // Mutations
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'published' | 'draft' }) => {
+      const token = await getToken();
+      if (!token) throw new Error("No token");
+      // Use single update or bulk? The UI calls toggleStatus per item.
+      return apiClient.admin.updateStatus(id, status, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'assets'] });
+    },
+    onError: (error) => {
+      console.error("Failed to update status:", error);
+    }
+  });
 
+  const bulkStatusMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[]; status: 'published' | 'draft' }) => {
+      const token = await getToken();
+      if (!token) throw new Error("No token");
+      return apiClient.admin.bulkUpdateStatus(ids, status, token);
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'assets'] });
+      setNotificationModal({
+        isOpen: true,
+        title: variables.status === 'published' ? 'Assets Published' : 'Assets Unpublished',
+        message: `${data.updatedCount} asset(s) updated.`,
+        variant: 'success'
+      });
+      setSelectedIds(new Set());
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async ({ id, isBulk, ids }: { id?: string; isBulk: boolean; ids?: string[] }) => {
+      const token = await getToken();
+      if (!token) throw new Error("No token");
+      
+      if (isBulk && ids) {
+        return apiClient.admin.bulkDeleteAssets(ids, token);
+      } else if (id) {
+        return apiClient.admin.deleteAsset(id, token);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'assets'] });
+      setDeleteModal({ isOpen: false, assetId: null, isBulk: false });
+      setSelectedIds(new Set());
+    }
+  });
+  
+  const regenerateMutation = useMutation({
+     mutationFn: async (ids: string[]) => {
+       const token = await getToken();
+       return apiClient.admin.bulkRegenerateAssets(ids, token!);
+     },
+     onSuccess: (data) => {
+        setNotificationModal({
+          isOpen: true,
+          title: 'Regeneration Queued',
+          message: `${data.queuedCount} asset(s) queued.`,
+          variant: 'success'
+        });
+        setSelectedIds(new Set());
+     }
+  });
+
+  const toggleStatus = (id: string) => {
     const asset = assets.find(a => a.id === id);
     if (!asset) return;
-    
     const newStatus = asset.status === "published" ? "draft" : "published";
-    
-    // Optimistic update
-    setAssets(assets.map((a) => 
-      a.id === id ? { ...a, status: newStatus } : a
-    ));
-    
-    try {
-      await apiClient.admin.updateStatus(id, newStatus, token);
-    } catch (error) {
-      console.error("Failed to update status:", error);
-      // Revert on failure
-      setAssets(assets.map((a) => 
-        a.id === id ? { ...a, status: asset.status } : a
-      ));
-    }
+    statusMutation.mutate({ id, status: newStatus });
   };
+
+  const handleDeleteConfirm = async () => {
+      if (deleteModal.isBulk) {
+        deleteMutation.mutate({ isBulk: true, ids: Array.from(selectedIds) });
+      } else if (deleteModal.assetId) {
+        deleteMutation.mutate({ isBulk: false, id: deleteModal.assetId });
+      }
+  };
+
+  const isDeleting = deleteMutation.isPending;
+  const isUpdatingStatus = statusMutation.isPending || bulkStatusMutation.isPending;
+  const isRegenerating = regenerateMutation.isPending;
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -130,91 +179,20 @@ export default function AdminAssets() {
     if (selectedIds.size === 0) return;
     setDeleteModal({ isOpen: true, assetId: null, isBulk: true });
   };
-
-  const handleDeleteConfirm = async () => {
-    if (!user) return;
-    const token = await getToken();
-    if (!token) return;
-    
-    setIsDeleting(true);
-    try {
-      if (deleteModal.isBulk) {
-        await apiClient.admin.bulkDeleteAssets(Array.from(selectedIds), token);
-        setAssets(assets.filter(a => !selectedIds.has(a.id)));
-        setSelectedIds(new Set());
-      } else if (deleteModal.assetId) {
-        await apiClient.admin.deleteAsset(deleteModal.assetId, token);
-        setAssets(assets.filter(a => a.id !== deleteModal.assetId));
-      }
-    } catch (error) {
-      console.error("Delete failed:", error);
-    } finally {
-      setIsDeleting(false);
-      setDeleteModal({ isOpen: false, assetId: null, isBulk: false });
-    }
-  };
-
-  const handleBulkRegenerate = async () => {
+  
+  const handleBulkRegenerate = () => {
     if (selectedIds.size === 0) return;
-    if (!user) return;
-    const token = await getToken();
-    if (!token) return;
-    
-    setIsRegenerating(true);
-    try {
-      const result = await apiClient.admin.bulkRegenerateAssets(Array.from(selectedIds), token);
-      setNotificationModal({
-        isOpen: true,
-        title: 'Regeneration Queued',
-        message: `${result.queuedCount} asset(s) queued for regeneration. Check logs for progress.`,
-        variant: 'success'
-      });
-      setSelectedIds(new Set());
-    } catch (error) {
-      console.error("Regenerate failed:", error);
-      setNotificationModal({
-        isOpen: true,
-        title: 'Regeneration Failed',
-        message: 'Failed to queue regeneration. Check console for details.',
-        variant: 'error'
-      });
-    } finally {
-      setIsRegenerating(false);
-    }
+    regenerateMutation.mutate(Array.from(selectedIds));
   };
 
-  const handleBulkStatus = async (status: 'published' | 'draft') => {
+  const handleBulkStatus = (status: 'published' | 'draft') => {
     if (selectedIds.size === 0) return;
-    if (!user) return;
-    const token = await getToken();
-    if (!token) return;
-    
-    setIsUpdatingStatus(true);
-    try {
-      const result = await apiClient.admin.bulkUpdateStatus(Array.from(selectedIds), status, token);
-      // Update local state
-      setAssets(assets.map(a => 
-        selectedIds.has(a.id) ? { ...a, status } : a
-      ));
-      setNotificationModal({
-        isOpen: true,
-        title: status === 'published' ? 'Assets Published' : 'Assets Unpublished',
-        message: `${result.updatedCount} asset(s) ${status === 'published' ? 'published' : 'set to draft'}.`,
-        variant: 'success'
-      });
-      setSelectedIds(new Set());
-    } catch (error) {
-      console.error("Status update failed:", error);
-      setNotificationModal({
-        isOpen: true,
-        title: 'Update Failed',
-        message: 'Failed to update status. Check console for details.',
-        variant: 'error'
-      });
-    } finally {
-      setIsUpdatingStatus(false);
-    }
+    bulkStatusMutation.mutate({ ids: Array.from(selectedIds), status });
   };
+
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500">Loading assets...</div>;
+  }
 
   return (
     <>

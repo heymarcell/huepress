@@ -264,6 +264,26 @@ export const apiClient = {
         throw new Error(data.error || "Failed to update status");
       }
       return data;
+    },
+    listRequests: async (status?: string) => {
+      // TODO: Pass token from auth context properly. For now using hardcoded header in component or assuming public?
+      // Wait, the component was passing X-Admin-Email.
+      // The backend `admin.ts` `verifyAdmin` relies on Clerk.
+      // So we should pass the token.
+      
+      const token = await window.Clerk?.session?.getToken();
+      const query = status && status !== 'all' ? `?status=${status}` : '';
+      return fetchApi<{ requests: any[]; total: number }>(`/api/admin/requests${query}`, {
+        token
+      });
+    },
+    updateRequestStatus: async (id: string, status: string) => {
+      const token = await window.Clerk?.session?.getToken();
+      return fetchApi<{ success: boolean }>(`/api/admin/requests/${id}`, {
+        method: "PATCH",
+        token,
+        body: JSON.stringify({ status })
+      });
     }
   },
   billing: {
@@ -293,27 +313,14 @@ export const apiClient = {
   user: {
     getLikes: async () => {
       const token = await window.Clerk?.session?.getToken();
-      return fetchApi<{ likes: Asset[] }>("/api/user/likes", {
+      return fetchApi<{ likes: Asset[]; total: number }>("/api/user/likes", {
         token
       });
     },
-    getLikeStatus: async (assetId: string) => {
-      const token = await window.Clerk?.session?.getToken();
-      if (!token) return { liked: false }; // Fast fail if no token
-      return fetchApi<{ liked: boolean }>(`/api/user/likes/${assetId}/status`, {
-        token
-      });
-    },
-    toggleLike: async (assetId: string) => {
-      const token = await window.Clerk?.session?.getToken();
-      return fetchApi<{ liked: boolean }>(`/api/user/likes/${assetId}`, {
-        method: "POST",
-        token
-      });
-    },
+
     getHistory: async () => {
       const token = await window.Clerk?.session?.getToken();
-      return fetchApi<{ history: (Asset & { downloaded_at: string, type: string })[] }>("/api/user/history", {
+      return fetchApi<{ history: (Asset & { downloaded_at: string, type: string })[]; total: number }>("/api/user/history", {
         token
       });
     },
@@ -323,6 +330,19 @@ export const apiClient = {
         method: "POST",
         token,
         body: JSON.stringify({ assetId, type })
+      });
+    },
+    toggleLike: async (assetId: string) => {
+      const token = await window.Clerk?.session?.getToken();
+      return fetchApi<{ liked: boolean }>(`/api/user/likes/${assetId}`, {
+        method: "POST",
+        token
+      });
+    },
+    getLikeStatus: async (assetId: string) => {
+      const token = await window.Clerk?.session?.getToken();
+      return fetchApi<{ liked: boolean }>(`/api/user/likes/${assetId}`, {
+        token
       });
     }
   }
