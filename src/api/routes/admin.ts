@@ -450,6 +450,7 @@ app.post("/assets", async (c) => {
                             svgContent,
                             title: (title as string) || "",
                             assetId: assetId,
+                            slug: slug,
                             description: (description as string) || "",
                             // Thumbnail settings
                             thumbnailUploadUrl: !hasThumbnailUpload ? `${apiBaseUrl}/api/internal/upload-public` : null,
@@ -756,6 +757,7 @@ app.post("/assets/:id/regenerate-og", async (c) => {
       title: string; 
       asset_id: string;
       r2_key_public: string | null; 
+      r2_key_source: string | null;
       r2_key_og: string | null;
     }>();
 
@@ -763,18 +765,32 @@ app.post("/assets/:id/regenerate-og", async (c) => {
       return c.json({ error: "Asset not found" }, 404);
     }
 
-    if (!asset.r2_key_public) {
-      return c.json({ error: "No thumbnail available to generate OG image" }, 400);
+    if (!asset.r2_key_public && !asset.r2_key_source) {
+      return c.json({ error: "No source or thumbnail available to generate OG image" }, 400);
     }
 
-    // Fetch thumbnail content
-    const thumbObject = await c.env.ASSETS_PUBLIC.get(asset.r2_key_public);
-    if (!thumbObject) {
-       return c.json({ error: "Thumbnail file missing in storage" }, 404);
+    // Fetch thumbnail content (fallback)
+    let thumbBase64 = null;
+    if (asset.r2_key_public) {
+       const thumbObject = await c.env.ASSETS_PUBLIC.get(asset.r2_key_public);
+       if (thumbObject) {
+         const thumbBuffer = await thumbObject.arrayBuffer();
+         thumbBase64 = btoa(String.fromCharCode(...new Uint8Array(thumbBuffer)));
+       }
     }
     
-    const thumbBuffer = await thumbObject.arrayBuffer();
-    const thumbBase64 = btoa(String.fromCharCode(...new Uint8Array(thumbBuffer)));
+    // Fetch Source SVG (preferred)
+    let svgContent = null;
+    if (asset.r2_key_source) {
+       try {
+         const sourceObject = await c.env.ASSETS_PRIVATE.get(asset.r2_key_source);
+         if (sourceObject) {
+            svgContent = await sourceObject.text();
+         }
+       } catch (e) {
+         console.warn("Failed to fetch source SVG for OG regen:", e);
+       }
+    }
 
     // Prepare target OG key
     let ogKey = asset.r2_key_og;
@@ -788,10 +804,6 @@ app.post("/assets/:id/regenerate-og", async (c) => {
     const apiBaseUrl = c.env.API_URL || 'https://api.huepress.co';
     const container = (await import("@cloudflare/containers")).getContainer(c.env.PROCESSING, "main");
     
-    // Fire and forget (async) or wait?
-    // User expects feedback, but generation is fast.
-    // The container supports async upload if uploadUrl is provided.
-    
     const response = await fetchWithRetry(() => container.fetch("http://container/og-image", {
         method: "POST",
         headers: { 
@@ -801,6 +813,7 @@ app.post("/assets/:id/regenerate-og", async (c) => {
         body: JSON.stringify({
             title: asset.title,
             thumbnailBase64: thumbBase64,
+            svgContent: svgContent,
             uploadUrl: `${apiBaseUrl}/api/internal/upload-public`,
             uploadKey: ogKey,
             uploadToken: c.env.INTERNAL_API_TOKEN

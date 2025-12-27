@@ -618,9 +618,9 @@ export default function ResourceDetailPage() {
                         <Sparkles className="w-5 h-5" />
                      </div>
                      <div>
-                        <h4 className="font-serif text-lg text-ink mb-1">Unlock All 500+ Designs</h4>
+                        <h4 className="font-serif text-lg text-ink mb-1">Request a Custom Design</h4>
                       <p className="text-sm text-gray-600 mb-3">
-                        Get unlimited access to the entire HuePress library, including premium collections and exclusive PDFs.
+                        Can't find exactly what you're looking for? As a Club member, you can request specific designs.
                         </p>
                         <Link to="/request-design" className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-1 group">
                            Request a Design <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

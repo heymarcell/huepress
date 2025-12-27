@@ -94,7 +94,7 @@ app.get('/health', (req, res) => {
  */
 app.post('/og-image', async (req, res) => {
   try {
-    const { title, thumbnailBase64, thumbnailMimeType = 'image/webp', uploadUrl, uploadToken, uploadKey } = req.body;
+    const { title, thumbnailBase64, thumbnailMimeType = 'image/webp', svgContent, uploadUrl, uploadToken, uploadKey } = req.body;
 
     if (!title) {
       return res.status(400).json({ error: 'title is required' });
@@ -116,21 +116,48 @@ app.post('/og-image', async (req, res) => {
       const width = 1200;
       const height = 630;
 
-      // Create base image with light background
-      let image = sharp({
-        create: {
-          width,
-          height,
-          channels: 4,
-          background: { r: 250, g: 250, b: 250, alpha: 1 }
-        }
-      });
+      // 1. Base Layer: Template
+      // Use og_template.svg if available, otherwise fall back to white background
+      const templatePath = require('path').join(__dirname, 'og_template.svg');
+      let templateBuffer = null;
+      if (require('fs').existsSync(templatePath)) {
+        templateBuffer = require('fs').readFileSync(templatePath);
+      }
 
       const layers = [];
 
-      // Add thumbnail on the right side if provided
-      if (thumbnailBuffer) {
+      // Add template as first layer
+      if (templateBuffer) {
+        layers.push({ input: templateBuffer, top: 0, left: 0 });
+      }
+
+      // 2. Art Layer (Right Side)
+      // Prefer SVG Content (Vector)
+      if (svgContent) {
+         try {
+           const ogArt = await sharp(Buffer.from(svgContent))
+            .resize(450, 500, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 0 } })
+            .flatten({ background: { r: 255, g: 255, b: 255 } })
+            .png()
+            .toBuffer();
+          
+          const artMeta = await sharp(ogArt).metadata();
+          const artW = artMeta.width || 450;
+          const artH = artMeta.height || 500;
+          
+          // Center in right area (center x: 900, center y: 315)
+          const artLeft = 900 - Math.round(artW / 2);
+          const artTop = 315 - Math.round(artH / 2);
+
+          layers.push({ input: ogArt, left: artLeft, top: artTop });
+         } catch (e) {
+            console.error('[OG Image] SVG processing error:', e.message);
+         }
+      } 
+      // Fallback to Thumbnail (Raster) logic
+      else if (thumbnailBuffer) {
         try {
+          // Resize to fit in the right area
           const thumbnail = await sharp(thumbnailBuffer)
             .resize(500, 500, { fit: 'cover' })
             .png()
@@ -146,28 +173,53 @@ app.post('/og-image', async (req, res) => {
         }
       }
 
-      // Create text overlay using SVG
+      // 3. Text Overlay Layer
+      // Calculate lines for title
+      const maxTitleChars = 22;
+      const titleLines = [];
+      const words = (title || 'Coloring Page').split(' ');
+      let currentLine = words[0];
+
+      for (let i = 1; i < words.length; i++) {
+        if ((currentLine + " " + words[i]).length < maxTitleChars) {
+          currentLine += " " + words[i];
+        } else {
+          titleLines.push(currentLine);
+          currentLine = words[i];
+        }
+      }
+      titleLines.push(currentLine);
+      
+      const displayLines = titleLines.slice(0, 3);
+      if (titleLines.length > 3) {
+         displayLines[2] = displayLines[2].substring(0, displayLines[2].length - 3) + "...";
+      }
+
+      // Positioning
+      const startY = 280;
+      const lineHeight = 60;
+      const titleHeight = displayLines.length * lineHeight;
+      const subtitleY = startY + titleHeight + 20;
+
+      const titleSvg = displayLines.map((line, i) => 
+        `<tspan x="60" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`
+      ).join('');
+
+      // We ONLY draw the dynamic text. 
+      // The Template already contains the Logo (Top Left) and Batch (Bottom Left).
+      // We also do NOT use the full white overlay anymore, because it would hide the template.
+      // But we might need a slight gradient if the text is prolonged? 
+      // The user's template likely handles the background.
+      
       const textSvg = `
         <svg width="${width}" height="${height}">
-          <defs>
-            <linearGradient id="overlay" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" style="stop-color:white;stop-opacity:1" />
-              <stop offset="60%" style="stop-color:white;stop-opacity:0.95" />
-              <stop offset="100%" style="stop-color:white;stop-opacity:0" />
-            </linearGradient>
-          </defs>
-          <rect fill="url(#overlay)" width="700" height="${height}"/>
           <style>
-            .logo { font: bold 32px sans-serif; fill: #0f766e; }
-            .title { font: bold 48px sans-serif; fill: #0f766e; }
-            .subtitle { font: 24px sans-serif; fill: #374151; }
-            .badge-text { font: bold 18px sans-serif; fill: white; }
+            .title { font: bold 48px 'Inter', 'FreeSans', sans-serif; fill: #0f766e; }
+            .subtitle { font: 24px 'Inter', 'FreeSans', sans-serif; fill: #374151; }
           </style>
-          <text x="60" y="100" class="logo">HuePress</text>
-          <text x="60" y="280" class="title">${wrapTextToSvg(title, 22, 60, 280, 55)}</text>
-          <text x="60" y="420" class="subtitle">Printable Coloring Page</text>
-          <rect fill="#0f766e" x="60" y="490" width="180" height="50" rx="10"/>
-          <text x="100" y="523" class="badge-text">✓ HuePress</text>
+          
+          <text x="60" y="${startY}" class="title">${titleSvg}</text>
+          <text x="60" y="${subtitleY}" class="subtitle">Printable Coloring Page</text>
         </svg>
       `;
 
@@ -549,12 +601,15 @@ app.post('/generate-all', async (req, res) => {
   
   try {
     const {
-      svgContent, title, assetId, description = '',
+      svgContent, title, assetId, description = '', slug,
       thumbnailUploadUrl, thumbnailUploadKey,
       ogUploadUrl, ogUploadKey,
       pdfUploadUrl, pdfUploadKey, pdfFilename,
       uploadToken
     } = req.body;
+
+    const displayId = (assetId || "").replace(/^HP-[A-Z]+-/, '');
+    const publicUrl = slug ? `https://huepress.co/assets/${slug}` : `https://huepress.co`;
 
     if (!svgContent) {
       return res.status(400).json({ error: 'Missing svgContent' });
@@ -593,7 +648,6 @@ app.post('/generate-all', async (req, res) => {
         .toBuffer();
       
       // Step 1b: Create banner SVG with copyright info
-      const displayId = (assetId || "").replace(/^HP-[A-Z]+-/, '');
       const currentYear = new Date().getFullYear();
       const bannerSvg = `
         <svg width="${thumbSize}" height="${bannerHeight}">
@@ -656,12 +710,17 @@ app.post('/generate-all', async (req, res) => {
 
       // 2. Prepare Layers
       const layers = [];
+      
+      // Add Template Layer FIRST
+      if (templateBuffer) {
+        layers.push({ input: templateBuffer, top: 0, left: 0 });
+      }
 
       // Layer A: Art from SVG (NO banner) - placed on the RIGHT side
       if (safeSvgContent) {
         try {
           const ogArt = await sharp(Buffer.from(safeSvgContent))
-            .resize(450, 500, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+            .resize(450, 500, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 0 } })
             .flatten({ background: { r: 255, g: 255, b: 255 } })
             .png()
             .toBuffer();
@@ -681,26 +740,50 @@ app.post('/generate-all', async (req, res) => {
         }
       }
 
-      // Layer B: Template Overlay
-      if (templateBuffer) {
-        layers.push({ input: templateBuffer, top: 0, left: 0 });
+      // Layer C: Dynamic Text
+      const maxTitleChars = 22;
+      const titleLines = [];
+      const words = (title || 'Coloring Page').split(' ');
+      let currentLine = words[0];
+
+      for (let i = 1; i < words.length; i++) {
+        if ((currentLine + " " + words[i]).length < maxTitleChars) {
+          currentLine += " " + words[i];
+        } else {
+          titleLines.push(currentLine);
+          currentLine = words[i];
+        }
+      }
+      titleLines.push(currentLine);
+      
+      const displayLines = titleLines.slice(0, 3);
+      if (titleLines.length > 3) {
+         displayLines[2] = displayLines[2].substring(0, displayLines[2].length - 3) + "...";
       }
 
-      // Layer C: Dynamic Text
-      const safeTitle = title ? escapeXml(truncate(title, 35)) : 'Coloring Page';
+      const lineHeight = 60;
+      const startY = 280;
+      const titleHeight = displayLines.length * lineHeight;
+      const subtitleY = startY + titleHeight + 20;
+
       const safeDescription = "Printable Coloring Page"; 
-      
+
+      const titleSvg = displayLines.map((line, i) => 
+        `<tspan x="60" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`
+      ).join('');
+
       const textSvg = `
         <svg width="${width}" height="${height}">
           <style>
              .title { font: bold 48px 'Inter', 'FreeSans', sans-serif; fill: #0f766e; }
              .subtitle { font: 24px 'Inter', 'FreeSans', sans-serif; fill: #374151; }
           </style>
-          <text x="60" y="280" class="title">${wrapTextToSvg(title || 'Coloring Page', 22, 60, 280, 55)}</text>
-          <text x="60" y="420" class="subtitle">${safeDescription}</text>
+          <text x="60" y="${startY}" class="title">${titleSvg}</text>
+          <text x="60" y="${subtitleY}" class="subtitle">${safeDescription}</text>
         </svg>
       `;
       layers.push({ input: Buffer.from(textSvg), top: 0, left: 0 });
+
       
       // Composite all
       const ogBuffer = await sharp({
@@ -783,7 +866,15 @@ app.post('/generate-all', async (req, res) => {
           size: 'A4',
           layout: pageLayout, // Dynamic layout
           margin: MARGIN,
-          autoFirstPage: true
+          autoFirstPage: true,
+          info: {
+            Title: title || 'Coloring Page',
+            Author: 'HuePress',
+            Subject: (truncate(description, 250) || 'Therapy-Grade Coloring Page') + ` • ID: #${displayId} • ${publicUrl}`,
+            Keywords: `coloring, page, printable, kids, art, huepress, therapy, vector, #${displayId}`,
+            Creator: 'HuePress',
+            Producer: 'HuePress'
+          }
         });
         
         pdfDoc.on('data', chunk => chunks.push(chunk));
@@ -836,7 +927,6 @@ app.post('/generate-all', async (req, res) => {
         }
         
         const currentYear = new Date().getFullYear();
-        const displayId = (assetId || "").replace(/^HP-[A-Z]+-/, '');
         
         // --- NATIVE TEXT OVERLAYS ---
         // Coordinates ADJUSTED based on user feedback/screenshots
