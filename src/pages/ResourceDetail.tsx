@@ -503,11 +503,9 @@ export default function ResourceDetailPage() {
                  </span>
               </div>
 
-              <h1 className="font-serif text-3xl lg:text-4xl text-ink mb-2 leading-tight">
+              <h1 className="font-serif text-3xl lg:text-4xl text-ink mb-2 leading-tight flex items-center gap-3">
                 {asset.title}
-                <div className="inline-block ml-3 align-middle">
-                   <LikeButton assetId={asset.id} variant="icon" className="shadow-sm border border-gray-100" />
-                </div>
+                <LikeButton assetId={asset.id} variant="icon" className="shadow-sm border border-gray-100" />
               </h1>
 
               {/* Asset ID and Rating */}

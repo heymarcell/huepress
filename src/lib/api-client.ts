@@ -50,10 +50,17 @@ async function fetchApi<T>(path: string, options: RequestInit & { token?: string
     headers,
   });
 
-  const data = await response.json() as T & { error?: string };
+  let data;
+  try {
+    data = await response.json() as T & { error?: string };
+  } catch (e) {
+    // If JSON parse fails, it might be a text error or HTML (500)
+    const text = await response.text();
+    throw new Error(text || `Request failed with status ${response.status}`);
+  }
 
   if (!response.ok) {
-    throw new Error(data.error || "API Request Failed");
+    throw new Error(data?.error || `Request failed with status ${response.status}`);
   }
 
   return data as T;

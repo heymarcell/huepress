@@ -25,7 +25,23 @@ app.get("/likes", async (c) => {
     ORDER BY l.created_at DESC
   `).bind(user.id).all();
 
-  return c.json({ likes: results });
+  const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
+  const likes = results.map((row: any) => {
+    const r2Key = row.r2_key_public;
+    let imageUrl = row.image_url;
+    
+    if (r2Key && !r2Key.startsWith("__draft__")) {
+      imageUrl = r2Key.startsWith("http") ? r2Key : `${cdnUrl}/${r2Key}`;
+    }
+
+    return {
+      ...row,
+      tags: row.tags ? JSON.parse(row.tags as string) : [],
+      image_url: imageUrl
+    };
+  });
+
+  return c.json({ likes });
 });
 
 // POST /likes/:assetId - Toggle like
@@ -74,7 +90,23 @@ app.get("/history", async (c) => {
     ORDER BY d.downloaded_at DESC
   `).bind(user.id).all();
 
-  return c.json({ history: results });
+  const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
+  const history = results.map((row: any) => {
+    const r2Key = row.r2_key_public;
+    let imageUrl = row.image_url;
+    
+    if (r2Key && !r2Key.startsWith("__draft__")) {
+      imageUrl = r2Key.startsWith("http") ? r2Key : `${cdnUrl}/${r2Key}`;
+    }
+
+    return {
+      ...row,
+      tags: row.tags ? JSON.parse(row.tags as string) : [],
+      image_url: imageUrl
+    };
+  });
+
+  return c.json({ history });
 });
 
 // POST /activity - Record download or print

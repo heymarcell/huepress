@@ -59,13 +59,13 @@ export function LikeButton({ assetId, initialLiked = false, className, variant =
         onClick={handleToggle}
         disabled={loading}
         className={cn(
-          "p-2 rounded-full transition-colors hover:bg-rose-50",
-          liked ? "text-rose-500" : "text-gray-400 hover:text-rose-400",
+          "p-2 rounded-full transition-all duration-300 hover:scale-110 active:scale-95 shadow-sm border border-transparent hover:border-rose-100 hover:shadow-md",
+          liked ? "bg-rose-50 text-rose-500 hover:bg-rose-100" : "bg-white text-gray-400 hover:bg-rose-50 hover:text-rose-500",
           className
         )}
         title={liked ? "Remove from favorites" : "Add to favorites"}
       >
-        <Heart className={cn("w-5 h-5", liked && "fill-current")} />
+        <Heart className={cn("w-5 h-5", liked && "fill-current")} strokeWidth={liked ? 0 : 2} />
       </button>
     );
   }
