@@ -104,7 +104,7 @@ export default function App() {
       </Route>
       </Routes>
       </Suspense>
-      <Toaster position="top-center" />
+      <Toaster position="bottom-center" />
     </ConsentProvider>
   );
 }

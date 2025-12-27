@@ -14,7 +14,7 @@ import { FreeSampleBanner } from "@/components/features/FreeSampleBanner";
 
 export default function VaultPage() {
   const { isSubscriber } = useSubscription();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [tags, setTags] = useState<Record<string, Tag[]>>({});
   
@@ -22,7 +22,7 @@ export default function VaultPage() {
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "");
   const [selectedSkill, setSelectedSkill] = useState(searchParams.get("skill") || "");
   const [selectedTag, setSelectedTag] = useState(searchParams.get("tag") || ""); // General tag filter (Theme/Age)
-  const [sortBy, setSortBy] = useState("newest");
+  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const debouncedSearch = useDebounce(searchQuery, 500);
 
@@ -37,6 +37,18 @@ export default function VaultPage() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Sync filters to URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedCategory) params.set("category", selectedCategory);
+    if (selectedSkill) params.set("skill", selectedSkill);
+    if (selectedTag) params.set("tag", selectedTag);
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (sortBy && sortBy !== "newest") params.set("sort", sortBy);
+    
+    setSearchParams(params, { replace: true });
+  }, [selectedCategory, selectedSkill, selectedTag, debouncedSearch, sortBy, setSearchParams]);
 
   // Fetch Tags on mount
   useEffect(() => {

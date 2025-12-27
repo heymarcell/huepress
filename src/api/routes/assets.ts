@@ -6,8 +6,8 @@ const app = new Hono<{ Bindings: Bindings }>();
 
 // Get all published assets
 app.get("/assets", async (c) => {
-  const category = c.req.query("category");
-  const skill = c.req.query("skill");
+  const category = c.req.query("category")?.trim();
+  const skill = c.req.query("skill")?.trim();
   const limit = parseInt(c.req.query("limit") || "50");
   const offset = parseInt(c.req.query("offset") || "0");
 
@@ -25,7 +25,7 @@ app.get("/assets", async (c) => {
     params.push(skill);
   }
 
-  const tag = c.req.query("tag");
+  const tag = c.req.query("tag")?.trim();
   if (tag) {
     // Filter by tag in the tags JSON array
     query += " AND EXISTS (SELECT 1 FROM json_each(tags) WHERE value = ?)";

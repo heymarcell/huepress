@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Asset } from "@/api/types";
-import { Button } from "@/components/ui";
+import { Button, ResourceCard } from "@/components/ui";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { useSubscription } from "@/lib/auth";
 import { useAuth } from "@clerk/clerk-react";
@@ -665,26 +665,21 @@ export default function ResourceDetailPage() {
                 </Link>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {relatedItems.map((item) => (
-                  <Link key={item.id} to={item.asset_id && item.slug ? `/coloring-pages/${item.slug}-${item.asset_id}` : `/vault/${item.id}`} className="group">
-                    <div className="bg-gray-50 rounded-lg hover:shadow-md transition-all overflow-hidden">
-                      <div className="aspect-square bg-white p-3">
-                        {item.image_url ? (
-                          <img src={item.image_url} alt={item.title} className="object-contain w-full h-full group-hover:scale-105 transition-transform duration-300" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300">
-                            <FileText className="w-6 h-6" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="px-3 py-2">
-                        <h4 className="text-xs font-semibold text-gray-800 group-hover:text-primary transition-colors line-clamp-1">{item.title}</h4>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {relatedItems.map((item) => (
+                    <ResourceCard
+                      key={item.id}
+                      id={item.id}
+                      title={item.title}
+                      imageUrl={item.image_url}
+                      assetId={item.asset_id}
+                      slug={item.slug}
+                      tags={item.tags || []}
+                      isLocked={!isSubscriber}
+                      isSubscriber={isSubscriber}
+                    />
+                  ))}
+                </div>
            </div>
         </div>
       </div>

@@ -56,6 +56,16 @@ describe("Assets API", () => {
         expect(queryArg).toContain("category = ?");
     });
 
+    it("GET /assets?category= animals should trim whitespace", async () => {
+        mockAll.mockResolvedValue({ results: [] });
+        await app.request("http://localhost/assets?category= animals ", {}, mockEnv);
+
+        expect(mockBind).toHaveBeenCalledWith(expect.stringMatching("animals"), expect.anything(), expect.anything());
+        // accurately check first param is trimmed "animals"
+        const args = mockBind.mock.calls[0];
+        expect(args[0]).toBe("animals");
+    });
+
     it("GET /assets?skill=easy should filter by skill", async () => {
         mockAll.mockResolvedValue({ results: [] });
         await app.request("http://localhost/assets?skill=easy", {}, mockEnv);
