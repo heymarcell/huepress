@@ -92,7 +92,7 @@ async function processQueue() {
         console.log(`[Queue] Processing job ${job.id} for asset ${job.asset_id}`);
         
         // Mark Processing
-        const statusRes = await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}/status`, {
+        const statusRes = await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}`, {
           method: 'PATCH',
           headers: { 'Authorization': `Bearer ${internalToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'processing' })
@@ -137,7 +137,7 @@ async function processQueue() {
         await uploadFile(apiUrl, internalToken, 'private', asset.r2_key_private, pdfBuffer, 'application/pdf');
         
         // Complete
-        const completeRes = await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}/status`, {
+        const completeRes = await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}`, {
           method: 'PATCH',
           headers: { 'Authorization': `Bearer ${internalToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'completed' })
@@ -150,7 +150,7 @@ async function processQueue() {
         console.error(`[Queue] Job ${job.id} failed:`, err.message);
         // Fail status
         const newStatus = (job.attempts || 0) >= (job.max_attempts || 3) ? 'failed' : 'pending';
-        await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}/status`, {
+        await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}`, {
            method: 'PATCH',
            headers: { 'Authorization': `Bearer ${internalToken}`, 'Content-Type': 'application/json' },
            body: JSON.stringify({ status: newStatus, error: err.message })
