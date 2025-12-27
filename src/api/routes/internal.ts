@@ -192,8 +192,14 @@ app.patch("/queue/:id", auth, async (c) => {
             params = [status, error_message || 'Unknown error', id];
         }
         
-        await c.env.DB.prepare(query).bind(...params).run();
-        console.log(`[Internal API] Job ${id} updated to ${status}`);
+        const result = await c.env.DB.prepare(query).bind(...params).run();
+        console.log(`[Internal API] Job ${id} updated to ${status}. Changes: ${result.meta.changes}`);
+        
+        if (result.meta.changes === 0) {
+             console.error(`[Internal API] Job ${id} NOT FOUND during update`);
+             return c.json({ error: "Job not found" }, 404);
+        }
+
         return c.json({ success: true });
     } catch (err) {
         console.error(`[Internal API] Queue update error:`, err);
