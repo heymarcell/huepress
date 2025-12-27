@@ -819,9 +819,11 @@ describe("Admin API", () => {
 
         // Update the container mock for this specific test
         const { getContainer } = await import("@cloudflare/containers");
-        (getContainer as any).mockReturnValue({
-            fetch: mockContainerFetch
-        });
+        vi.mocked(getContainer).mockReturnValue({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            fetch: mockContainerFetch as any 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any);
 
         // Capture promise passed to waitUntil
         let backgroundPromise: Promise<void> | undefined;
