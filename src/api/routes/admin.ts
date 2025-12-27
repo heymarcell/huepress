@@ -631,8 +631,15 @@ app.delete("/assets/:id", async (c) => {
       console.log(`[Delete] Deleted Source: ${asset.r2_key_source}`);
     }
 
-    // Delete from database
-    await c.env.DB.prepare("DELETE FROM assets WHERE id = ?").bind(id).run();
+    // Delete from dependent tables first (Manual Cascade)
+    // D1/SQLite FKs might strictly enforce this if CASCADE isn't set
+    await c.env.DB.batch([
+      c.env.DB.prepare("DELETE FROM downloads WHERE asset_id = ?").bind(id),
+      c.env.DB.prepare("DELETE FROM reviews WHERE asset_id = ?").bind(id),
+      c.env.DB.prepare("DELETE FROM likes WHERE asset_id = ?").bind(id),
+      c.env.DB.prepare("DELETE FROM asset_tags WHERE asset_id = ?").bind(id), // Just in case
+      c.env.DB.prepare("DELETE FROM assets WHERE id = ?").bind(id)
+    ]);
     
     return c.json({ success: true });
   } catch (error) {
@@ -696,28 +703,34 @@ app.post("/assets/bulk-delete", async (c) => {
     for (const id of ids) {
       const asset = await c.env.DB.prepare(
         "SELECT r2_key_private, r2_key_public, r2_key_source, r2_key_og FROM assets WHERE id = ?"
-      ).bind(id).first<{ r2_key_private: string; r2_key_public: string; r2_key_source: string; r2_key_og: string }>();
+      ).bind(id).first<{ r2_key_private: string | null; r2_key_public: string | null; r2_key_source: string | null; r2_key_og: string | null }>();
 
       if (asset) {
         console.log(`[Bulk Delete] Deleting Asset ${id}. OG=${asset.r2_key_og}`);
 
-        // Delete from R2
-        if (asset.r2_key_private && !asset.r2_key_private.startsWith("__draft__")) {
+        // Delete from R2 (with null/draft checks)
+        if (asset.r2_key_private && !asset.r2_key_private.startsWith("__draft__") && !asset.r2_key_private.startsWith("__pending__")) {
           await c.env.ASSETS_PRIVATE.delete(asset.r2_key_private);
         }
-        if (asset.r2_key_public && !asset.r2_key_public.startsWith("__draft__")) {
+        if (asset.r2_key_public && !asset.r2_key_public.startsWith("__draft__") && !asset.r2_key_public.startsWith("__pending__")) {
           await c.env.ASSETS_PUBLIC.delete(asset.r2_key_public);
         }
-        if (asset.r2_key_og && !asset.r2_key_og.startsWith("__draft__")) {
+        if (asset.r2_key_og && !asset.r2_key_og.startsWith("__draft__") && !asset.r2_key_og.startsWith("__pending__")) {
           await c.env.ASSETS_PUBLIC.delete(asset.r2_key_og);
           console.log(`[Bulk Delete] Deleted OG: ${asset.r2_key_og}`);
         }
-        if (asset.r2_key_source) {
+        if (asset.r2_key_source && !asset.r2_key_source.startsWith("__draft__") && !asset.r2_key_source.startsWith("__pending__")) {
           await c.env.ASSETS_PRIVATE.delete(asset.r2_key_source);
         }
 
-        // Delete from database
-        await c.env.DB.prepare("DELETE FROM assets WHERE id = ?").bind(id).run();
+        // Delete from database (Manual Cascade)
+        await c.env.DB.batch([
+          c.env.DB.prepare("DELETE FROM downloads WHERE asset_id = ?").bind(id),
+          c.env.DB.prepare("DELETE FROM reviews WHERE asset_id = ?").bind(id),
+          c.env.DB.prepare("DELETE FROM likes WHERE asset_id = ?").bind(id),
+          c.env.DB.prepare("DELETE FROM asset_tags WHERE asset_id = ?").bind(id),
+          c.env.DB.prepare("DELETE FROM assets WHERE id = ?").bind(id)
+        ]);
         deletedCount++;
       }
     }
