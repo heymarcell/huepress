@@ -8,7 +8,8 @@ import {
   Users, 
   Stethoscope, 
   BookOpen, 
-  Home 
+  Home,
+  Star
 } from "lucide-react";
 import SEO from "@/components/SEO";
 import { analytics } from "@/lib/analytics";
@@ -146,8 +147,8 @@ export default function PricingPage() {
                 }`}
               >
                 {plan.popular && (
-                <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-secondary text-white text-sm font-bold px-6 py-2 rounded-md whitespace-nowrap shadow-lg ring-2 ring-white">
-                    ⭐ BEST VALUE — Save 25%
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-secondary text-white text-sm font-bold px-6 py-2 rounded-md whitespace-nowrap shadow-lg ring-2 ring-white flex items-center gap-1">
+                    <Star className="w-4 h-4 fill-current" /> BEST VALUE — Save 25%
                   </div>
                 )}
                 <div className="text-center mb-6">

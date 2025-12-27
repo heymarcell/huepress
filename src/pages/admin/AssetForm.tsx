@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui";
 import { AlertModal } from "@/components/ui/AlertModal";
-import { Upload, Save, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Upload, Save, ArrowLeft, Eye, EyeOff, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
@@ -276,7 +276,7 @@ export default function AdminAssetForm() {
 
       setAlertState({
         isOpen: true,
-        title: "Asset Created! ✨",
+        title: "Asset Created!",
         message: `Successfully created asset ${assetId}. You can now publish it or continue editing.`,
         variant: "success"
       });
@@ -691,7 +691,9 @@ export default function AdminAssetForm() {
             
             {/* Master SVG Upload (Magic) */}
             <div className="bg-gradient-to-br from-primary/5 to-secondary/5 p-4 rounded-xl border border-primary/10">
-              <label className="block text-sm font-bold text-ink mb-1">✨ Magic Upload (SVG)</label>
+              <label className="flex items-center gap-2 text-sm font-bold text-ink mb-1">
+                <Sparkles className="w-4 h-4 text-primary" /> Magic Upload (SVG)
+              </label>
               <p className="text-xs text-gray-500 mb-3">Upload an SVG to automatically generate the PDF and Thumbnail.</p>
               
               {/* Warning for existing assets without source */}

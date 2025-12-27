@@ -4,7 +4,7 @@ import { useUser } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/Button"; // Assuming this exists or using standard button
 import { 
   ArrowRight, Check, User, Users, BookOpen, Briefcase, Palette, 
-  Cat, Crown, Skull, Car, Rocket, Leaf, Sparkles, Gift, Circle, 
+  Cat, Crown, Turtle, Car, Rocket, Leaf, Sparkles, Gift, Circle, 
   GraduationCap, Sun, Heart, Instagram, Music, Search, Facebook, Pin, MoreHorizontal 
 } from "lucide-react";
 
@@ -41,7 +41,7 @@ const AGE_RANGES = [
 const THEMES = [
   { id: "Animals", label: "Animals", icon: Cat },
   { id: "Princesses", label: "Princesses", icon: Crown },
-  { id: "Dinosaurs", label: "Dinosaurs", icon: Skull },
+  { id: "Dinosaurs", label: "Dinosaurs", icon: Turtle },
   { id: "Vehicles", label: "Vehicles", icon: Car },
   { id: "Space", label: "Space", icon: Rocket },
   { id: "Nature", label: "Nature", icon: Leaf },
@@ -318,7 +318,7 @@ export default function Onboarding() {
               isLoading={loading}
               className="w-full mt-4"
             >
-              Finish Customization ✨
+              Finish Customization <Sparkles className="ml-2 w-4 h-4" />
             </Button>
           </div>
         )}

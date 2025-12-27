@@ -502,7 +502,7 @@ export default function HomePage() {
         <section className="bg-primary text-white py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
              <div>
-                <h3 className="font-serif text-2xl mb-1">Your next masterpiece awaits ✨</h3>
+                <h3 className="font-serif text-2xl mb-1">Your next masterpiece awaits </h3>
                 <p className="text-white/70 text-sm">New designs added every Sunday — dive in!</p>
              </div>
              <Link to="/vault">
