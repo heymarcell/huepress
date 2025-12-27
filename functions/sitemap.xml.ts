@@ -65,7 +65,7 @@ export const onRequest = async (context: { env: Env }) => {
 
     // Fetch blog posts via API
     try {
-      const res = await fetch(`${apiUrl}/api/blog/posts?limit=100`);
+      const res = await fetch(`${apiUrl}/api/posts?limit=100`);
       if (res.ok) {
         const data = await res.json() as { posts?: Post[] };
         posts = data.posts || [];
