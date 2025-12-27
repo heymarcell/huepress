@@ -5,6 +5,8 @@ const app = new Hono<{ Bindings: Bindings }>();
 
 // GET /tags - Get all tags, optionally filtered by type
 app.get("/", async (c) => {
+  // Tags rarely change - cache aggressively to avoid DB round-trips
+  c.header("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
   const type = c.req.query("type");
 
   try {
@@ -49,7 +51,7 @@ app.get("/", async (c) => {
                      if (typeof t === 'string' && t.length > 0) usedTagsSet.add(t.trim());
                   });
                 }
-              } catch (e) { /* ignore parse error */ }
+              } catch (_e) { /* ignore parse error */ }
             }
          });
 

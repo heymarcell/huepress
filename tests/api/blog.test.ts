@@ -281,4 +281,77 @@ describe("Blog API", () => {
             expect(res.status).toBe(401);
         });
     });
+
+    describe("Error Handling", () => {
+        it("GET /posts should handle database error", async () => {
+            mockAll.mockRejectedValue(new Error("DB error"));
+
+            const res = await app.request("http://localhost/posts", {}, mockEnv);
+            
+            expect(res.status).toBe(500);
+        });
+
+        it("GET /posts/:slug should handle database error", async () => {
+            mockFirst.mockRejectedValue(new Error("DB error"));
+
+            const res = await app.request("http://localhost/posts/test-slug", {}, mockEnv);
+            
+            expect(res.status).toBe(500);
+        });
+
+        it("GET /admin/posts should handle database error", async () => {
+            mockAll.mockRejectedValue(new Error("DB error"));
+
+            const res = await app.request("http://localhost/admin/posts", {}, mockEnv);
+            
+            expect(res.status).toBe(500);
+        });
+
+        it("GET /admin/posts/:id should handle database error", async () => {
+            mockFirst.mockRejectedValue(new Error("DB error"));
+
+            const res = await app.request("http://localhost/admin/posts/123", {}, mockEnv);
+            
+            expect(res.status).toBe(500);
+        });
+
+        it("POST /admin/posts should handle database error", async () => {
+            mockFirst.mockResolvedValueOnce(null); // No slug conflict
+            mockRun.mockRejectedValue(new Error("DB error"));
+
+            const res = await app.request("http://localhost/admin/posts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title: "Test" })
+            }, mockEnv);
+            
+            expect(res.status).toBe(500);
+        });
+
+        it("PUT /admin/posts/:id should handle database error on update", async () => {
+            mockFirst.mockResolvedValueOnce({ id: "123" }); // Existing post
+            mockFirst.mockResolvedValueOnce(null); // No slug conflict
+            mockRun.mockRejectedValue(new Error("DB error"));
+
+            const res = await app.request("http://localhost/admin/posts/123", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title: "Updated" })
+            }, mockEnv);
+            
+            expect(res.status).toBe(500);
+        });
+
+        it("DELETE /admin/posts/:id should handle database error", async () => {
+            mockFirst.mockResolvedValueOnce({ id: "123" });
+            mockRun.mockRejectedValue(new Error("DB error"));
+
+            const res = await app.request("http://localhost/admin/posts/123", {
+                method: "DELETE"
+            }, mockEnv);
+            
+            expect(res.status).toBe(500);
+        });
+    });
 });
+

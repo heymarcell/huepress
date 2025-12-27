@@ -224,7 +224,7 @@ export default function AdminAssetForm() {
         message: `Applied ${Object.keys(newFormData).length} fields from JSON.`,
         variant: "success"
       });
-    } catch (err) {
+    } catch (_err) {
       setJsonError("Invalid JSON. Please check your syntax.");
     }
   };
@@ -497,7 +497,7 @@ export default function AdminAssetForm() {
                       message: "OG Image regeneration started. Please wait a few seconds and refresh if needed.",
                       variant: "success"
                     });
-                  } catch (e) {
+                  } catch (_e) {
                     setAlertState({
                       isOpen: true,
                       title: "Error",
@@ -803,7 +803,7 @@ export default function AdminAssetForm() {
                       message: "OG Image regeneration started. Please wait a few seconds.",
                       variant: "success"
                     });
-                  } catch (e) {
+                  } catch (_e) {
                     setAlertState({
                       isOpen: true,
                       title: "Error",

@@ -35,22 +35,24 @@ app.get("/posts", async (c) => {
     const limit = parseInt(c.req.query("limit") || "10");
     const offset = parseInt(c.req.query("offset") || "0");
     
+    // Combined query: get posts AND total count in one round-trip
     const { results } = await c.env.DB.prepare(`
-      SELECT id, title, slug, excerpt, cover_image, published_at, created_at
+      SELECT id, title, slug, excerpt, cover_image, published_at, created_at,
+        (SELECT COUNT(*) FROM posts WHERE status = 'published') as total_count
       FROM posts
       WHERE status = 'published'
       ORDER BY published_at DESC
       LIMIT ? OFFSET ?
     `).bind(limit, offset).all();
     
-    // Get total count for pagination
-    const countResult = await c.env.DB.prepare(
-      "SELECT COUNT(*) as total FROM posts WHERE status = 'published'"
-    ).first<{ total: number }>();
+    const total = (results?.[0] as { total_count?: number })?.total_count || 0;
+    
+    // Cache blog listing
+    c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
     
     return c.json({ 
       posts: results || [],
-      total: countResult?.total || 0,
+      total,
       limit,
       offset
     });

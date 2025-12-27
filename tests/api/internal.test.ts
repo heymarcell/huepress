@@ -193,10 +193,52 @@ describe("Internal API", () => {
             expect(res.status).toBe(200);
             expect(mockR2PutPrivate).toHaveBeenCalled();
         });
+
+        it("should reject empty body", async () => {
+            const res = await app.request("http://localhost/upload-pdf?key=pdfs/test.pdf", {
+                method: "PUT",
+                headers: { "Authorization": "Bearer test-secret-token" },
+                body: new ArrayBuffer(0),
+            }, mockEnv);
+            
+            expect(res.status).toBe(400);
+        });
+
+        it("should reject missing key", async () => {
+            const res = await app.request("http://localhost/upload-pdf", {
+                method: "PUT",
+                headers: { "Authorization": "Bearer test-secret-token" },
+                body: new ArrayBuffer(10),
+            }, mockEnv);
+            
+            expect(res.status).toBe(400);
+        });
+
+        it("should reject invalid key path", async () => {
+            const res = await app.request("http://localhost/upload-pdf?key=invalid/test.pdf", {
+                method: "PUT",
+                headers: { "Authorization": "Bearer test-secret-token" },
+                body: new ArrayBuffer(10),
+            }, mockEnv);
+            
+            expect(res.status).toBe(403);
+        });
+
+        it("should handle R2 errors gracefully", async () => {
+            mockR2PutPrivate.mockRejectedValue(new Error("R2 error"));
+            
+            const res = await app.request("http://localhost/upload-pdf?key=pdfs/test.pdf", {
+                method: "PUT",
+                headers: { "Authorization": "Bearer test-secret-token" },
+                body: new ArrayBuffer(10),
+            }, mockEnv);
+            
+            expect(res.status).toBe(500);
+        });
     });
 
     describe("Error Handling", () => {
-        it("should handle R2 errors gracefully", async () => {
+        it("should handle R2 errors gracefully for public uploads", async () => {
             mockR2PutPublic.mockRejectedValue(new Error("R2 connection failed"));
             
             const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", {
@@ -212,5 +254,30 @@ describe("Internal API", () => {
             const data = await res.json();
             expect(data).toHaveProperty("error", "Internal Server Error");
         });
+
+        it("should handle R2 errors gracefully for private uploads", async () => {
+            mockR2PutPrivate.mockRejectedValue(new Error("R2 connection failed"));
+            
+            const res = await app.request("http://localhost/upload-private?key=pdfs/test.pdf", {
+                method: "PUT",
+                headers: { "Authorization": "Bearer test-secret-token" },
+                body: new ArrayBuffer(10),
+            }, mockEnv);
+            
+            expect(res.status).toBe(500);
+        });
+
+        it("should reject auth when INTERNAL_API_TOKEN is not set", async () => {
+            const envWithoutToken = { ...mockEnv, INTERNAL_API_TOKEN: undefined };
+            
+            const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", {
+                method: "PUT",
+                headers: { "Authorization": "Bearer some-token" },
+                body: new ArrayBuffer(10),
+            }, envWithoutToken);
+            
+            expect(res.status).toBe(401);
+        });
     });
 });
+

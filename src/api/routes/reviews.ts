@@ -9,26 +9,28 @@ app.get("/:assetId", async (c) => {
   const assetId = c.req.param("assetId");
   
   try {
+    // Combined query: reviews + aggregate stats in one round-trip
     const result = await c.env.DB.prepare(`
-      SELECT r.*, u.email as user_email
+      SELECT r.*, u.email as user_email,
+        (SELECT AVG(rating) FROM reviews WHERE asset_id = ?) as avg_rating,
+        (SELECT COUNT(*) FROM reviews WHERE asset_id = ?) as total_count
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
       WHERE r.asset_id = ?
       ORDER BY r.created_at DESC
       LIMIT 50
-    `).bind(assetId).all<Review>();
+    `).bind(assetId, assetId, assetId).all<Review & { avg_rating: number | null; total_count: number }>();
     
-    // Calculate average rating
-    const avgResult = await c.env.DB.prepare(`
-      SELECT AVG(rating) as avg_rating, COUNT(*) as count
-      FROM reviews
-      WHERE asset_id = ?
-    `).bind(assetId).first<{ avg_rating: number | null; count: number }>();
+    const avgRating = (result.results?.[0] as { avg_rating?: number | null })?.avg_rating || null;
+    const totalReviews = (result.results?.[0] as { total_count?: number })?.total_count || 0;
+    
+    // Cache reviews for short period
+    c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
     
     return c.json({
       reviews: result.results || [],
-      averageRating: avgResult?.avg_rating ? Math.round(avgResult.avg_rating * 10) / 10 : null,
-      totalReviews: avgResult?.count || 0
+      averageRating: avgRating ? Math.round(avgRating * 10) / 10 : null,
+      totalReviews
     });
   } catch (error) {
     console.error("Error fetching reviews:", error);

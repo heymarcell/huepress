@@ -334,4 +334,535 @@ describe("Admin API", () => {
         const data = await res.json() as { assets: { tags: string[] }[] };
         expect(data.assets[0].tags).toEqual(["cute", "animal"]);
     });
+
+    it("GET /stats should return dashboard statistics", async () => {
+        mockFirst
+            .mockResolvedValueOnce({ count: 100 }) // total assets
+            .mockResolvedValueOnce({ count: 5000 })  // total downloads (SUM)
+            .mockResolvedValueOnce({ count: 10 }) // new this week
+            .mockResolvedValueOnce({ count: 50 }); // subscribers
+        
+        const res = await app.request("http://localhost/stats", {}, mockEnv);
+        
+        expect(res.status).toBe(200);
+        const data = await res.json() as { totalAssets: number; totalDownloads: number };
+        expect(data.totalAssets).toBe(100);
+        expect(data.totalDownloads).toBe(5000);
+    });
+
+    it("GET /stats should handle database error", async () => {
+        mockFirst.mockRejectedValue(new Error("DB error"));
+        
+        const res = await app.request("http://localhost/stats", {}, mockEnv);
+        
+        expect(res.status).toBe(500);
+    });
+
+    it("GET /assets/:id/source should return SVG file", async () => {
+        const svgContent = '<svg xmlns="http://www.w3.org/2000/svg"></svg>';
+        mockFirst.mockResolvedValueOnce({ r2_key_source: "sources/test.svg" });
+        mockR2Get.mockResolvedValue({ 
+            body: svgContent,
+            writeHttpMetadata: vi.fn() // R2ObjectBody has this method
+        });
+        
+        const res = await app.request("http://localhost/assets/123/source", {}, mockEnv);
+        
+        expect(res.status).toBe(200);
+    });
+
+    it("GET /assets/:id/source should return 404 if no source key", async () => {
+        mockFirst.mockResolvedValueOnce({ r2_key_source: null });
+        
+        const res = await app.request("http://localhost/assets/123/source", {}, mockEnv);
+        
+        expect(res.status).toBe(404);
+    });
+
+    it("GET /assets/:id/source should return 404 if file not in R2", async () => {
+        mockFirst.mockResolvedValueOnce({ r2_key_source: "sources/test.svg" });
+        mockR2Get.mockResolvedValue(null);
+        
+        const res = await app.request("http://localhost/assets/123/source", {}, mockEnv);
+        
+        expect(res.status).toBe(404);
+    });
+
+    it("GET /assets/:id/source should handle database error", async () => {
+        mockFirst.mockRejectedValue(new Error("DB error"));
+        
+        const res = await app.request("http://localhost/assets/123/source", {}, mockEnv);
+        
+        expect(res.status).toBe(500);
+    });
+
+    it("POST /assets/bulk-delete should delete multiple assets", async () => {
+        mockFirst
+            .mockResolvedValueOnce({ r2_key_private: "pdfs/1.pdf", r2_key_public: "thumbs/1.webp" })
+            .mockResolvedValueOnce({ r2_key_private: "pdfs/2.pdf", r2_key_public: "thumbs/2.webp" });
+        
+        const res = await app.request("http://localhost/assets/bulk-delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: ["id1", "id2"] })
+        }, mockEnv);
+        
+        expect(res.status).toBe(200);
+        const data = await res.json() as { deletedCount: number };
+        expect(data.deletedCount).toBe(2);
+    });
+
+    it("POST /assets/bulk-delete should delete all R2 keys including OG and source", async () => {
+        mockFirst.mockResolvedValueOnce({ 
+            r2_key_private: "pdfs/1.pdf", 
+            r2_key_public: "thumbs/1.webp",
+            r2_key_og: "og-images/1.png",
+            r2_key_source: "sources/1.svg"
+        });
+        
+        const res = await app.request("http://localhost/assets/bulk-delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: ["id1"] })
+        }, mockEnv);
+        
+        expect(res.status).toBe(200);
+        // Should have called R2 delete for all 4 keys
+        expect(mockR2Delete).toHaveBeenCalledTimes(4);
+    });
+
+    it("POST /assets/bulk-delete should skip draft/pending R2 keys", async () => {
+        mockFirst.mockResolvedValueOnce({ 
+            r2_key_private: "__draft__/test.pdf", 
+            r2_key_public: "__pending__/test.webp",
+            r2_key_og: "__draft__/test.png",
+            r2_key_source: "__pending__/test.svg"
+        });
+        
+        const localMockR2Delete = vi.fn();
+        mockEnv.ASSETS_PRIVATE = { ...mockEnv.ASSETS_PRIVATE as object, delete: localMockR2Delete };
+        mockEnv.ASSETS_PUBLIC = { ...mockEnv.ASSETS_PUBLIC as object, delete: localMockR2Delete };
+        
+        const res = await app.request("http://localhost/assets/bulk-delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: ["id1"] })
+        }, mockEnv);
+        
+        expect(res.status).toBe(200);
+        // R2 delete should NOT be called for draft/pending keys
+        expect(localMockR2Delete).not.toHaveBeenCalled();
+    });
+
+    it("POST /assets/bulk-delete should return 400 if no IDs provided", async () => {
+        const res = await app.request("http://localhost/assets/bulk-delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: [] })
+        }, mockEnv);
+        
+        expect(res.status).toBe(400);
+    });
+
+    it("POST /assets/bulk-delete should handle database error", async () => {
+        mockFirst.mockRejectedValue(new Error("DB error"));
+        
+        const res = await app.request("http://localhost/assets/bulk-delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: ["id1"] })
+        }, mockEnv);
+        
+        expect(res.status).toBe(500);
+    });
+
+    it("POST /assets/bulk-status should update multiple asset statuses", async () => {
+        const res = await app.request("http://localhost/assets/bulk-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: ["id1", "id2"], status: "published" })
+        }, mockEnv);
+        
+        expect(res.status).toBe(200);
+        const data = await res.json() as { updatedCount: number };
+        expect(data.updatedCount).toBe(2);
+    });
+
+    it("POST /assets/bulk-status should return 400 if no IDs provided", async () => {
+        const res = await app.request("http://localhost/assets/bulk-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: [], status: "published" })
+        }, mockEnv);
+        
+        expect(res.status).toBe(400);
+    });
+
+    it("POST /assets/bulk-status should return 400 if invalid status", async () => {
+        const res = await app.request("http://localhost/assets/bulk-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: ["id1"], status: "invalid" })
+        }, mockEnv);
+        
+        expect(res.status).toBe(400);
+    });
+
+    it("POST /assets/bulk-status should handle database error", async () => {
+        mockRun.mockRejectedValue(new Error("DB error"));
+        
+        const res = await app.request("http://localhost/assets/bulk-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: ["id1"], status: "published" })
+        }, mockEnv);
+        
+        expect(res.status).toBe(500);
+    });
+
+    it("DELETE /assets/:id should handle R2 deletion errors gracefully", async () => {
+        mockFirst.mockResolvedValueOnce({ 
+            id: "123", 
+            r2_key_private: "pdfs/test.pdf",
+            r2_key_public: "thumbs/test.webp",
+            r2_key_og: "og-images/test.png"
+        });
+        mockR2Delete.mockRejectedValue(new Error("R2 error"));
+        
+        const res = await app.request("http://localhost/assets/123", {
+            method: "DELETE",
+        }, mockEnv);
+        
+        // Should still return 500 since R2 delete failed
+        expect(res.status).toBe(500);
+    });
+
+    it("DELETE /assets/:id should skip draft R2 keys", async () => {
+        mockFirst.mockResolvedValueOnce({ 
+            id: "123", 
+            r2_key_private: "__draft__/test.pdf",
+            r2_key_public: "__pending__/test.webp"
+        });
+        
+        const localMockR2Delete = vi.fn();
+        mockEnv.ASSETS_PRIVATE = { ...mockEnv.ASSETS_PRIVATE as object, delete: localMockR2Delete };
+        mockEnv.ASSETS_PUBLIC = { ...mockEnv.ASSETS_PUBLIC as object, delete: localMockR2Delete };
+        
+        const res = await app.request("http://localhost/assets/123", {
+            method: "DELETE",
+        }, mockEnv);
+        
+        expect(res.status).toBe(200);
+        // R2 delete should NOT be called for draft keys
+        expect(localMockR2Delete).not.toHaveBeenCalled();
+    });
+
+    it("POST /assets/bulk-regenerate should return 400 if no IDs provided", async () => {
+        const res = await app.request("http://localhost/assets/bulk-regenerate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: [] })
+        }, mockEnv);
+        
+        expect(res.status).toBe(400);
+    });
+
+    it("POST /assets/bulk-regenerate should skip assets without source", async () => {
+        mockFirst.mockResolvedValueOnce({ id: "id1", r2_key_source: null }); // No source
+        
+        const mockExecutionCtx = {
+            waitUntil: vi.fn(),
+            passThroughOnException: vi.fn(),
+            props: {},
+        } as ExecutionContext;
+        
+        const res = await app.request("http://localhost/assets/bulk-regenerate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: ["id1"] })
+        }, mockEnv, mockExecutionCtx);
+        
+        expect(res.status).toBe(200);
+        const data = await res.json() as { queuedCount: number };
+        expect(data.queuedCount).toBe(0); // Skipped because no source
+    });
+
+    it("POST /assets/:id/regenerate-og should return 404 if asset not found", async () => {
+        mockFirst.mockResolvedValueOnce(null);
+        
+        const res = await app.request("http://localhost/assets/unknown/regenerate-og", {
+            method: "POST"
+        }, mockEnv);
+        
+        expect(res.status).toBe(404);
+    });
+
+    it("POST /assets/:id/regenerate-og should return 400 if no source or thumbnail", async () => {
+        mockFirst.mockResolvedValueOnce({ 
+            id: "123",
+            title: "Test",
+            r2_key_public: null,
+            r2_key_source: null
+        });
+        
+        const res = await app.request("http://localhost/assets/123/regenerate-og", {
+            method: "POST"
+        }, mockEnv);
+        
+        expect(res.status).toBe(400);
+    });
+
+    it("GET /assets should handle database error", async () => {
+        mockAll.mockRejectedValue(new Error("DB error"));
+        
+        const res = await app.request("http://localhost/assets", {}, mockEnv);
+        
+        expect(res.status).toBe(500);
+    });
+
+    it("GET /assets/:id should handle database error", async () => {
+        mockFirst.mockRejectedValue(new Error("DB error"));
+        
+        const res = await app.request("http://localhost/assets/123", {}, mockEnv);
+        
+        expect(res.status).toBe(500);
+    });
+
+    it("PATCH /assets/:id/status should handle database error", async () => {
+        mockRun.mockRejectedValue(new Error("DB error"));
+
+        const res = await app.request("http://localhost/assets/123/status", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "published" })
+        }, mockEnv);
+        
+        expect(res.status).toBe(500);
+    });
+
+    it("POST /create-draft should handle database error", async () => {
+        mockFirst.mockResolvedValueOnce({ value: 1 }); // Sequence
+        mockRun.mockRejectedValue(new Error("DB error"));
+
+        const formData = new FormData();
+        formData.append("title", "Test");
+        formData.append("category", "Animals");
+
+        const res = await app.request("http://localhost/create-draft", {
+            method: "POST",
+            body: formData
+        }, mockEnv);
+        
+        expect(res.status).toBe(500);
+    });
+
+    it("POST /assets should require title", async () => {
+        const formData = new FormData();
+        formData.append("category", "Animals");
+        formData.append("thumbnail", new File([""], "thumb.png", { type: "image/png" }));
+
+        const res = await app.request("http://localhost/assets", {
+            method: "POST",
+            body: formData
+        }, mockEnv);
+        
+        expect(res.status).toBe(400);
+    });
+
+    it("POST /assets should require category", async () => {
+        const formData = new FormData();
+        formData.append("title", "Test Title");
+        formData.append("thumbnail", new File([""], "thumb.png", { type: "image/png" }));
+
+        const res = await app.request("http://localhost/assets", {
+            method: "POST",
+            body: formData
+        }, mockEnv);
+        
+        expect(res.status).toBe(400);
+    });
+
+    it("POST /assets should handle update of existing asset", async () => {
+        const formData = new FormData();
+        formData.append("title", "Updated Asset");
+        formData.append("category", "Animals");
+        formData.append("asset_id", "HP-ANM-0001");
+        formData.append("status", "published");
+
+        // Mock existing asset lookup
+        mockFirst.mockResolvedValueOnce({ id: "existing-uuid" });
+
+        const mockExecutionCtx = {
+            waitUntil: vi.fn(),
+            passThroughOnException: vi.fn(),
+            props: {},
+        } as ExecutionContext;
+
+        const res = await app.request("http://localhost/assets", {
+            method: "POST",
+            body: formData
+        }, mockEnv, mockExecutionCtx);
+        
+        expect(res.status).toBe(200);
+    });
+
+    it("POST /assets/bulk-regenerate should handle database error", async () => {
+        mockFirst.mockRejectedValue(new Error("DB error"));
+        
+        const res = await app.request("http://localhost/assets/bulk-regenerate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: ["id1"] })
+        }, mockEnv);
+        
+        expect(res.status).toBe(500);
+    });
+
+    it("DELETE /assets/:id should handle delete database error", async () => {
+        mockFirst.mockResolvedValueOnce({ r2_key_private: null, r2_key_public: null });
+        mockBatch.mockRejectedValue(new Error("DB error"));
+        
+        const res = await app.request("http://localhost/assets/123", {
+            method: "DELETE"
+        }, mockEnv);
+        
+        expect(res.status).toBe(500);
+    });
+
+    it("POST /create-draft should return 401 for non-admin", async () => {
+        mockGetAuth.mockReturnValue({ 
+            userId: "user_regular",
+            sessionClaims: { publicMetadata: {} }
+        });
+
+        const formData = new FormData();
+        formData.append("title", "Test");
+        formData.append("category", "Animals");
+
+        const res = await app.request("http://localhost/create-draft", {
+            method: "POST",
+            body: formData
+        }, mockEnv);
+        
+        expect(res.status).toBe(401);
+    });
+
+    describe("Admin Requests", () => {
+        beforeEach(() => {
+            // Reset to admin
+            mockGetAuth.mockReturnValue({ 
+                userId: "user_admin",
+                sessionClaims: { publicMetadata: { role: 'admin' } }
+            });
+        });
+
+        it("GET /requests should return all design requests", async () => {
+            mockAll.mockResolvedValue({ results: [{ id: "1", status: "pending" }] });
+            
+            const res = await app.request("http://localhost/requests", {}, mockEnv);
+            
+            expect(res.status).toBe(200);
+        });
+
+        it("GET /requests should filter by status", async () => {
+            mockAll.mockResolvedValue({ results: [] });
+            
+            const res = await app.request("http://localhost/requests?status=approved", {}, mockEnv);
+            
+            expect(res.status).toBe(200);
+            expect(mockPrepare).toHaveBeenCalledWith(expect.stringContaining("WHERE status = ?"));
+        });
+
+        it("GET /requests should return 401 for non-admin", async () => {
+            mockGetAuth.mockReturnValue({ userId: "user_regular", sessionClaims: {} });
+            
+            const res = await app.request("http://localhost/requests", {}, mockEnv);
+            
+            expect(res.status).toBe(401);
+        });
+
+        it("PATCH /requests/:id should update request status", async () => {
+            const res = await app.request("http://localhost/requests/123", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "approved" })
+            }, mockEnv);
+            
+            expect(res.status).toBe(200);
+            expect(mockRun).toHaveBeenCalled();
+        });
+
+        it("PATCH /requests/:id should update admin_notes", async () => {
+            const res = await app.request("http://localhost/requests/123", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ admin_notes: "Approved with notes" })
+            }, mockEnv);
+            
+            expect(res.status).toBe(200);
+        });
+
+        it("PATCH /requests/:id should return 401 for non-admin", async () => {
+            mockGetAuth.mockReturnValue({ userId: "user_regular", sessionClaims: {} });
+            
+            const res = await app.request("http://localhost/requests/123", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "approved" })
+            }, mockEnv);
+            
+            expect(res.status).toBe(401);
+        });
+    });
+
+    describe("Regenerate OG", () => {
+        beforeEach(() => {
+            mockGetAuth.mockReturnValue({ 
+                userId: "user_admin",
+                sessionClaims: { publicMetadata: { role: 'admin' } }
+            });
+        });
+
+        it("POST /assets/:id/regenerate-og should succeed with source SVG", async () => {
+            mockFirst.mockResolvedValueOnce({ 
+                id: "123",
+                title: "Test Asset",
+                asset_id: "HP-ANM-0001",
+                r2_key_public: "thumbnails/123.webp",
+                r2_key_source: "sources/123.svg",
+                r2_key_og: "og-images/123.png"
+            });
+            mockR2Get.mockResolvedValueOnce({ 
+                arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(100))
+            }); // Thumbnail
+            mockR2Get.mockResolvedValueOnce({ 
+                text: vi.fn().mockResolvedValue('<svg></svg>')
+            }); // Source
+
+            const res = await app.request("http://localhost/assets/123/regenerate-og", {
+                method: "POST"
+            }, mockEnv);
+            
+            expect(res.status).toBe(200);
+        });
+
+        it("POST /assets/:id/regenerate-og should handle container error", async () => {
+            mockFirst.mockResolvedValueOnce({ 
+                id: "123",
+                title: "Test",
+                r2_key_public: "thumbnails/123.webp",
+                r2_key_source: null
+            });
+            mockR2Get.mockResolvedValueOnce(null); // Thumbnail not found
+
+            const res = await app.request("http://localhost/assets/123/regenerate-og", {
+                method: "POST"
+            }, mockEnv);
+            
+            // Should succeed because we check r2_key_public || r2_key_source, and public exists
+            // Even if R2.get returns null, the condition passes initially
+            expect(res.status).toBe(200);
+        });
+    });
 });
+

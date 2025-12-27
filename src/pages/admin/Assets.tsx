@@ -247,41 +247,44 @@ export default function AdminAssets() {
           <h1 className="font-serif text-h2 text-ink">Assets</h1>
           <p className="text-gray-500">Manage your coloring page library</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-2">
+          {/* Bulk Actions - Only show when items selected */}
           {selectedIds.size > 0 && (
-            <>
-              <Button 
-                variant="outline" 
+            <div className="flex items-center gap-1 mr-2 px-3 py-1.5 bg-gray-100 rounded-full">
+              <span className="text-sm font-medium text-gray-700">{selectedIds.size} selected</span>
+              <div className="w-px h-4 bg-gray-300 mx-2" />
+              <button 
                 onClick={handleBulkRegenerate} 
                 disabled={isRegenerating}
-                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                title="Regenerate selected"
+                className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${isRegenerating ? 'animate-spin' : ''}`} />
-                {isRegenerating ? 'Regenerating...' : `Regenerate (${selectedIds.size})`}
-              </Button>
-              <Button 
-                variant="outline" 
+              </button>
+              <button 
                 onClick={() => handleBulkStatus('published')} 
                 disabled={isUpdatingStatus}
-                className="text-green-600 border-green-200 hover:bg-green-50"
+                title="Publish selected"
+                className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors disabled:opacity-50"
               >
                 <Eye className="w-4 h-4" />
-                {isUpdatingStatus ? 'Updating...' : 'Publish'}
-              </Button>
-              <Button 
-                variant="outline" 
+              </button>
+              <button 
                 onClick={() => handleBulkStatus('draft')} 
                 disabled={isUpdatingStatus}
-                className="text-yellow-600 border-yellow-200 hover:bg-yellow-50"
+                title="Unpublish selected"
+                className="p-1.5 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-md transition-colors disabled:opacity-50"
               >
                 <EyeOff className="w-4 h-4" />
-                {isUpdatingStatus ? 'Updating...' : 'Unpublish'}
-              </Button>
-              <Button variant="outline" onClick={confirmBulkDelete} className="text-red-600 border-red-200 hover:bg-red-50">
+              </button>
+              <button 
+                onClick={confirmBulkDelete}
+                title="Delete selected"
+                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+              >
                 <Trash2 className="w-4 h-4" />
-                Delete ({selectedIds.size})
-              </Button>
-            </>
+              </button>
+            </div>
           )}
           <Link to="/admin/assets/new">
             <Button variant="primary">

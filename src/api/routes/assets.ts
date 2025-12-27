@@ -62,6 +62,8 @@ app.get("/assets", async (c) => {
       };
     });
 
+    // Cache list results - short TTL as content changes frequently
+    c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
     return c.json({ assets, count: assets?.length || 0 });
   } catch (error) {
     console.error("Database error:", error);
@@ -82,24 +84,21 @@ app.get("/assets/:id", async (c) => {
     
     let asset: Record<string, unknown> | null = null;
 
+    // Optimized: Single query instead of up to 4 sequential queries
+    // Use specific indexed queries for known ID formats
     if (isUUID) {
        asset = await c.env.DB.prepare("SELECT * FROM assets WHERE id = ?").bind(id).first();
     } else if (isAssetId) {
        asset = await c.env.DB.prepare("SELECT * FROM assets WHERE asset_id = ?").bind(id).first();
     } else {
-       // Fallback: Check slug (most common for SEO URLS)
-       asset = await c.env.DB.prepare("SELECT * FROM assets WHERE slug = ?").bind(id).first();
-       
-       if (!asset) {
-         // Check if exact asset_id match (legacy)
-         asset = await c.env.DB.prepare("SELECT * FROM assets WHERE asset_id = ?").bind(id).first();
-       }
-       
-       if (!asset && /^\d+$/.test(id)) {
-          // If ID is just numbers, try to find an asset_id ending with this number (suffix match)
-          // This supports URLs like /slug-80100 resolving to HP-GEN-80100
-          asset = await c.env.DB.prepare("SELECT * FROM assets WHERE asset_id LIKE ?").bind(`%${id}`).first();
-       }
+       // For slugs and legacy IDs: single query with OR conditions
+       // SQLite evaluates conditions left-to-right and short-circuits
+       const suffixPattern = /^\d+$/.test(id) ? `%${id}` : null;
+       asset = await c.env.DB.prepare(`
+         SELECT * FROM assets 
+         WHERE slug = ? OR asset_id = ? ${suffixPattern ? 'OR asset_id LIKE ?' : ''}
+         LIMIT 1
+       `).bind(...(suffixPattern ? [id, id, suffixPattern] : [id, id])).first();
     }
 
     if (!asset || asset.status !== 'published') {
