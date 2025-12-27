@@ -127,7 +127,7 @@ app.get("/cdn/*", async (c) => {
 
 const worker = {
   fetch: app.fetch,
-  async scheduled(_event: any, env: Bindings, _ctx: any) {
+  async scheduled(_event: unknown, env: Bindings, _ctx: unknown) {
     console.log("[Cron] Checking for pending jobs...");
     try {
        const pending = await env.DB.prepare("SELECT 1 FROM processing_queue WHERE status = 'pending' LIMIT 1").first();

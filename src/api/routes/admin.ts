@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { Bindings } from "../types";
 import { notifyIndexNow, buildAssetUrl } from "../../lib/indexnow";
+import { getContainer } from "@cloudflare/containers";
 
 // Container calls are now fire-and-forget via direct fetch
 
@@ -826,7 +827,7 @@ app.post("/assets/bulk-regenerate", async (c) => {
         try {
           console.log(`[Bulk Regenerate] Processing ${assetId}...`);
           
-          const container = (await import("@cloudflare/containers")).getContainer(c.env.PROCESSING, "main");
+          const container = getContainer(c.env.PROCESSING, "main");
           
           const response = await fetchWithRetry(() => container.fetch("http://container/generate-all", {
             method: "POST",
@@ -936,7 +937,7 @@ app.post("/assets/:id/regenerate-og", async (c) => {
 
     // Call Container
     const apiBaseUrl = c.env.API_URL || 'https://api.huepress.co';
-    const container = (await import("@cloudflare/containers")).getContainer(c.env.PROCESSING, "main");
+    const container = getContainer(c.env.PROCESSING, "main");
     
     const response = await fetchWithRetry(() => container.fetch("http://container/og-image", {
         method: "POST",

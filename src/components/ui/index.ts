@@ -3,7 +3,7 @@ export * from "./Accordion";
 export * from "./SearchBar";
 export * from "./FilterChip";
 export * from "./ResourceCard";
-export * from "./StickyCTA";
+
 export * from "./AlertModal";
 
 // New Design System Components

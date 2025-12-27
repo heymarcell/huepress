@@ -400,7 +400,7 @@ async function processQueue() {
         });
         
         // Fetch asset details and source SVG
-        const assetRes = await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}/asset`, {
+        const assetRes = await fetchWithRetry(`${apiUrl}/api/internal/assets/${job.asset_id}`, {
           headers: { 'Authorization': `Bearer ${internalToken}` }
         });
         
@@ -1619,5 +1619,5 @@ function wrapTextToSvg(text, maxLength, x, startY, lineHeight) {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`[Processing] Server running on port ${PORT} (v1.4 - Force Deploy)`);
+  console.log(`[Processing] Server running on port ${PORT} (v1.5 - Fix Internal API)`);
 });

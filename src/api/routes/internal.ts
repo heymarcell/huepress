@@ -136,7 +136,7 @@ app.get("/queue/pending", auth, async (c) => {
         const limit = parseInt(c.req.query("limit") || "10");
         
         const result = await c.env.DB.prepare(`
-            SELECT id, asset_id, job_type, payload, attempt_count, created_at
+            SELECT id, asset_id, job_type, attempts, created_at
             FROM processing_queue
             WHERE status = 'pending'
             ORDER BY created_at ASC
@@ -172,7 +172,7 @@ app.patch("/queue/:id", auth, async (c) => {
         if (status === 'processing') {
             query = `
                 UPDATE processing_queue 
-                SET status = ?, started_at = datetime('now'), attempt_count = attempt_count + 1
+                SET status = ?, started_at = datetime('now'), attempts = attempts + 1
                 WHERE id = ?
             `;
             params = [status, id];
