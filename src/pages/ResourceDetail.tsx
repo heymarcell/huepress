@@ -536,7 +536,8 @@ export default function ResourceDetailPage() {
                        <img 
                          src={asset.image_url} 
                          alt={asset.title}
-                         className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500 select-none shadow-xl"
+                         className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500 select-none drop-shadow-xl"
+                         style={{ clipPath: 'inset(0 0 8% 0)', transform: 'translateY(4%)' }}
                          onError={() => setImageError(true)}
                          onContextMenu={(e) => e.preventDefault()}
                          onDragStart={(e) => e.preventDefault()}
