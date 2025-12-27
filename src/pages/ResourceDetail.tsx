@@ -496,7 +496,7 @@ export default function ResourceDetailPage() {
                 {asset.category && (
                   <>
                     <ChevronRight className="w-4 h-4 text-gray-300" />
-                    <Link to={`/vault?category=${asset.category}`} className="hover:text-primary transition-colors capitalize">{asset.category}</Link>
+                    <Link to={`/vault?category=${encodeURIComponent(asset.category)}`} className="hover:text-primary transition-colors capitalize">{asset.category}</Link>
                   </>
                 )}
                 <ChevronRight className="w-4 h-4 text-gray-300" />
@@ -537,7 +537,7 @@ export default function ResourceDetailPage() {
             {/* Right Column: Key Details & CTA */}
             <div className="w-full lg:w-1/2 lg:py-8">
               <div className="flex flex-wrap items-center gap-3 mb-4">
-                 <Link to={`/vault?category=${asset.category}`} className="px-3 py-1 bg-primary/5 text-primary text-xs font-bold uppercase tracking-wider rounded-full hover:bg-primary/10 transition-colors">
+                 <Link to={`/vault?category=${encodeURIComponent(asset.category)}`} className="px-3 py-1 bg-primary/5 text-primary text-xs font-bold uppercase tracking-wider rounded-full hover:bg-primary/10 transition-colors">
                    {asset.category}
                  </Link>
                  <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold uppercase tracking-wider rounded-full">

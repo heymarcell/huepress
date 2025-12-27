@@ -12,3 +12,4 @@ export * from "./Card";
 export * from "./Badge";
 export * from "./Section";
 export * from "./Input";
+export * from "./Combobox";

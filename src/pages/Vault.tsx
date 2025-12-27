@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
 import { apiClient } from "@/lib/api-client";
 import { Asset, Tag } from "@/api/types";
-import { ResourceCard, ResourceCardSkeleton, SearchBar, Button, Heading } from "@/components/ui";
+import { ResourceCard, ResourceCardSkeleton, SearchBar, Button, Heading, Combobox } from "@/components/ui";
 import { ArrowUpDown, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -228,16 +228,13 @@ export default function VaultPage() {
               {themesUI.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
-                  <select
+                  <Combobox
+                    label="Theme"
                     value={selectedTag}
-                    onChange={(e) => setSelectedTag(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="">All Themes</option>
-                    {themesUI.map(t => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setSelectedTag(val)}
+                    options={[{ label: "All Themes", value: "" }, ...themesUI]}
+                    placeholder="All Themes"
+                  />
                 </div>
               )}
               
