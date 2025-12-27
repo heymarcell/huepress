@@ -96,6 +96,9 @@ export default function AdminAssetForm() {
             setThumbnailPreviewUrl(`https://assets.huepress.co/${asset.r2_key_public}`);
             setHasExistingFiles(true);
           }
+          if (asset.r2_key_og) {
+            setOgPreviewUrl(`https://assets.huepress.co/${asset.r2_key_og}`);
+          }
           if (asset.r2_key_private && !(asset.r2_key_private as string).startsWith("__draft__")) {
             const previewLink = apiClient.assets.getDownloadUrl(asset.id as string);
             setPdfPreviewUrl(previewLink);
@@ -149,6 +152,7 @@ export default function AdminAssetForm() {
   const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(null);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [ogPreviewUrl, setOgPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasExistingFiles, setHasExistingFiles] = useState(false);
   const [isProcessingSvg, setIsProcessingSvg] = useState(false);
@@ -480,10 +484,17 @@ export default function AdminAssetForm() {
                       variant: "info"
                     });
                     await apiClient.admin.regenerateOg(id!, token);
+                    
+                    // Force refresh image by appending timestamp
+                    if (ogPreviewUrl) {
+                       const baseUrl = ogPreviewUrl.split('?')[0];
+                       setOgPreviewUrl(`${baseUrl}?t=${Date.now()}`);
+                    }
+                    
                     setAlertState({
                       isOpen: true,
                       title: "Success",
-                      message: "OG Image regeneration started.",
+                      message: "OG Image regeneration started. Please wait a few seconds and refresh if needed.",
                       variant: "success"
                     });
                   } catch (e) {
@@ -754,6 +765,20 @@ export default function AdminAssetForm() {
                 <Eye className="w-4 h-4" />
                 Preview PDF
               </a>
+            )}
+
+            {/* OG Image Preview */}
+            {ogPreviewUrl && (
+              <div className="relative group w-full aspect-[1.91/1] bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
+                <img 
+                  src={ogPreviewUrl} 
+                  alt="OG Preview" 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1 text-center">
+                   <span className="text-[10px] text-white font-medium">OpenGraph Preview</span>
+                </div>
+              </div>
             )}
 
             {/* Regenerate OG Button */}

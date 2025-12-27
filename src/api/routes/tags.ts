@@ -22,7 +22,7 @@ app.get("/", async (c) => {
       .bind(...params)
       .all<Tag>();
 
-    // Group tags by type for easier UI consumption
+    // 1. Group official tags
     const grouped = (result.results || []).reduce((acc, tag) => {
       if (!acc[tag.type]) {
         acc[tag.type] = [];
@@ -30,6 +30,59 @@ app.get("/", async (c) => {
       acc[tag.type].push(tag);
       return acc;
     }, {} as Record<string, Tag[]>);
+
+    // 2. Fetch used tags from assets to make "Themes" dynamic
+    // Only do this if asking for all tags or specifically themes
+    if (!type || type === 'theme') {
+       try {
+         // Get all tags from assets
+         const assetTagsResult = await c.env.DB.prepare("SELECT tags FROM assets WHERE status = 'published'").all<{tags: string}>();
+         const usedTagsSet = new Set<string>();
+         
+         assetTagsResult.results?.forEach(row => {
+            if (row.tags) {
+              try {
+                const tagsArray = JSON.parse(row.tags);
+                if (Array.isArray(tagsArray)) {
+                  tagsArray.forEach(t => {
+                     // Normalize string
+                     if (typeof t === 'string' && t.length > 0) usedTagsSet.add(t.trim());
+                  });
+                }
+              } catch (e) { /* ignore parse error */ }
+            }
+         });
+
+         // Filter out known tags (categories, skills, existing themes)
+         const knownTagNames = new Set(result.results?.map(t => t.name) || []);
+         
+         // Add unknown tags to "theme" group (dynamic themes)
+         if (!grouped['theme']) grouped['theme'] = [];
+         
+         const dynamicTags: Tag[] = Array.from(usedTagsSet)
+            .filter(t => !knownTagNames.has(t))
+            .sort()
+            .map(t => ({
+               id: `dyn-${t}`,
+               name: t,
+               slug: t.toLowerCase().replace(/\s+/g, '-'),
+               type: 'theme',
+               description: 'User generated tag',
+               display_order: 999
+            }));
+            
+         grouped['theme'].push(...dynamicTags);
+         
+         // Sort themes: Official first (by display_order), then Dynamic (alphabetical)
+         grouped['theme'].sort((a, b) => {
+            if (a.display_order !== b.display_order) return (a.display_order || 0) - (b.display_order || 0);
+            return a.name.localeCompare(b.name);
+         });
+
+       } catch (err) {
+         console.warn("Failed to aggregate dynamic tags", err);
+       }
+    }
 
     return c.json({
       tags: result.results || [],
