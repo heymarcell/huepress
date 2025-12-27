@@ -831,6 +831,8 @@ app.post("/assets/bulk-regenerate", async (c) => {
           console.log(`[Bulk Regenerate] Processing ${assetId}...`);
           
           const container = getContainer(c.env.PROCESSING, "main");
+          const containerUrl = "http://container/generate-all";
+          console.log(`[Bulk Regenerate] POST ${containerUrl} for ${assetId}`);
           
           const response = await fetchWithRetry(() => container.fetch("http://container/generate-all", {
             method: "POST",
@@ -859,14 +861,17 @@ app.post("/assets/bulk-regenerate", async (c) => {
             })
           }));
           
+          
           if (response.ok) {
             const result = await response.json() as { success: boolean; elapsedMs: number };
-            console.log(`[Bulk Regenerate] Completed ${assetId} in ${result.elapsedMs}ms`);
+            console.log(`[Bulk Regenerate] Completed ${assetId} in ${result.elapsedMs}ms. Success: ${result.success}`);
           } else {
-            console.error(`[Bulk Regenerate] Failed ${assetId}: ${response.status}`);
+            console.error(`[Bulk Regenerate] Failed ${assetId}: Status ${response.status}`);
+            const errorText = await response.text();
+            console.error(`[Bulk Regenerate] Container Error Body: ${errorText}`);
           }
         } catch (err) {
-          console.error(`[Bulk Regenerate] Error for ${assetId}:`, err);
+          console.error(`[Bulk Regenerate] Exception for ${assetId}:`, err);
         }
       })());
 

@@ -148,13 +148,24 @@ app.get("/download/:id", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  // Verify subscription status from database
-  const user = await c.env.DB.prepare(
-    "SELECT subscription_status FROM users WHERE clerk_id = ?"
-  ).bind(auth.userId).first<{ subscription_status: string }>();
+  // Check if admin (bypass subscription)
+  let isAdmin = false;
+  const sessionClaims = auth.sessionClaims as { publicMetadata?: { role?: string } } | undefined;
+  if (sessionClaims?.publicMetadata?.role === 'admin') {
+     isAdmin = true;
+  } else {
+     // Fallback check if needed, or rely on metadata
+  }
 
-  if (!user || user.subscription_status !== 'active') {
-    return c.json({ error: "Active subscription required" }, 403);
+  if (!isAdmin) {
+    // Verify subscription status from database for non-admins
+    const user = await c.env.DB.prepare(
+      "SELECT subscription_status FROM users WHERE clerk_id = ?"
+    ).bind(auth.userId).first<{ subscription_status: string }>();
+
+    if (!user || user.subscription_status !== 'active') {
+      return c.json({ error: "Active subscription required" }, 403);
+    }
   }
 
   try {

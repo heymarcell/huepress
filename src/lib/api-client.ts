@@ -230,6 +230,9 @@ export const apiClient = {
       }
       return data;
     },
+    bulkRegenerate: async (ids: string[], token: string) => {
+      return apiClient.admin.bulkRegenerateAssets(ids, token);
+    },
     bulkRegenerateAssets: async (ids: string[], token: string) => {
       const cleanBase = API_URL.replace(/\/$/, "");
       const response = await fetch(`${cleanBase}/api/admin/assets/bulk-regenerate`, {

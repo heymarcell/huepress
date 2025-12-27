@@ -789,6 +789,77 @@ describe("Admin API", () => {
         expect(res.status).toBe(401);
     });
 
+
+    it("POST /assets/bulk-regenerate should trigger container generation", async () => {
+        const assetId = "HP-ANM-0001";
+        const mockAsset = {
+            id: "uuid-123",
+            asset_id: assetId,
+            slug: "test-asset",
+            title: "Test Asset",
+            description: "Description",
+            r2_key_source: "sources/test.svg"
+        };
+
+        // Mock DB finding the asset
+        mockFirst.mockResolvedValueOnce(mockAsset);
+
+        // Mock R2 getting the source file
+        mockR2Get.mockResolvedValue({
+            text: vi.fn().mockResolvedValue("<svg>content</svg>"),
+            writeHttpMetadata: vi.fn()
+        });
+
+        // Mock Container Fetch
+        const mockContainerFetch = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: vi.fn().mockResolvedValue({ success: true, elapsedMs: 50 })
+        });
+
+        // Update the container mock for this specific test
+        const { getContainer } = await import("@cloudflare/containers");
+        (getContainer as Mock).mockReturnValue({
+            fetch: mockContainerFetch
+        });
+
+        // Capture promise passed to waitUntil
+        let backgroundPromise: Promise<void> | undefined;
+        const mockExecutionCtx = {
+            waitUntil: vi.fn((promise) => {
+                backgroundPromise = promise;
+            }),
+            passThroughOnException: vi.fn(),
+            props: {},
+        } as unknown as ExecutionContext;
+
+        const res = await app.request("http://localhost/assets/bulk-regenerate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: ["uuid-123"] })
+        }, mockEnv, mockExecutionCtx);
+
+        expect(res.status).toBe(200);
+        
+        // Wait for the background task to finish
+        if (backgroundPromise) {
+            await backgroundPromise;
+        }
+
+        // Verify container was called
+        expect(mockContainerFetch).toHaveBeenCalled();
+        const callArgs = mockContainerFetch.mock.calls[0];
+        // Ensure the correct container URL is called
+        expect(callArgs[0]).toBe("http://container/generate-all");
+        
+        // Ensure body has correct SVG content from R2
+        const body = JSON.parse(callArgs[1].body);
+        expect(body).toMatchObject({
+            assetId: assetId,
+            svgContent: "<svg>content</svg>"
+        });
+    });
+
     describe("Admin Requests", () => {
         beforeEach(() => {
             // Reset to admin
