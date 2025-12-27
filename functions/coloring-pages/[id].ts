@@ -73,6 +73,11 @@ export const onRequest: PagesFunction = async (context) => {
         element.setAttribute("content", imageUrl);
       },
     })
+    .on('meta[property="fb:app_id"]', {
+      element(element) {
+        element.setAttribute("content", "24035268926171107");
+      },
+    })
     .on('meta[property="og:url"]', {
       element(element) {
         element.setAttribute("content", asset.canonicalUrl);
