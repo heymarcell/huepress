@@ -819,7 +819,7 @@ describe("Admin API", () => {
 
         // Update the container mock for this specific test
         const { getContainer } = await import("@cloudflare/containers");
-        (getContainer as Mock).mockReturnValue({
+        (getContainer as any).mockReturnValue({
             fetch: mockContainerFetch
         });
 
