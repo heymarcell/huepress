@@ -61,6 +61,181 @@ function validateUploadUrl(url) {
   return true;
 }
 
+// Helper: Parse color string to RGB values
+// Supports: #000, #000000, rgb(0,0,0), rgba(0,0,0,1), named colors
+function parseColorToRGB(color) {
+  if (!color || color === 'none' || color === 'transparent' || color === 'inherit' || color === 'currentColor') {
+    return null; // Not a solid color
+  }
+  
+  color = color.trim().toLowerCase();
+  
+  // Named colors mapping (common ones)
+  const namedColors = {
+    'black': { r: 0, g: 0, b: 0 },
+    'white': { r: 255, g: 255, b: 255 },
+    'red': { r: 255, g: 0, b: 0 },
+    'green': { r: 0, g: 128, b: 0 },
+    'blue': { r: 0, g: 0, b: 255 },
+    'gray': { r: 128, g: 128, b: 128 },
+    'grey': { r: 128, g: 128, b: 128 },
+    'darkgray': { r: 169, g: 169, b: 169 },
+    'darkgrey': { r: 169, g: 169, b: 169 },
+    'lightgray': { r: 211, g: 211, b: 211 },
+    'lightgrey': { r: 211, g: 211, b: 211 },
+    'dimgray': { r: 105, g: 105, b: 105 },
+    'dimgrey': { r: 105, g: 105, b: 105 },
+    'yellow': { r: 255, g: 255, b: 0 },
+    'orange': { r: 255, g: 165, b: 0 },
+    'pink': { r: 255, g: 192, b: 203 },
+    'purple': { r: 128, g: 0, b: 128 },
+    'cyan': { r: 0, g: 255, b: 255 },
+    'magenta': { r: 255, g: 0, b: 255 },
+  };
+  
+  if (namedColors[color]) {
+    return namedColors[color];
+  }
+  
+  // Hex format: #RGB or #RRGGBB
+  if (color.startsWith('#')) {
+    let hex = color.slice(1);
+    if (hex.length === 3) {
+      hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    }
+    if (hex.length === 6) {
+      return {
+        r: parseInt(hex.slice(0, 2), 16),
+        g: parseInt(hex.slice(2, 4), 16),
+        b: parseInt(hex.slice(4, 6), 16)
+      };
+    }
+  }
+  
+  // RGB/RGBA format
+  const rgbMatch = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  if (rgbMatch) {
+    return {
+      r: parseInt(rgbMatch[1], 10),
+      g: parseInt(rgbMatch[2], 10),
+      b: parseInt(rgbMatch[3], 10)
+    };
+  }
+  
+  return null; // Unknown format
+}
+
+// Helper: Check if color is near-black (threshold: all RGB < 40)
+const NEAR_BLACK_THRESHOLD = 40;
+function isNearBlack(rgb) {
+  if (!rgb) return false;
+  return rgb.r <= NEAR_BLACK_THRESHOLD && rgb.g <= NEAR_BLACK_THRESHOLD && rgb.b <= NEAR_BLACK_THRESHOLD;
+}
+
+// Helper: Normalize SVG colors - convert near-black to pure black, remove non-black elements
+function normalizeSvgColors(svgContent) {
+  const dom = new JSDOM(svgContent, { contentType: 'image/svg+xml' });
+  const doc = dom.window.document;
+  const svg = doc.querySelector('svg');
+  
+  if (!svg) return svgContent; // No SVG found, return as-is
+  
+  // Process all elements recursively
+  const processElement = (el) => {
+    // Skip the root SVG element itself and structural elements
+    if (el.tagName === 'svg' || el.tagName === 'defs' || el.tagName === 'style') {
+      // Still process children
+      Array.from(el.children).forEach(child => processElement(child));
+      return;
+    }
+    
+    // Check fill attribute
+    let fill = el.getAttribute('fill');
+    let stroke = el.getAttribute('stroke');
+    
+    // Also extract from inline style
+    const style = el.getAttribute('style') || '';
+    const fillFromStyle = style.match(/fill\s*:\s*([^;]+)/i);
+    const strokeFromStyle = style.match(/stroke\s*:\s*([^;]+)/i);
+    
+    if (fillFromStyle) fill = fillFromStyle[1].trim();
+    if (strokeFromStyle) stroke = strokeFromStyle[1].trim();
+    
+    // Parse colors
+    const fillRGB = parseColorToRGB(fill);
+    const strokeRGB = parseColorToRGB(stroke);
+    
+    // Determine if element should be kept
+    let keepElement = false;
+    
+    // Check fill
+    if (fillRGB) {
+      if (isNearBlack(fillRGB)) {
+        // Normalize to pure black
+        el.setAttribute('fill', '#000000');
+        keepElement = true;
+      }
+      // Non-black fill = don't keep (unless stroke saves it)
+    } else if (fill === 'none' || !fill) {
+      // No fill is OK, might have stroke
+    }
+    
+    // Check stroke
+    if (strokeRGB) {
+      if (isNearBlack(strokeRGB)) {
+        // Normalize to pure black
+        el.setAttribute('stroke', '#000000');
+        keepElement = true;
+      }
+      // Non-black stroke = don't contribute to keeping
+    } else if (stroke === 'none' || !stroke) {
+      // No stroke, that's fine
+    }
+    
+    // If element has no black fill AND no black stroke, remove it
+    // But be careful: elements with neither fill nor stroke set might inherit
+    // For safety, if an element has a non-black color set explicitly, remove it
+    const hasExplicitNonBlackFill = fillRGB && !isNearBlack(fillRGB);
+    const hasExplicitNonBlackStroke = strokeRGB && !isNearBlack(strokeRGB);
+    
+    if (hasExplicitNonBlackFill || hasExplicitNonBlackStroke) {
+      // Check if it has any black attribute that saves it
+      if (!keepElement) {
+        el.remove();
+        return;
+      }
+      // If it has a good fill/stroke but also a bad one, just remove the bad attribute
+      if (hasExplicitNonBlackFill && fill) {
+        el.setAttribute('fill', 'none');
+      }
+      if (hasExplicitNonBlackStroke && stroke) {
+        el.setAttribute('stroke', 'none');
+      }
+    }
+    
+    // Clean up style attribute (remove fill/stroke from inline styles, we've set them as attributes)
+    if (style) {
+      const newStyle = style
+        .replace(/fill\s*:\s*[^;]+;?/gi, '')
+        .replace(/stroke\s*:\s*[^;]+;?/gi, '')
+        .trim();
+      if (newStyle) {
+        el.setAttribute('style', newStyle);
+      } else {
+        el.removeAttribute('style');
+      }
+    }
+    
+    // Process children
+    Array.from(el.children).forEach(child => processElement(child));
+  };
+  
+  // Start processing from SVG root's children
+  Array.from(svg.children).forEach(child => processElement(child));
+  
+  return svg.outerHTML;
+}
+
 // Helper: Sanitize SVG [F-004 Enhanced]
 function sanitizeSvgContent(input) {
   if (!input) return input; // Let endpoints handle missing input
@@ -73,12 +248,16 @@ function sanitizeSvgContent(input) {
   if (!isSvg(input)) {
     throw new Error("Invalid SVG format");
   }
-  // Sanitize: strip scripts, foreignObjects, event handlers
-  return DOMPurify.sanitize(input, { 
+  
+  // Step 1: Security sanitization - strip scripts, foreignObjects, event handlers
+  const sanitized = DOMPurify.sanitize(input, { 
     USE_PROFILES: { svg: true, svgFilters: true },
     ADD_TAGS: ['style', 'defs', 'linearGradient', 'stop', 'rect', 'circle', 'path', 'g', 'text', 'tspan', 'clipPath'], // Ensure standard SVG tags are kept
     ADD_ATTR: ['id', 'class', 'width', 'height', 'viewBox', 'fill', 'stroke', 'style', 'd', 'transform', 'x', 'y', 'r', 'cx', 'cy', 'rx', 'ry', 'offset', 'stop-color', 'stop-opacity'] 
   });
+  
+  // Step 2: Color normalization - convert near-black to black, remove non-black elements
+  return normalizeSvgColors(sanitized);
 }
 
 // Health check endpoint
