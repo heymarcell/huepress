@@ -14,6 +14,7 @@ interface ComboboxProps {
   label?: string;
   className?: string;
   icon?: React.ReactNode;
+  searchable?: boolean;
 }
 
 export function Combobox({ 
@@ -23,7 +24,8 @@ export function Combobox({
   placeholder = "Select...", 
   label,
   className = "",
-  icon
+  icon,
+  searchable = true
 }: ComboboxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -104,28 +106,30 @@ export function Combobox({
           className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top"
         >
           {/* Search Input */}
-          <div className="p-2 border-b border-gray-100 flex items-center gap-2 sticky top-0 bg-white">
-            <Search className="w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search..."
-              className="flex-1 text-sm outline-none text-ink placeholder:text-gray-400 bg-transparent"
-              onClick={(e) => e.stopPropagation()}
-            />
-            {searchQuery && (
-              <button 
-                onClick={(e) => {
-                   e.stopPropagation();
-                   setSearchQuery("");
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </div>
+          {searchable && (
+            <div className="p-2 border-b border-gray-100 flex items-center gap-2 sticky top-0 bg-white">
+              <Search className="w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search..."
+                className="flex-1 text-sm outline-none text-ink placeholder:text-gray-400 bg-transparent"
+                onClick={(e) => e.stopPropagation()}
+              />
+              {searchQuery && (
+                <button 
+                  onClick={(e) => {
+                     e.stopPropagation();
+                     setSearchQuery("");
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Options List */}
           <div className="max-h-60 overflow-y-auto py-1">

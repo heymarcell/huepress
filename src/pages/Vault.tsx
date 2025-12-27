@@ -192,14 +192,14 @@ export default function VaultPage() {
           <div className="hidden sm:block w-px h-6 bg-gray-200" />
           
           {/* Sort Dropdown */}
-            <Combobox
-              value={sortBy}
-              onChange={(val) => setSortBy(val)}
-              options={[{ label: "Newest", value: "newest" }, { label: "Oldest", value: "oldest" }]}
-              placeholder="Sort by"
-              icon={<ArrowUpDown className="w-4 h-4 text-gray-400" />}
-              className="w-40"
-            />
+          {/* Sort Toggle Button */}
+          <button
+            onClick={() => setSortBy(sortBy === "newest" ? "oldest" : "newest")}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-ink hover:bg-gray-50 transition-colors"
+          >
+            <ArrowUpDown className="w-4 h-4 text-gray-500" />
+            <span>{sortBy === "newest" ? "Newest" : "Oldest"}</span>
+          </button>
         </div>
         
         {/* Collapsible Filter Panel */}
@@ -363,14 +363,14 @@ export default function VaultPage() {
             </button>
             
             {/* Sort (Simplified) */}
-              <div className="w-32">
-                  <Combobox
-                    value={sortBy}
-                    onChange={(val) => setSortBy(val)}
-                    options={[{ label: "Newest", value: "newest" }, { label: "Oldest", value: "oldest" }]}
-                    placeholder="Sort"
-                  />
-              </div>
+            {/* Sort (Simplified Toggle) */}
+              <button
+                onClick={() => setSortBy(sortBy === "newest" ? "oldest" : "newest")}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-ink hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                  <ArrowUpDown className="w-4 h-4 text-gray-500" />
+                  <span className="hidden sm:inline">{sortBy === "newest" ? "Newest" : "Oldest"}</span>
+              </button>
           </div>
 
           {/* Active filter chips - compact summary */}
