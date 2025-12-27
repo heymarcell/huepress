@@ -210,9 +210,9 @@ app.get("/assets/:id", auth, async (c) => {
         const id = c.req.param("id");
         
         const result = await c.env.DB.prepare(`
-            SELECT id, asset_id, title, description, source_key
+            SELECT id, asset_id, title, description, r2_key_source, r2_key_public, r2_key_private, r2_key_og
             FROM assets
-            WHERE asset_id = ?
+            WHERE id = ?
         `).bind(id).first();
         
         if (!result) {
@@ -221,8 +221,8 @@ app.get("/assets/:id", auth, async (c) => {
         
         // Fetch SVG content from R2 if source_key exists
         let svgContent = null;
-        if (result.source_key) {
-            const obj = await c.env.ASSETS_PRIVATE.get(result.source_key as string);
+        if (result.r2_key_source) {
+            const obj = await c.env.ASSETS_PRIVATE.get(result.r2_key_source as string);
             if (obj) {
                 svgContent = await obj.text();
             }
