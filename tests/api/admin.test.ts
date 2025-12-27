@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
+import { ExecutionContext } from "hono";
 
 // Mock the OG generator to avoid WASM loading in tests
 vi.mock("../../src/lib/og-generator", () => ({
@@ -134,6 +135,47 @@ describe("Admin API", () => {
         expect(mockR2Put).toHaveBeenCalledTimes(2); // Thumb + PDF
         // Expect 2 DB writes: 1. INSERT (Pending), 2. UPDATE (Active)
         expect(mockRun).toHaveBeenCalledTimes(2); 
+    });
+
+    it("POST /assets should not insert duplicate pending job", async () => {
+        const formData = new FormData();
+        formData.append("title", "Test Duplicate");
+        formData.append("description", "Desc");
+        formData.append("category", "animals");
+        formData.append("tags", "tag1");
+        formData.append("license", "standard");
+        formData.append("source", new File(["<svg></svg>"], "test.svg", { type: "image/svg+xml" }));
+
+        // Mock queries:
+        // 1. SELECT lastAsset -> { asset_id: 'HP-ANIM-0001' }
+        // 2. SELECT queue check -> EXISTING JOB
+        mockFirst
+            .mockResolvedValueOnce({ asset_id: 'HP-ANIM-0001' }) // lastAsset check
+            .mockResolvedValueOnce({ id: 'existing-job' }); // Queue existing check
+
+        const mockExecutionCtx = {
+            waitUntil: vi.fn(),
+            passThroughOnException: vi.fn(),
+        } as unknown as ExecutionContext;
+
+        const res = await app.request("http://localhost/assets", {
+            method: "POST",
+            body: formData,
+            headers: { "Authorization": "Bearer test-token" }
+        }, mockEnv, mockExecutionCtx);
+
+        if (res.status === 500) {
+            const err = await res.json();
+            console.error("DEBUG TEST ERROR:", err);
+        }
+        expect(res.status).toBe(200);
+        
+        // Verify prepare was NOT called with INSERT INTO processing_queue
+        const prepareCalls = mockPrepare.mock.calls.map(c => c[0]);
+        const queueInsertStr = "INSERT INTO processing_queue";
+        const hasQueueInsert = prepareCalls.some((sql: string) => sql.includes(queueInsertStr));
+        
+        expect(hasQueueInsert).toBe(false);
     });
 
     it("POST /assets should rollback DB on upload failure", async () => {
@@ -843,6 +885,10 @@ describe("Admin API", () => {
                 method: "POST"
             }, mockEnv);
             
+            if (res.status === 500) {
+                const err = await res.json();
+                console.error("DEBUG REGEN OG ERROR:", err);
+            }
             expect(res.status).toBe(200);
         });
 

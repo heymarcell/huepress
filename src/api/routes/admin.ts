@@ -468,27 +468,40 @@ app.post("/assets", async (c) => {
 
         // 5. INSERT JOB INTO PROCESSING QUEUE (if source was uploaded)
         if (hasSourceUpload) {
-          const jobId = crypto.randomUUID();
-          await c.env.DB.prepare(`
-            INSERT INTO processing_queue (id, asset_id, job_type, status)
-            VALUES (?, ?, 'generate_all', 'pending')
-          `).bind(jobId, id).run();
-          
-          console.log(`[Queue] Job ${jobId} created for asset ${assetId}`);
+          // Check for existing pending job to prevent duplicates (e.g. double submit)
+          const existingJob = await c.env.DB.prepare(
+            "SELECT id FROM processing_queue WHERE asset_id = ? AND status = 'pending' AND job_type = 'generate_all'"
+          ).bind(id).first();
+
+          let jobId;
+          if (existingJob) {
+             console.log(`[Queue] Pending job already exists for asset ${id}, skipping insert`);
+             jobId = existingJob.id;
+          } else {
+            jobId = crypto.randomUUID();
+            await c.env.DB.prepare(`
+              INSERT INTO processing_queue (id, asset_id, job_type, status)
+              VALUES (?, ?, 'generate_all', 'pending')
+            `).bind(jobId, id).run();
+            
+            console.log(`[Queue] Job ${jobId} created for asset ${assetId}`);
+          }
           
           // 6. FIRE LIGHTWEIGHT KICK TO CONTAINER (no waiting, no retries)
           // Container will poll the queue and process jobs
           c.executionCtx.waitUntil((async () => {
             try {
               const container = (await import("@cloudflare/containers")).getContainer(c.env.PROCESSING, "main");
-              // Just kick the container awake - don't wait for response
-              container.fetch("http://container/wakeup", { 
+              console.log(`[Queue] Sending wakeup to container for job ${jobId}...`);
+              
+              const res = await container.fetch("http://container/wakeup", { 
                 method: "GET",
                 headers: { "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET || "" }
-              }).catch(() => {}); // Ignore errors - container will process queue eventually
-              console.log(`[Queue] Kicked container for job ${jobId}`);
-            } catch (_err) {
-              // Container kick is best-effort - queue is the source of truth
+              });
+              
+              console.log(`[Queue] Wakeup sent. Status: ${res.status}`);
+            } catch (err) {
+              console.error(`[Queue] Failed to send wakeup signal:`, err);
             }
           })());
         }

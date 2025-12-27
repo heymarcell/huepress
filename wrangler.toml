@@ -70,3 +70,7 @@ tag = "v1"
 type = "Text"
 globs = ["**/*.svg"]
 fallthrough = false
+
+[triggers]
+crons = ["* * * * *"]
+

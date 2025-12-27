@@ -125,7 +125,30 @@ app.get("/cdn/*", async (c) => {
   }
 });
 
-export default app;
+const worker = {
+  fetch: app.fetch,
+  async scheduled(_event: any, env: Bindings, _ctx: any) {
+    console.log("[Cron] Checking for pending jobs...");
+    try {
+       const pending = await env.DB.prepare("SELECT 1 FROM processing_queue WHERE status = 'pending' LIMIT 1").first();
+       
+       if (pending) {
+          console.log("[Cron] Pending jobs found. Waking container...");
+          const container = (await import("@cloudflare/containers")).getContainer(env.PROCESSING, "main");
+          const res = await container.fetch("http://container/wakeup", {
+             headers: { "X-Internal-Secret": env.CONTAINER_AUTH_SECRET || "" }
+          });
+          console.log(`[Cron] Wakeup sent. Status: ${res.status}`);
+       } else {
+          console.log("[Cron] No pending jobs.");
+       }
+    } catch (err) {
+       console.error("[Cron] Error:", err);
+    }
+  }
+};
+
+export default worker;
 
 // Export ProcessingContainer for Cloudflare Containers
 export { ProcessingContainer } from "../lib/processing-container";
