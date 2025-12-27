@@ -255,15 +255,6 @@ export default function VaultPage() {
                 </select>
               </div>
             </div>
-            
-            <div className="flex justify-end mt-4 pt-4 border-t border-gray-100">
-              <button
-                onClick={() => setShowMobileFilters(false)}
-                className="text-sm font-medium text-primary hover:underline"
-              >
-                Done
-              </button>
-            </div>
           </div>
         )}
 
