@@ -96,21 +96,51 @@ async function generateOgBuffer(svgContent, title) {
     console.error('[OG] Art processing error:', e);
   }
 
-  // 3. Text Layer
+  // Balanced Line Breaking Algorithm
   const maxTitleChars = 22;
-  const titleLines = [];
   const words = (title || 'Coloring Page').split(' ');
+  
+  // 1. Calculate ideal line count & target length
+  const totalChars = words.join(' ').length;
+  // Estimate lines needed (min 1)
+  const numLines = Math.max(1, Math.ceil(totalChars / maxTitleChars));
+  // Target length to aim for per line
+  const targetLen = totalChars / numLines;
+  
+  const titleLines = [];
   let currentLine = words[0];
 
   for (let i = 1; i < words.length; i++) {
-    if ((currentLine + " " + words[i]).length < maxTitleChars) {
-      currentLine += " " + words[i];
-    } else {
+    const word = words[i];
+    const candidate = currentLine + " " + word;
+    
+    // Safety break: if candidate barely fits or overflows max, logic needs to decide
+    // Strict Limit: absolute max capacity
+    if (candidate.length > maxTitleChars) {
       titleLines.push(currentLine);
-      currentLine = words[i];
+      currentLine = word;
+      continue;
+    }
+    
+    // Balance Logic: 
+    // Check if adding the word gets us closer to the target length
+    // or pushes us too far away compared to just splitting here.
+    const currentDiff = Math.abs(currentLine.length - targetLen);
+    const candidateDiff = Math.abs(candidate.length - targetLen);
+    
+    // If adding the word makes it closer to target (or equal), 
+    // OR if we are still under the target, continue adding.
+    // (Optimization: prefer filling up to target over splitting early)
+    if (candidateDiff <= currentDiff || candidate.length < targetLen) {
+      currentLine = candidate;
+    } else {
+      // Splits here for better balance
+      titleLines.push(currentLine);
+      currentLine = word;
     }
   }
   titleLines.push(currentLine);
+  
   
   const displayLines = titleLines.slice(0, 3);
   if (titleLines.length > 3) {
