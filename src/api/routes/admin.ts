@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Bindings } from "../types";
-import { notifyIndexNow, buildAssetUrl } from "../../lib/indexnow";
+import { notifyIndexNow, notifyIndexNowBatch, buildAssetUrl } from "../../lib/indexnow";
 import { getContainer } from "@cloudflare/containers";
 
 // Container calls are now fire-and-forget via direct fetch
@@ -261,6 +261,20 @@ app.patch("/assets/:id/status", async (c) => {
     await c.env.DB.prepare(
       "UPDATE assets SET status = ? WHERE id = ?"
     ).bind(status, id).run();
+
+    // Notify IndexNow when publishing (fire-and-forget)
+    if (status === 'published') {
+      const asset = await c.env.DB.prepare(
+        "SELECT asset_id, slug FROM assets WHERE id = ?"
+      ).bind(id).first<{ asset_id: string; slug: string }>();
+      
+      if (asset) {
+        c.executionCtx.waitUntil(
+          notifyIndexNow(buildAssetUrl(asset.asset_id, asset.slug))
+            .catch(err => console.error('[IndexNow] Notification failed:', err))
+        );
+      }
+    }
 
     return c.json({ success: true, status });
   } catch (error) {
@@ -796,6 +810,24 @@ app.post("/assets/bulk-status", async (c) => {
     await c.env.DB.prepare(
       `UPDATE assets SET status = ? WHERE id IN (${placeholders})`
     ).bind(status, ...ids).run();
+
+    // Notify IndexNow when bulk publishing (fire-and-forget)
+    if (status === 'published') {
+      c.executionCtx.waitUntil((async () => {
+        try {
+          const assets = await c.env.DB.prepare(
+            `SELECT asset_id, slug FROM assets WHERE id IN (${placeholders})`
+          ).bind(...ids).all<{ asset_id: string; slug: string }>();
+          
+          if (assets.results && assets.results.length > 0) {
+            const urls = assets.results.map(a => buildAssetUrl(a.asset_id, a.slug));
+            await notifyIndexNowBatch(urls);
+          }
+        } catch (err) {
+          console.error('[IndexNow] Bulk notification failed:', err);
+        }
+      })());
+    }
 
     console.log(`[Bulk Status] Updated ${ids.length} assets to ${status}`);
     return c.json({ success: true, updatedCount: ids.length });
