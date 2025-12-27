@@ -111,14 +111,14 @@ export default function VaultPage() {
   return (
     <div className="bg-gray-50 min-h-screen">
       <SEO 
-        title="The Vault | 500+ Coloring Pages | HuePress"
-        description="Browse our curated collection of 500+ therapy-grade coloring pages. Bold lines, trending themes, instant PDF downloads."
+        title="The Vault | 1,000+ Coloring Pages | HuePress"
+        description="Browse our curated collection of 1,000+ therapy-grade coloring pages. Bold lines, trending themes, instant PDF downloads."
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="font-serif text-h1 text-ink mb-2">The Vault</h1>
-          <p className="text-gray-500">500+ fridge-worthy designs, ready to print</p>
+          <p className="text-gray-500">1,000+ fridge-worthy designs, ready to print</p>
         </div>
 
         {/* Search Bar */}

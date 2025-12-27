@@ -20,7 +20,7 @@ const plans = [
     price: "$5",
     period: "/month",
     description: "Perfect for trying us out",
-    features: ["Unlimited downloads", "500+ bold designs", "New drops every Sunday", "High-res vector PDFs", "No watermarks", "Cancel anytime"],
+    features: ["Unlimited downloads", "1,000+ bold designs", "New drops every Sunday", "High-res vector PDFs", "No watermarks", "Cancel anytime"],
     priceId: "price_1Sh99kRzWblq3ch1ACXHv20y",
     popular: false,
     cta: "Join for $5/mo",
@@ -125,7 +125,7 @@ export default function PricingPage() {
     <>
       <SEO 
         title="Pricing | $5/mo Unlimited Downloads | HuePress"
-        description="Join The Club for $5/month. Unlimited access to 500+ therapy-grade coloring pages. Cancel anytime, no questions asked."
+        description="Join The Club for $5/month. Unlimited access to 1,000+ therapy-grade coloring pages. Cancel anytime, no questions asked."
       />
       {/* Hero */}
       <Section background="accent" className="text-center" size="md">
@@ -232,7 +232,7 @@ export default function PricingPage() {
                <div className="grid grid-cols-3 text-sm border-b border-gray-200 bg-gray-50">
                  <div className="p-4 font-medium text-gray-500">Feature</div>
                  <div className="p-4 font-bold text-primary text-center bg-primary/5">Annual</div>
-                 <div className="p-4 font-bold text-ink text-center">Monthly</div>
+                 <div className="p-4 text-center font-bold text-ink">Monthly</div>
                </div>
                <div className="grid grid-cols-3 text-sm border-b border-gray-100">
                  <div className="p-4 font-medium text-ink">Price per Month</div>
@@ -265,7 +265,7 @@ export default function PricingPage() {
       <Section background="accent" size="md">
           <div className="text-center mb-10">
             <p className="text-gray-500 mb-2">Trusted by</p>
-            <Heading as="h2" variant="h1" className="mb-4">500+ Happy Families</Heading>
+            <Heading as="h2" variant="h1" className="mb-4">1,000+ Happy Families</Heading>
             <Text>Used at home, in classrooms, and in pediatric OT sessions.</Text>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

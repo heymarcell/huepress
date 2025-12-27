@@ -73,8 +73,8 @@ function SubscribePrompt() {
   return (
     <div className="text-center p-8 bg-accent rounded-xl">
       <h3 className="font-serif text-h3 text-ink mb-4">Unlock This Design</h3>
-      <p className="text-gray-500 mb-6">
-        Subscribe for $5/mo to download this and 500+ more designs.
+      <p className="text-center text-sm text-gray-500 mb-4">
+        Subscribe for $5/mo to download this and 1,000+ more designs.
       </p>
       <Link to="/pricing" className="btn-primary inline-block">
         View Pricing

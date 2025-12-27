@@ -537,12 +537,12 @@ export default function ResourceDetailPage() {
                <div className="sticky top-32">
                  <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 group">
                    {/* 1:1 container - clips bottom banner using clip-path */}
-                   <div className="aspect-square w-full bg-white overflow-hidden flex items-center justify-center p-4">
+                   <div className="aspect-square w-full bg-white overflow-hidden flex items-center justify-center">
                      {asset.image_url && !asset.image_url.includes("__draft__") && !imageError ? (
                        <img 
                          src={asset.image_url} 
                          alt={asset.title}
-                         className="max-w-full max-h-full object-contain group-hover:scale-[1.02] transition-transform duration-500 select-none"
+                         className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500 select-none"
                          style={{ clipPath: 'inset(0 0 8% 0)', transform: 'translateY(4%)' }}
                          onError={() => setImageError(true)}
                          onContextMenu={(e) => e.preventDefault()}

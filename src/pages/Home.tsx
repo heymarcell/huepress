@@ -162,7 +162,7 @@ export default function HomePage() {
                   </Heading>
                   
                   <Text variant="large" className="mb-8 max-w-lg mx-auto lg:mx-0">
-                    Join 500+ families using our bold-line designs to reduce anxiety and build focus. 
+                    Join 1,000+ families using our bold-line designs to reduce anxiety and build focus. 
                     New drops every Sunday.
                   </Text>
                   
@@ -200,7 +200,7 @@ export default function HomePage() {
                           <img src="/avatars/avatar_mom_2.png" alt="Happy Mom" className="w-full h-full object-cover" loading="lazy" />
                         </div>
                      </div>
-                     <p>Join <strong className="text-ink">500+ families</strong> printing today.</p>
+                     <p>Join <strong className="text-ink">1,000+ families</strong> printing today.</p>
                   </div>
                 </>
               )}
@@ -236,7 +236,7 @@ export default function HomePage() {
                   ))}
                </div>
                <div className="flex flex-col text-left leading-tight">
-                 <span className="font-bold text-ink">4.9/5 from 500+ families</span>
+                 <span className="font-bold text-ink">4.9/5 from 1,000+ families</span>
                  <span className="text-xs text-gray-500">Rated by parents & OTs</span>
                </div>
             </div>
@@ -252,7 +252,7 @@ export default function HomePage() {
       <Section>
           <div className="text-center mb-12">
             <Heading as="h2" variant="h1" className="mb-4">Peek Inside The Vault</Heading>
-            <Text variant="large" className="max-w-2xl mx-auto">Over 500 bold, curated designs across trending themes. New drops every Sunday.</Text>
+            <Text variant="large" className="max-w-2xl mx-auto">Over 1,000 bold, curated designs across trending themes. New drops every Sunday.</Text>
           </div>
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
              {featuredItems.length > 0 ? (
@@ -290,7 +290,7 @@ export default function HomePage() {
                    <Link to="/vault">
                      <Button variant="primary" size="lg">Explore Your Vault</Button>
                    </Link>
-                   <Text variant="muted">All 500+ designs unlocked for you</Text>
+                   <Text variant="muted">All 1,000+ designs unlocked for you</Text>
                  </>
                ) : (
                  // Non-subscriber CTAs
@@ -303,7 +303,7 @@ export default function HomePage() {
                        <Button variant="outline" size="lg">Browse the Vault</Button>
                      </Link>
                    </div>
-                   <Text variant="muted">Instant access to 500+ designs</Text>
+                   <Text variant="muted">Instant access to 1,000+ designs</Text>
                  </>
                )}
             </div>
