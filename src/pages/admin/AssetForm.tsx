@@ -308,6 +308,10 @@ export default function AdminAssetForm() {
       // Append Source File
       uploadForm.append("source", file);
 
+      // SKIP PROCESSING for this auto-save (prevents double generation job)
+      // The job will be triggered only on explicit "Save" click
+      uploadForm.append("skip_processing", "true");
+
       const uploadResult = await apiClient.admin.createAsset(uploadForm, token);
       
       if (uploadResult.error) {

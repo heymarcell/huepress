@@ -468,7 +468,10 @@ app.post("/assets", async (c) => {
         await c.env.DB.prepare(query).bind(...values).run();
 
         // 5. INSERT JOB INTO PROCESSING QUEUE (if source was uploaded)
-        if (hasSourceUpload) {
+        // Check for skip_processing flag (used for auto-saves that shouldn't trigger generation)
+        const skipProcessing = body["skip_processing"] === "true";
+
+        if (hasSourceUpload && !skipProcessing) {
           // Check for existing pending job to prevent duplicates (e.g. double submit)
           const existingJob = await c.env.DB.prepare(
             "SELECT id FROM processing_queue WHERE asset_id = ? AND status = 'pending' AND job_type = 'generate_all'"
