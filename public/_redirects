@@ -1,6 +1,8 @@
-# SPA fallback - serve index.html for all routes
+# SPA fallback - serve index.html for all routes except static files
 # IndexNow key file (must be served as-is)
 /6036370EF1A6D786631BBA0C2FE92864.txt  /6036370EF1A6D786631BBA0C2FE92864.txt  200
+# Exclude /index.html itself to prevent infinite loop
+/index.html  /index.html  200
 /*    /index.html   200
 
 # Redirects
