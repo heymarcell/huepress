@@ -1,12 +1,28 @@
 // Cloudflare Pages Function for sitemap generation
+// Uses API endpoints instead of direct D1 access
 
 interface Env {
-  DB: D1Database;
+  API_URL?: string;
+}
+
+interface Asset {
+  id: string;
+  slug: string;
+  asset_id: string;
+  updated_at?: string;
+  created_at?: string;
+}
+
+interface Post {
+  slug: string;
+  published_at?: string;
+  updated_at?: string;
 }
 
 export const onRequest = async (context: { env: Env }) => {
   const { env } = context;
   const baseUrl = "https://huepress.co";
+  const apiUrl = env.API_URL || "https://api.huepress.co";
 
   // Static pages
   const staticPages = [
@@ -33,26 +49,29 @@ export const onRequest = async (context: { env: Env }) => {
   };
 
   try {
-    // Fetch dynamic assets from D1
-    let assets: Array<{ id: string; slug: string; asset_id: string | null; updated_at: string | null; created_at: string | null }> = [];
-    let posts: Array<{ slug: string; published_at: string | null; updated_at: string | null }> = [];
+    let assets: Asset[] = [];
+    let posts: Post[] = [];
 
+    // Fetch assets via API
     try {
-      const assetResult = await env.DB.prepare(
-        "SELECT id, slug, asset_id, updated_at, created_at FROM assets WHERE status = 'published' ORDER BY created_at DESC LIMIT 1000"
-      ).all();
-      assets = (assetResult?.results || []) as typeof assets;
-    } catch (assetErr) {
-      console.error("Failed to fetch assets:", assetErr);
+      const res = await fetch(`${apiUrl}/api/assets?limit=1000`);
+      if (res.ok) {
+        const data = await res.json() as { assets?: Asset[] };
+        assets = data.assets || [];
+      }
+    } catch (err) {
+      console.error("Failed to fetch assets for sitemap:", err);
     }
 
+    // Fetch blog posts via API
     try {
-      const postResult = await env.DB.prepare(
-        "SELECT slug, published_at, updated_at FROM posts WHERE status = 'published' ORDER BY published_at DESC LIMIT 100"
-      ).all();
-      posts = (postResult?.results || []) as typeof posts;
-    } catch (postErr) {
-      console.error("Failed to fetch posts:", postErr);
+      const res = await fetch(`${apiUrl}/api/blog/posts?limit=100`);
+      if (res.ok) {
+        const data = await res.json() as { posts?: Post[] };
+        posts = data.posts || [];
+      }
+    } catch (err) {
+      console.error("Failed to fetch posts for sitemap:", err);
     }
 
     // Generate XML
