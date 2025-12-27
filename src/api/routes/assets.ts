@@ -88,10 +88,17 @@ app.get("/assets/:id", async (c) => {
        asset = await c.env.DB.prepare("SELECT * FROM assets WHERE asset_id = ?").bind(id).first();
     } else {
        // Fallback: Check slug (most common for SEO URLS)
-       // If lookup fails, try asset_id one last time just in case it's a legacy numeric format
        asset = await c.env.DB.prepare("SELECT * FROM assets WHERE slug = ?").bind(id).first();
+       
        if (!asset) {
+         // Check if exact asset_id match (legacy)
          asset = await c.env.DB.prepare("SELECT * FROM assets WHERE asset_id = ?").bind(id).first();
+       }
+       
+       if (!asset && /^\d+$/.test(id)) {
+          // If ID is just numbers, try to find an asset_id ending with this number (suffix match)
+          // This supports URLs like /slug-80100 resolving to HP-GEN-80100
+          asset = await c.env.DB.prepare("SELECT * FROM assets WHERE asset_id LIKE ?").bind(`%${id}`).first();
        }
     }
 
