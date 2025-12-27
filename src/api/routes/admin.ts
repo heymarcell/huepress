@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { Bindings } from "../types";
+import { notifyIndexNow, buildAssetUrl } from "../../lib/indexnow";
 
 // Container calls are now fire-and-forget via direct fetch
 
@@ -542,6 +543,14 @@ app.post("/assets", async (c) => {
         
         await c.env.DB.prepare(query).bind(...values).run();
 
+        // Notify IndexNow for published assets (fire-and-forget)
+        if (status === 'published') {
+          c.executionCtx.waitUntil(
+            notifyIndexNow(buildAssetUrl(assetId, slug))
+              .catch(err => console.error('[IndexNow] Notification failed:', err))
+          );
+        }
+
         return c.json({ success: true, id, assetId });
 
     } catch (error) {
@@ -753,6 +762,150 @@ app.post("/assets/bulk-delete", async (c) => {
   } catch (error) {
     console.error("Bulk delete error:", error);
     return c.json({ error: "Failed to delete assets" }, 500);
+  }
+});
+
+// ADMIN: Bulk update status (publish/unpublish)
+app.post("/assets/bulk-status", async (c) => {
+  const isAdminUser = await verifyAdmin(c);
+  if (!isAdminUser) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  try {
+    const { ids, status } = await c.req.json<{ ids: string[]; status: 'published' | 'draft' }>();
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return c.json({ error: "No IDs provided" }, 400);
+    }
+    
+    if (!status || !['published', 'draft'].includes(status)) {
+      return c.json({ error: "Invalid status" }, 400);
+    }
+
+    console.log(`[Bulk Status] Updating ${ids.length} assets to ${status}...`);
+
+    // Batch update all assets
+    const placeholders = ids.map(() => '?').join(',');
+    await c.env.DB.prepare(
+      `UPDATE assets SET status = ? WHERE id IN (${placeholders})`
+    ).bind(status, ...ids).run();
+
+    console.log(`[Bulk Status] Updated ${ids.length} assets to ${status}`);
+    return c.json({ success: true, updatedCount: ids.length });
+  } catch (error) {
+    console.error("Bulk status error:", error);
+    return c.json({ error: "Failed to update status" }, 500);
+  }
+});
+
+// ADMIN: Bulk regenerate assets (thumbnail, OG, PDF)
+app.post("/assets/bulk-regenerate", async (c) => {
+  const isAdminUser = await verifyAdmin(c);
+  if (!isAdminUser) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  try {
+    const { ids } = await c.req.json<{ ids: string[] }>();
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return c.json({ error: "No IDs provided" }, 400);
+    }
+
+    console.log(`[Bulk Regenerate] Starting for ${ids.length} assets...`);
+
+    let queuedCount = 0;
+    const apiBaseUrl = c.env.API_URL || 'https://api.huepress.co';
+    const uploadToken = c.env.INTERNAL_API_TOKEN;
+
+    // Process each asset - dispatch to background
+    for (const id of ids) {
+      const asset = await c.env.DB.prepare(
+        "SELECT id, asset_id, slug, title, description, r2_key_source FROM assets WHERE id = ?"
+      ).bind(id).first<{ 
+        id: string; 
+        asset_id: string; 
+        slug: string; 
+        title: string; 
+        description: string;
+        r2_key_source: string | null;
+      }>();
+
+      if (!asset || !asset.r2_key_source) {
+        console.warn(`[Bulk Regenerate] Skipping ${id} - no source SVG`);
+        continue;
+      }
+
+      // Fetch source SVG
+      const sourceFile = await c.env.ASSETS_PRIVATE.get(asset.r2_key_source);
+      if (!sourceFile) {
+        console.warn(`[Bulk Regenerate] Skipping ${id} - source not found in R2`);
+        continue;
+      }
+
+      const svgContent = await sourceFile.text();
+      const assetId = asset.asset_id;
+      const idPath = asset.id;
+
+      // Keys for regenerated files
+      const thumbnailKey = `thumbnails/${idPath}.webp`;
+      const ogKey = `og-images/${idPath}.png`;
+      const pdfKey = `pdfs/${idPath}.pdf`;
+
+      // Dispatch to container via waitUntil (background)
+      c.executionCtx.waitUntil((async () => {
+        try {
+          console.log(`[Bulk Regenerate] Processing ${assetId}...`);
+          
+          const container = (await import("@cloudflare/containers")).getContainer(c.env.PROCESSING, "main");
+          
+          const response = await fetchWithRetry(() => container.fetch("http://container/generate-all", {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET || ""
+            },
+            body: JSON.stringify({
+              svgContent,
+              title: asset.title || "",
+              assetId: assetId,
+              slug: asset.slug,
+              description: asset.description || "",
+              // Thumbnail
+              thumbnailUploadUrl: `${apiBaseUrl}/api/internal/upload-public`,
+              thumbnailUploadKey: thumbnailKey,
+              // OG
+              ogUploadUrl: `${apiBaseUrl}/api/internal/upload-public`,
+              ogUploadKey: ogKey,
+              // PDF
+              pdfUploadUrl: `${apiBaseUrl}/api/internal/upload-private`,
+              pdfUploadKey: pdfKey,
+              pdfFilename: `${assetId}-${asset.slug}.pdf`,
+              // Auth
+              uploadToken
+            })
+          }));
+          
+          if (response.ok) {
+            const result = await response.json() as { success: boolean; elapsedMs: number };
+            console.log(`[Bulk Regenerate] Completed ${assetId} in ${result.elapsedMs}ms`);
+          } else {
+            console.error(`[Bulk Regenerate] Failed ${assetId}: ${response.status}`);
+          }
+        } catch (err) {
+          console.error(`[Bulk Regenerate] Error for ${assetId}:`, err);
+        }
+      })());
+
+      queuedCount++;
+    }
+
+    console.log(`[Bulk Regenerate] Queued ${queuedCount} assets for processing`);
+    return c.json({ success: true, queuedCount });
+  } catch (error) {
+    console.error("Bulk regenerate error:", error);
+    return c.json({ error: "Failed to queue regeneration" }, 500);
   }
 });
 

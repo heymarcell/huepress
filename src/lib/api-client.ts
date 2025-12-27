@@ -229,6 +229,38 @@ export const apiClient = {
         throw new Error(data.error || "Failed to regenerate OG image");
       }
       return data;
+    },
+    bulkRegenerateAssets: async (ids: string[], token: string) => {
+      const cleanBase = API_URL.replace(/\/$/, "");
+      const response = await fetch(`${cleanBase}/api/admin/assets/bulk-regenerate`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ ids })
+      });
+      const data = await response.json() as { success?: boolean; queuedCount?: number; error?: string };
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Failed to queue regeneration");
+      }
+      return data;
+    },
+    bulkUpdateStatus: async (ids: string[], status: 'published' | 'draft', token: string) => {
+      const cleanBase = API_URL.replace(/\/$/, "");
+      const response = await fetch(`${cleanBase}/api/admin/assets/bulk-status`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ ids, status })
+      });
+      const data = await response.json() as { success?: boolean; updatedCount?: number; error?: string };
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Failed to update status");
+      }
+      return data;
     }
   },
   billing: {

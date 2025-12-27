@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
@@ -24,6 +24,8 @@ export default function AdminAssets() {
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   
   // Delete confirmation modal state
   const [deleteModal, setDeleteModal] = useState<{ 
@@ -34,6 +36,19 @@ export default function AdminAssets() {
     isOpen: false,
     assetId: null,
     isBulk: false
+  });
+
+  // Notification modal state
+  const [notificationModal, setNotificationModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: 'success' | 'error';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    variant: 'success'
   });
 
   useEffect(() => {
@@ -139,6 +154,68 @@ export default function AdminAssets() {
     }
   };
 
+  const handleBulkRegenerate = async () => {
+    if (selectedIds.size === 0) return;
+    if (!user) return;
+    const token = await getToken();
+    if (!token) return;
+    
+    setIsRegenerating(true);
+    try {
+      const result = await apiClient.admin.bulkRegenerateAssets(Array.from(selectedIds), token);
+      setNotificationModal({
+        isOpen: true,
+        title: 'Regeneration Queued',
+        message: `${result.queuedCount} asset(s) queued for regeneration. Check logs for progress.`,
+        variant: 'success'
+      });
+      setSelectedIds(new Set());
+    } catch (error) {
+      console.error("Regenerate failed:", error);
+      setNotificationModal({
+        isOpen: true,
+        title: 'Regeneration Failed',
+        message: 'Failed to queue regeneration. Check console for details.',
+        variant: 'error'
+      });
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
+  const handleBulkStatus = async (status: 'published' | 'draft') => {
+    if (selectedIds.size === 0) return;
+    if (!user) return;
+    const token = await getToken();
+    if (!token) return;
+    
+    setIsUpdatingStatus(true);
+    try {
+      const result = await apiClient.admin.bulkUpdateStatus(Array.from(selectedIds), status, token);
+      // Update local state
+      setAssets(assets.map(a => 
+        selectedIds.has(a.id) ? { ...a, status } : a
+      ));
+      setNotificationModal({
+        isOpen: true,
+        title: status === 'published' ? 'Assets Published' : 'Assets Unpublished',
+        message: `${result.updatedCount} asset(s) ${status === 'published' ? 'published' : 'set to draft'}.`,
+        variant: 'success'
+      });
+      setSelectedIds(new Set());
+    } catch (error) {
+      console.error("Status update failed:", error);
+      setNotificationModal({
+        isOpen: true,
+        title: 'Update Failed',
+        message: 'Failed to update status. Check console for details.',
+        variant: 'error'
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   return (
     <>
       <AlertModal
@@ -153,6 +230,16 @@ export default function AdminAssets() {
         confirmText={isDeleting ? "Deleting..." : "Delete"}
         onConfirm={handleDeleteConfirm}
       />
+
+      <AlertModal
+        isOpen={notificationModal.isOpen}
+        onClose={() => setNotificationModal({ ...notificationModal, isOpen: false })}
+        title={notificationModal.title}
+        message={notificationModal.message}
+        variant={notificationModal.variant === 'success' ? 'success' : 'error'}
+        confirmText="OK"
+        onConfirm={() => setNotificationModal({ ...notificationModal, isOpen: false })}
+      />
       
       <div>
       <div className="flex items-center justify-between mb-8">
@@ -162,10 +249,39 @@ export default function AdminAssets() {
         </div>
         <div className="flex gap-3">
           {selectedIds.size > 0 && (
-            <Button variant="outline" onClick={confirmBulkDelete} className="text-red-600 border-red-200 hover:bg-red-50">
-              <Trash2 className="w-4 h-4" />
-              Delete ({selectedIds.size})
-            </Button>
+            <>
+              <Button 
+                variant="outline" 
+                onClick={handleBulkRegenerate} 
+                disabled={isRegenerating}
+                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRegenerating ? 'animate-spin' : ''}`} />
+                {isRegenerating ? 'Regenerating...' : `Regenerate (${selectedIds.size})`}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => handleBulkStatus('published')} 
+                disabled={isUpdatingStatus}
+                className="text-green-600 border-green-200 hover:bg-green-50"
+              >
+                <Eye className="w-4 h-4" />
+                {isUpdatingStatus ? 'Updating...' : 'Publish'}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => handleBulkStatus('draft')} 
+                disabled={isUpdatingStatus}
+                className="text-yellow-600 border-yellow-200 hover:bg-yellow-50"
+              >
+                <EyeOff className="w-4 h-4" />
+                {isUpdatingStatus ? 'Updating...' : 'Unpublish'}
+              </Button>
+              <Button variant="outline" onClick={confirmBulkDelete} className="text-red-600 border-red-200 hover:bg-red-50">
+                <Trash2 className="w-4 h-4" />
+                Delete ({selectedIds.size})
+              </Button>
+            </>
           )}
           <Link to="/admin/assets/new">
             <Button variant="primary">

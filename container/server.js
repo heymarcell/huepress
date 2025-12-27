@@ -12,6 +12,59 @@ const DOMPurify = createDOMPurify(window);
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// ============================================
+// PROCESSING QUEUES (Concurrency Control)
+// Each queue allows only 1 concurrent job to prevent resource contention
+// ============================================
+let thumbnailQueue, ogQueue, pdfQueue;
+
+// Initialize queues (p-queue is ESM, requires dynamic import)
+(async () => {
+  const PQueue = (await import('p-queue')).default;
+  
+  thumbnailQueue = new PQueue({ concurrency: 1 });
+  ogQueue = new PQueue({ concurrency: 1 });
+  pdfQueue = new PQueue({ concurrency: 1 });
+  
+  console.log('[Queue] Processing queues initialized (concurrency: 1 each)');
+  
+  // Queue monitoring - log status every 10 seconds if there are pending jobs
+  setInterval(() => {
+    const pending = thumbnailQueue.pending + ogQueue.pending + pdfQueue.pending;
+    const size = thumbnailQueue.size + ogQueue.size + pdfQueue.size;
+    if (pending > 0 || size > 0) {
+      console.log(`[Queue] Status - Thumbnail: ${thumbnailQueue.size}/${thumbnailQueue.pending}, OG: ${ogQueue.size}/${ogQueue.pending}, PDF: ${pdfQueue.size}/${pdfQueue.pending} (queued/running)`);
+    }
+  }, 10000);
+})();
+
+// Helper to wait for queues to be ready
+const waitForQueues = async () => {
+  while (!thumbnailQueue || !ogQueue || !pdfQueue) {
+    await new Promise(r => setTimeout(r, 100));
+  }
+};
+
+// Helper: Fetch with retry and exponential backoff
+async function fetchWithRetry(url, options, maxRetries = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      return response;
+    } catch (err) {
+      lastError = err;
+      console.warn(`[Fetch] Attempt ${attempt}/${maxRetries} failed for ${url}: ${err.message}`);
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // 1s, 2s, 4s max 5s
+        console.log(`[Fetch] Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Reduced from 50MB for DoS protection [F-004]
@@ -805,6 +858,9 @@ app.post('/generate-all', async (req, res) => {
     // SANITIZE INPUT
     const safeSvgContent = sanitizeSvgContent(svgContent);
 
+    // Ensure queues are initialized before processing
+    await waitForQueues();
+    
     console.log(`[GenerateAll] Starting for "${title}" (assetId: ${assetId})`);
 
     // [F-004] PARALLEL PROCESSING: Thumbnail and OG are independent - run in parallel
@@ -857,7 +913,7 @@ app.post('/generate-all', async (req, res) => {
       
       console.log(`[GenerateAll] Thumbnail generated: ${thumbnailBuffer.length} bytes. Uploading...`);
       
-      const thumbRes = await fetch(`${thumbnailUploadUrl}?key=${encodeURIComponent(thumbnailUploadKey)}`, {
+      const thumbRes = await fetchWithRetry(`${thumbnailUploadUrl}?key=${encodeURIComponent(thumbnailUploadKey)}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${uploadToken}`,
@@ -973,7 +1029,7 @@ app.post('/generate-all', async (req, res) => {
       .toBuffer();
       console.log(`[GenerateAll] OG generated: ${ogBuffer.length} bytes. Uploading...`);
       
-      const ogRes = await fetch(`${ogUploadUrl}?key=${encodeURIComponent(ogUploadKey)}`, {
+      const ogRes = await fetchWithRetry(`${ogUploadUrl}?key=${encodeURIComponent(ogUploadKey)}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${uploadToken}`,
@@ -989,21 +1045,46 @@ app.post('/generate-all', async (req, res) => {
       return { success: true, size: ogBuffer.length };
     };
     
-    // [F-004] Execute Thumbnail and OG in parallel
-    console.log(`[GenerateAll] Starting parallel image generation...`);
+    // [F-004] Execute Thumbnail and OG via queues (concurrency=1 each)
+    // This ensures only one thumbnail and one OG image is generated at a time across all requests
+    console.log(`[GenerateAll] Queuing image generation (Thumb queue: ${thumbnailQueue.size}, OG queue: ${ogQueue.size})...`);
+    
     const [thumbnailResult, ogResult] = await Promise.all([
-      generateThumbnail().catch(err => ({ success: false, error: err.message })),
-      generateOgImage().catch(err => ({ success: false, error: err.message }))
+      thumbnailQueue.add(async () => {
+        console.log(`[Queue] Thumbnail job started for ${assetId}`);
+        return generateThumbnail();
+      }).catch(err => {
+        console.error(`[GenerateAll] Thumbnail generation FAILED:`, err.message, err.stack);
+        return { success: false, error: err.message };
+      }),
+      ogQueue.add(async () => {
+        console.log(`[Queue] OG job started for ${assetId}`);
+        return generateOgImage();
+      }).catch(err => {
+        console.error(`[GenerateAll] OG generation FAILED:`, err.message, err.stack);
+        return { success: false, error: err.message };
+      })
     ]);
     
     results.thumbnail = thumbnailResult;
     results.og = ogResult;
+    
+    // Log detailed results including any errors
+    if (thumbnailResult?.success === false && thumbnailResult?.error) {
+      console.error(`[GenerateAll] Thumbnail error detail: ${thumbnailResult.error}`);
+    }
+    if (ogResult?.success === false && ogResult?.error) {
+      console.error(`[GenerateAll] OG error detail: ${ogResult.error}`);
+    }
     console.log(`[GenerateAll] Parallel generation complete. Thumbnail: ${thumbnailResult?.success}, OG: ${ogResult?.success}`);
 
-    // 3. PDF - Generate TRUE VECTOR PDF using pdfkit + svg-to-pdfkit
+    // 3. PDF - Generate TRUE VECTOR PDF using pdfkit + svg-to-pdfkit via queue
     // This converts SVG paths directly to PDF vector drawing commands - no rasterization!
     if (pdfUploadUrl && pdfUploadKey) {
-      console.log(`[GenerateAll] Step 3: Generating VECTOR PDF via pdfkit...`);
+      console.log(`[GenerateAll] Queuing PDF generation (PDF queue: ${pdfQueue.size})...`);
+      
+      await pdfQueue.add(async () => {
+        console.log(`[Queue] PDF job started for ${assetId}`);
       
       const PDFDocument = require('pdfkit');
       const SVGtoPDF = require('svg-to-pdfkit');
@@ -1209,7 +1290,7 @@ app.post('/generate-all', async (req, res) => {
         
         console.log(`[GenerateAll] VECTOR PDF generated: ${pdfBuffer.length} bytes. Uploading...`);
         
-        const pdfRes = await fetch(`${pdfUploadUrl}?key=${encodeURIComponent(pdfUploadKey)}`, {
+        const pdfRes = await fetchWithRetry(`${pdfUploadUrl}?key=${encodeURIComponent(pdfUploadKey)}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${uploadToken}`,
@@ -1225,10 +1306,11 @@ app.post('/generate-all', async (req, res) => {
         results.pdf = { success: true, size: pdfBuffer.length, type: 'vector-pdfkit' };
         console.log(`[GenerateAll] VECTOR PDF uploaded successfully`);
         
-      } catch (pdfErr) {
-        console.error('[GenerateAll] PDF Error:', pdfErr.message);
-        results.pdf = { success: false, error: pdfErr.message };
-      }
+        } catch (pdfErr) {
+          console.error('[GenerateAll] PDF Error:', pdfErr.message);
+          results.pdf = { success: false, error: pdfErr.message };
+        }
+      }); // End pdfQueue.add()
     }
 
     const elapsed = Date.now() - startTime;
