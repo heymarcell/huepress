@@ -130,8 +130,8 @@ export default function Onboarding() {
         {/* STEP: WELCOME */}
         {step === "welcome" && (
           <div className="space-y-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-3xl">
-              👋
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-3xl text-primary">
+              <Sparkles className="w-8 h-8" />
             </div>
             <h1 className="font-serif text-3xl text-ink">Welcome, {user.firstName}!</h1>
             <p className="text-gray-600">
