@@ -21,7 +21,9 @@ export default function VaultPage() {
   // Filter States - Initialize from URL query params
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "");
   const [selectedSkill, setSelectedSkill] = useState(searchParams.get("skill") || "");
-  const [selectedTag, setSelectedTag] = useState(searchParams.get("tag") || ""); // General tag filter (Theme/Age)
+  const [selectedTags, setSelectedTags] = useState<string[]>(
+    searchParams.get("tag") ? searchParams.get("tag")!.split(",").filter(Boolean) : []
+  );
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const debouncedSearch = useDebounce(searchQuery, 500);
@@ -43,12 +45,12 @@ export default function VaultPage() {
     const params = new URLSearchParams();
     if (selectedCategory) params.set("category", selectedCategory);
     if (selectedSkill) params.set("skill", selectedSkill);
-    if (selectedTag) params.set("tag", selectedTag);
+    if (selectedTags.length > 0) params.set("tag", selectedTags.join(","));
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (sortBy && sortBy !== "newest") params.set("sort", sortBy);
     
     setSearchParams(params, { replace: true });
-  }, [selectedCategory, selectedSkill, selectedTag, debouncedSearch, sortBy, setSearchParams]);
+  }, [selectedCategory, selectedSkill, selectedTags, debouncedSearch, sortBy, setSearchParams]);
 
   // Fetch Tags on mount
   useEffect(() => {
@@ -71,7 +73,7 @@ export default function VaultPage() {
         const data = await apiClient.assets.list({
             category: selectedCategory || undefined,
             skill: selectedSkill || undefined,
-            tag: selectedTag || undefined,
+            tag: selectedTags.length > 0 ? selectedTags.join(",") : undefined,
             search: debouncedSearch || undefined,
             limit: 100 
         });
@@ -84,7 +86,7 @@ export default function VaultPage() {
     };
 
     fetchAssets();
-  }, [selectedCategory, selectedSkill, selectedTag, debouncedSearch]);
+  }, [selectedCategory, selectedSkill, selectedTags, debouncedSearch]);
 
 
   const handleSearch = (query: string) => {
@@ -142,9 +144,9 @@ export default function VaultPage() {
           >
             <Filter className="w-4 h-4" />
             <span>Filters</span>
-            {(selectedCategory || selectedSkill || selectedTag) && (
+            {(selectedCategory || selectedSkill || selectedTags.length > 0) && (
               <span className={`text-xs px-1.5 py-0.5 rounded-full ${showMobileFilters ? 'bg-white/20' : 'bg-primary text-white'}`}>
-                {[selectedCategory, selectedSkill, selectedTag].filter(Boolean).length}
+                {([selectedCategory, selectedSkill].filter(Boolean).length + selectedTags.length)}
               </span>
             )}
           </button>
@@ -158,14 +160,14 @@ export default function VaultPage() {
               </button>
             </span>
           )}
-          {selectedTag && (
-            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm">
-              {selectedTag}
-              <button onClick={() => setSelectedTag("")} className="hover:bg-primary/20 rounded-full p-0.5">
+          {selectedTags.length > 0 && selectedTags.map(tag => (
+            <span key={tag} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm">
+              {tag}
+              <button onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))} className="hover:bg-primary/20 rounded-full p-0.5">
                 <X className="w-3 h-3" />
               </button>
             </span>
-          )}
+          ))}
           {selectedSkill && (
             <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm">
               {selectedSkill}
@@ -175,12 +177,12 @@ export default function VaultPage() {
             </span>
           )}
           
-          {(selectedCategory || selectedSkill || selectedTag) && (
+          {(selectedCategory || selectedSkill || selectedTags.length > 0) && (
             <button 
               onClick={() => {
                 setSelectedCategory("");
                 setSelectedSkill("");
-                setSelectedTag("");
+                setSelectedTags([]);
               }}
               className="text-sm text-gray-500 hover:text-primary"
             >
@@ -218,19 +220,18 @@ export default function VaultPage() {
                   />
               </div>
               
-              {/* Theme */}
-              {themesUI.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
-                  <Combobox
-                    value={selectedTag}
-                    onChange={(val) => setSelectedTag(val)}
-                    options={[{ label: "All Themes", value: "" }, ...themesUI]}
-                    placeholder="All Themes"
-                    className="w-full"
-                  />
-                </div>
-              )}
+              {/* Tag (was Theme) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tag</label>
+                <Combobox
+                  value={selectedTags}
+                  onChange={(val) => setSelectedTags(val)}
+                  options={themesUI}
+                  placeholder="Select Tags"
+                  className="w-full"
+                  multiple={true}
+                />
+              </div>
               
               {/* Skill */}
               <div>
@@ -357,7 +358,7 @@ export default function VaultPage() {
             >
                 {showMobileFilters ? <X className="w-5 h-5" /> : <Filter className="w-5 h-5" />}
                 {/* Dot if filters active */}
-                {!showMobileFilters && (selectedCategory || selectedSkill || selectedTag) && (
+                {!showMobileFilters && (selectedCategory || selectedSkill || selectedTags.length > 0) && (
                   <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-secondary border-2 border-white rounded-full" />
                 )}
             </button>
@@ -374,7 +375,7 @@ export default function VaultPage() {
           </div>
 
           {/* Active filter chips - compact summary */}
-          {(selectedCategory || selectedSkill || selectedTag) && (
+          {(selectedCategory || selectedSkill || selectedTags.length > 0) && (
             <div className="flex items-center gap-2 flex-wrap mt-2">
               {selectedCategory && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
@@ -384,14 +385,14 @@ export default function VaultPage() {
                   </button>
                 </span>
               )}
-              {selectedTag && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
-                  {selectedTag}
-                  <button onClick={() => setSelectedTag("")} className="hover:bg-primary/20 rounded-full">
+              {selectedTags.length > 0 && selectedTags.map(tag => (
+                <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
+                  {tag}
+                  <button onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))} className="hover:bg-primary/20 rounded-full">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
-              )}
+              ))}
               {selectedSkill && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
                   {selectedSkill}

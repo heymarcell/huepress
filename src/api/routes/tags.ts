@@ -26,6 +26,9 @@ app.get("/", async (c) => {
 
     // 1. Group official tags
     const grouped = (result.results || []).reduce((acc, tag) => {
+      // Skip static themes (user requested dynamic only)
+      if (tag.type === "theme") return acc;
+      
       if (!acc[tag.type]) {
         acc[tag.type] = [];
       }

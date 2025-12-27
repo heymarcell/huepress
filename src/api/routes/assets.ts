@@ -25,11 +25,16 @@ app.get("/assets", async (c) => {
     params.push(skill);
   }
 
-  const tag = c.req.query("tag")?.trim();
-  if (tag) {
-    // Filter by tag in the tags JSON array
-    query += " AND EXISTS (SELECT 1 FROM json_each(tags) WHERE value = ?)";
-    params.push(tag);
+  const tagParam = c.req.query("tag")?.trim();
+  if (tagParam) {
+    const tags = tagParam.split(",").map(t => t.trim()).filter(Boolean);
+    if (tags.length > 0) {
+      // Filter by ANY of the tags (OR logic)
+      // json_each.value IN (?, ?, ...)
+      const placeholders = tags.map(() => "?").join(",");
+      query += ` AND EXISTS (SELECT 1 FROM json_each(tags) WHERE value IN (${placeholders}))`;
+      params.push(...tags);
+    }
   }
 
   const search = c.req.query("search");

@@ -6,7 +6,7 @@ const footerLinks = {
     { to: "/vault", label: "The Vault" },
     { to: "/blog", label: "Blog" },
     { to: "/pricing", label: "Pricing" },
-    { to: "/vault?skill=Calm", label: "For Therapists" },
+    { to: "/vault?skill=Easy", label: "For Therapists" },
     { to: "/about", label: "About" },
   ],
   legal: [

@@ -82,6 +82,19 @@ describe("Assets API", () => {
         expect(queryArg).toContain("json_each(tags)");
     });
 
+    it("GET /assets?tag=cute,nature should filter by multiple tags", async () => {
+        mockAll.mockResolvedValue({ results: [] });
+        await app.request("http://localhost/assets?tag=cute,nature", {}, mockEnv);
+
+        const queryArg = mockPrepare.mock.calls[0][0];
+        const params = mockBind.mock.calls[0];
+        
+        // Assert we're using IN clause
+        expect(queryArg).toContain("value IN (?,?)");
+        // Assert params include both tags
+        expect(params).toEqual(expect.arrayContaining(["cute", "nature"]));
+    });
+
     it("GET /assets?search=dino should filter by search", async () => {
         mockAll.mockResolvedValue({ results: [] });
         await app.request("http://localhost/assets?search=dino", {}, mockEnv);
