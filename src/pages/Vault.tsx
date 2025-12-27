@@ -123,17 +123,17 @@ export default function VaultPage() {
           <p className="text-gray-500">500+ fridge-worthy designs, ready to print</p>
         </div>
 
-        {/* Search + Filters Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-6">
-          {/* Search Bar - Takes up most space */}
-          <div className="flex-1">
-            <SearchBar onSearch={handleSearch} placeholder="Try 'Dinosaur', 'Space', or 'Calm'..." />
-          </div>
-          
+        {/* Search Bar - Centered with max width */}
+        <div className="max-w-2xl mx-auto mb-6">
+          <SearchBar onSearch={handleSearch} placeholder="Search designs..." />
+        </div>
+        
+        {/* Filter Controls Row - Centered */}
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
           {/* Filter Button */}
           <button
             onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
               showMobileFilters 
                 ? 'bg-primary text-white border-primary' 
                 : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
@@ -148,6 +148,48 @@ export default function VaultPage() {
             )}
           </button>
           
+          {/* Applied Filter Chips */}
+          {selectedCategory && (
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm">
+              {selectedCategory}
+              <button onClick={() => setSelectedCategory("")} className="hover:bg-primary/20 rounded-full p-0.5">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {selectedTag && (
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm">
+              {selectedTag}
+              <button onClick={() => setSelectedTag("")} className="hover:bg-primary/20 rounded-full p-0.5">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {selectedSkill && (
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm">
+              {selectedSkill}
+              <button onClick={() => setSelectedSkill("")} className="hover:bg-primary/20 rounded-full p-0.5">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          
+          {(selectedCategory || selectedSkill || selectedTag) && (
+            <button 
+              onClick={() => {
+                setSelectedCategory("");
+                setSelectedSkill("");
+                setSelectedTag("");
+              }}
+              className="text-sm text-gray-500 hover:text-primary"
+            >
+              Clear all
+            </button>
+          )}
+          
+          {/* Divider */}
+          <div className="hidden sm:block w-px h-6 bg-gray-200" />
+          
           {/* Sort Dropdown */}
           <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg">
             <ArrowUpDown className="w-4 h-4 text-gray-400" />
@@ -156,51 +198,11 @@ export default function VaultPage() {
               onChange={(e) => setSortBy(e.target.value)}
               className="text-sm font-medium text-ink bg-transparent border-none outline-none focus:ring-0 cursor-pointer"
             >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
             </select>
           </div>
         </div>
-        
-        {/* Applied Filter Chips */}
-        {(selectedCategory || selectedSkill || selectedTag) && (
-          <div className="flex items-center gap-2 flex-wrap mb-4">
-            {selectedCategory && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
-                {selectedCategory}
-                <button onClick={() => setSelectedCategory("")} className="hover:bg-primary/20 rounded-full p-0.5">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            {selectedTag && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
-                {selectedTag}
-                <button onClick={() => setSelectedTag("")} className="hover:bg-primary/20 rounded-full p-0.5">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            {selectedSkill && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
-                {selectedSkill}
-                <button onClick={() => setSelectedSkill("")} className="hover:bg-primary/20 rounded-full p-0.5">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            <button 
-              onClick={() => {
-                setSelectedCategory("");
-                setSelectedSkill("");
-                setSelectedTag("");
-              }}
-              className="text-sm text-gray-500 hover:text-primary ml-2"
-            >
-              Clear all
-            </button>
-          </div>
-        )}
         
         {/* Collapsible Filter Panel */}
         {showMobileFilters && (
