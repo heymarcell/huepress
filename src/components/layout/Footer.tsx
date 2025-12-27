@@ -4,6 +4,7 @@ import { useConsent } from "../../context/ConsentContext";
 const footerLinks = {
   product: [
     { to: "/vault", label: "The Vault" },
+    { to: "/blog", label: "Blog" },
     { to: "/pricing", label: "Pricing" },
     { to: "/vault?skill=Calm", label: "For Therapists" },
     { to: "/about", label: "About" },

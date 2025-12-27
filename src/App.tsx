@@ -23,8 +23,14 @@ const AdminAssets = lazy(() => import("./pages/admin/Assets"));
 const AdminAssetForm = lazy(() => import("./pages/admin/AssetForm"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const AdminDesignRequests = lazy(() => import("./pages/admin/DesignRequests"));
+const AdminBlogList = lazy(() => import("./pages/admin/BlogList"));
+const AdminBlogEditor = lazy(() => import("./pages/admin/BlogEditor"));
 const UserDashboard = lazy(() => import("./pages/UserDashboard"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
+
+// Public Blog pages
+const BlogIndex = lazy(() => import("./pages/BlogIndex"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
 
 import ScrollToTop from "./components/ScrollToTop";
 import { ConsentProvider } from "./context/ConsentContext";
@@ -75,6 +81,8 @@ export default function App() {
         <Route path="terms" element={<TermsOfServicePage />} />
         <Route path="dashboard" element={<UserDashboard />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="blog" element={<BlogIndex />} />
+        <Route path="blog/:slug" element={<BlogPost />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 
@@ -89,6 +97,9 @@ export default function App() {
         <Route path="assets/new" element={<AdminAssetForm />} />
         <Route path="assets/:id/edit" element={<AdminAssetForm />} />
         <Route path="requests" element={<AdminDesignRequests />} />
+        <Route path="blog" element={<AdminBlogList />} />
+        <Route path="blog/new" element={<AdminBlogEditor />} />
+        <Route path="blog/:id/edit" element={<AdminBlogEditor />} />
         <Route path="settings" element={<AdminSettings />} />
       </Route>
       </Routes>

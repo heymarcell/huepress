@@ -73,6 +73,7 @@ import { useSubscription } from "@/lib/auth";
 // Navigation Links
 const baseNavLinks = [
   { to: "/vault", label: "Vault" },
+  { to: "/blog", label: "Blog" },
 ];
 
 export function Navbar() {

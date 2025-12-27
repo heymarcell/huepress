@@ -5,7 +5,9 @@ import { Bindings } from "../types";
 const app = new Hono<{ Bindings: Bindings }>();
 
 // Helper to get DB user ID from Clerk ID
-async function getDbUser(c: any, clerkId: string) {
+import { Context } from "hono";
+
+async function getDbUser(c: Context<{ Bindings: Bindings }>, clerkId: string) {
   return await c.env.DB.prepare("SELECT id FROM users WHERE clerk_id = ?").bind(clerkId).first();
 }
 
@@ -26,9 +28,9 @@ app.get("/likes", async (c) => {
   `).bind(user.id).all();
 
   const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
-  const likes = results.map((row: any) => {
-    const r2Key = row.r2_key_public;
-    let imageUrl = row.image_url;
+  const likes = results.map((row: Record<string, unknown>) => {
+    const r2Key = row.r2_key_public as string | undefined;
+    let imageUrl = row.image_url as string | undefined;
     
     if (r2Key && !r2Key.startsWith("__draft__")) {
       imageUrl = r2Key.startsWith("http") ? r2Key : `${cdnUrl}/${r2Key}`;
@@ -91,9 +93,9 @@ app.get("/history", async (c) => {
   `).bind(user.id).all();
 
   const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
-  const history = results.map((row: any) => {
-    const r2Key = row.r2_key_public;
-    let imageUrl = row.image_url;
+  const history = results.map((row: Record<string, unknown>) => {
+    const r2Key = row.r2_key_public as string | undefined;
+    let imageUrl = row.image_url as string | undefined;
     
     if (r2Key && !r2Key.startsWith("__draft__")) {
       imageUrl = r2Key.startsWith("http") ? r2Key : `${cdnUrl}/${r2Key}`;

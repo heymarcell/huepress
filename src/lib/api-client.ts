@@ -6,7 +6,11 @@ const API_URL = import.meta.env.VITE_API_URL || "/api"; // Default to relative p
 // Types
 declare global {
   interface Window {
-    Clerk: any;
+    Clerk?: {
+      session?: {
+        getToken: () => Promise<string | null>;
+      };
+    };
   }
 }
 
@@ -53,7 +57,7 @@ async function fetchApi<T>(path: string, options: RequestInit & { token?: string
   let data;
   try {
     data = await response.json() as T & { error?: string };
-  } catch (e) {
+  } catch (_e) {
     // If JSON parse fails, it might be a text error or HTML (500)
     const text = await response.text();
     throw new Error(text || `Request failed with status ${response.status}`);

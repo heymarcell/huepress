@@ -12,6 +12,7 @@ import reviewsRoute from "./routes/reviews";
 import tagsRoute from "./routes/tags";
 import internalRoute from "./routes/internal";
 import userRoute from "./routes/user";
+import blogRoute from "./routes/blog";
 // import requestsRoute from "./routes/requests";
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -50,6 +51,7 @@ app.route("/api/reviews", reviewsRoute); // /api/reviews/:assetId
 app.route("/api/tags", tagsRoute);   // /api/tags
 app.route("/api/internal", internalRoute); // /api/internal/upload-pdf
 app.route("/api/user", userRoute);     // /api/user/likes, /api/user/history
+app.route("/api", blogRoute);          // /api/posts, /api/admin/posts
 // app.route("/api/requests", requestsRoute); // Moved to inline for debugging
 
 import { getAuth } from "@hono/clerk-auth";
