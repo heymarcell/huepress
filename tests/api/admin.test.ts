@@ -31,9 +31,12 @@ describe("Admin API", () => {
     let mockPrepare: Mock;
     let mockAll: Mock;
     let mockRun: Mock;
+    let mockBatch: Mock;
     let mockFirst: Mock;
     let mockEnv: Record<string, unknown>;
     let mockR2Put: Mock;
+    let mockR2Get: Mock;
+    let mockR2Delete: Mock;
     
     let mockGetAuth: Mock;
     
@@ -43,14 +46,18 @@ describe("Admin API", () => {
         mockFirst = vi.fn();
         mockBind = vi.fn();
         mockPrepare = vi.fn();
+        mockBatch = vi.fn().mockResolvedValue([]);
         mockR2Put = vi.fn();
+        mockR2Get = vi.fn();
+        mockR2Delete = vi.fn();
         mockGetAuth = getAuth as unknown as Mock;
         // Mock admin user with publicMetadata.role = 'admin'
         mockGetAuth.mockReturnValue({ 
             userId: "user_admin",
             sessionClaims: { publicMetadata: { role: 'admin' } }
         });
-        
+
+        // Setup DB Mock Chain
         const mockStatement = {
             all: mockAll,
             run: mockRun,
@@ -59,11 +66,18 @@ describe("Admin API", () => {
         };
         mockBind.mockReturnValue(mockStatement);
         mockPrepare.mockReturnValue(mockStatement);
-
+        
         mockEnv = {
-            DB: { prepare: mockPrepare },
-            ASSETS_PUBLIC: { put: mockR2Put },
-            ASSETS_PRIVATE: { put: mockR2Put },
+            DB: {
+                prepare: mockPrepare,
+                batch: mockBatch
+            },
+            ASSETS_PUBLIC: { put: mockR2Put, get: mockR2Get, delete: mockR2Delete },
+            ASSETS_PRIVATE: {
+                put: mockR2Put,
+                get: mockR2Get,
+                delete: mockR2Delete
+            },
             ASSETS_CDN_URL: "https://assets.test",
             PROCESSING: {}, // Mock Service Binding
             INTERNAL_API_TOKEN: "test-token"
@@ -198,16 +212,17 @@ describe("Admin API", () => {
     it("DELETE /assets/:id should delete asset", async () => {
         mockFirst.mockResolvedValueOnce({ id: "123", r2_key_private: "file.pdf" });
         
-        const mockR2Delete = vi.fn();
-        mockEnv.ASSETS_PRIVATE = { ...mockEnv.ASSETS_PRIVATE as object, delete: mockR2Delete };
-        mockEnv.ASSETS_PUBLIC = { ...mockEnv.ASSETS_PUBLIC as object, delete: mockR2Delete };
+        const localMockR2Delete = vi.fn();
+        mockEnv.ASSETS_PRIVATE = { ...mockEnv.ASSETS_PRIVATE as object, delete: localMockR2Delete };
+        mockEnv.ASSETS_PUBLIC = { ...mockEnv.ASSETS_PUBLIC as object, delete: localMockR2Delete };
         
         const res = await app.request("http://localhost/assets/123", {
             method: "DELETE",
         }, mockEnv);
         
         expect(res.status).toBe(200);
-        expect(mockRun).toHaveBeenCalled();
+        // The delete route uses DB.batch() for cascading deletes
+        expect(mockBatch).toHaveBeenCalled();
     });
 
     it("DELETE /assets/:id should return 404 for unknown asset", async () => {
