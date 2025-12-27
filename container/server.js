@@ -318,6 +318,240 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'huepress-processing' });
 });
 
+// ============================================
+// QUEUE PROCESSING
+// ============================================
+let isProcessingQueue = false;
+
+/**
+ * GET /wakeup - Wake up container and start processing queue
+ * Called by Worker after inserting a job into processing_queue
+ */
+app.get('/wakeup', async (req, res) => {
+  console.log('[Queue] Wakeup received');
+  res.json({ status: 'awake', processing: isProcessingQueue });
+  
+  // Start queue processing in background (don't block response)
+  if (!isProcessingQueue) {
+    processQueue().catch(err => console.error('[Queue] Processing error:', err));
+  }
+});
+
+/**
+ * Process jobs from the queue
+ * Fetches pending jobs from D1, processes them, updates status
+ */
+async function processQueue() {
+  if (isProcessingQueue) {
+    console.log('[Queue] Already processing, skipping');
+    return;
+  }
+  
+  isProcessingQueue = true;
+  console.log('[Queue] Starting queue processing...');
+  
+  try {
+    // Worker's API URL for D1 access and file uploads
+    const apiUrl = process.env.API_URL || 'https://api.huepress.co';
+    const internalToken = process.env.INTERNAL_API_TOKEN;
+    
+    if (!internalToken) {
+      console.error('[Queue] INTERNAL_API_TOKEN not set');
+      return;
+    }
+    
+    // Fetch pending jobs via internal API
+    const jobsRes = await fetchWithRetry(`${apiUrl}/api/internal/queue/pending`, {
+      headers: { 'Authorization': `Bearer ${internalToken}` }
+    });
+    
+    if (!jobsRes.ok) {
+      console.error(`[Queue] Failed to fetch jobs: ${jobsRes.status}`);
+      return;
+    }
+    
+    const { jobs } = await jobsRes.json();
+    console.log(`[Queue] Found ${jobs?.length || 0} pending jobs`);
+    
+    for (const job of (jobs || [])) {
+      try {
+        console.log(`[Queue] Processing job ${job.id} for asset ${job.asset_id}`);
+        
+        // Mark as processing
+        await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}/status`, {
+          method: 'PATCH',
+          headers: { 
+            'Authorization': `Bearer ${internalToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: 'processing' })
+        });
+        
+        // Fetch asset details and source SVG
+        const assetRes = await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}/asset`, {
+          headers: { 'Authorization': `Bearer ${internalToken}` }
+        });
+        
+        if (!assetRes.ok) {
+          throw new Error(`Failed to fetch asset: ${assetRes.status}`);
+        }
+        
+        const { asset, svgContent } = await assetRes.json();
+        
+        if (!svgContent) {
+          throw new Error('No SVG content found');
+        }
+        
+        // Generate all files
+        console.log(`[Queue] Generating files for ${asset.asset_id}...`);
+        
+        // 1. Thumbnail
+        const thumbnailBuffer = await generateThumbnailBuffer(svgContent);
+        await uploadFile(apiUrl, internalToken, 'public', asset.r2_key_public, thumbnailBuffer, 'image/webp');
+        
+        // 2. OG Image
+        const ogBuffer = await generateOgBuffer(svgContent, asset.title);
+        await uploadFile(apiUrl, internalToken, 'public', asset.r2_key_og, ogBuffer, 'image/png');
+        
+        // 3. PDF
+        const pdfBuffer = await generatePdfBuffer(svgContent, asset);
+        await uploadFile(apiUrl, internalToken, 'private', asset.r2_key_private, pdfBuffer, 'application/pdf');
+        
+        // Mark as completed
+        await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}/status`, {
+          method: 'PATCH',
+          headers: { 
+            'Authorization': `Bearer ${internalToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: 'completed' })
+        });
+        
+        console.log(`[Queue] Job ${job.id} completed successfully`);
+        
+      } catch (err) {
+        console.error(`[Queue] Job ${job.id} failed:`, err.message);
+        
+        // Mark as failed or pending for retry
+        const newStatus = job.attempts >= job.max_attempts ? 'failed' : 'pending';
+        await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}/status`, {
+          method: 'PATCH',
+          headers: { 
+            'Authorization': `Bearer ${internalToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: newStatus, error: err.message })
+        }).catch(() => {});
+      }
+    }
+    
+  } finally {
+    isProcessingQueue = false;
+    console.log('[Queue] Processing complete');
+  }
+}
+
+// Helper: Generate thumbnail buffer
+async function generateThumbnailBuffer(svgContent) {
+  const safeSvg = sanitizeSvgContent(svgContent);
+  return await sharp(Buffer.from(safeSvg))
+    .resize(1024, null, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
+    .flatten({ background: { r: 255, g: 255, b: 255 } })
+    .webp({ quality: 90 })
+    .toBuffer();
+}
+
+// Helper: Generate OG image buffer 
+async function generateOgBuffer(svgContent, title) {
+  // Simplified OG generation - uses existing logic
+  const safeSvg = sanitizeSvgContent(svgContent);
+  const width = 1200, height = 630;
+  
+  const templatePath = require('path').join(__dirname, 'og_template.svg');
+  let baseImage = sharp({ create: { width, height, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } } });
+  
+  if (require('fs').existsSync(templatePath)) {
+    baseImage = sharp(templatePath).resize(width, height);
+  }
+  
+  const artBuffer = await sharp(Buffer.from(safeSvg))
+    .resize(450, 500, { fit: 'inside' })
+    .flatten({ background: { r: 255, g: 255, b: 255 } })
+    .png()
+    .toBuffer();
+  
+  const artMeta = await sharp(artBuffer).metadata();
+  const artLeft = 900 - Math.round((artMeta.width || 450) / 2);
+  const artTop = 315 - Math.round((artMeta.height || 500) / 2);
+  
+  // Text overlay
+  const textSvg = `<svg width="${width}" height="${height}">
+    <style>.title { font: bold 48px sans-serif; fill: #0f766e; }</style>
+    <text x="60" y="300" class="title">${escapeXml(title || 'Coloring Page')}</text>
+  </svg>`;
+  
+  return await baseImage
+    .composite([
+      { input: artBuffer, left: artLeft, top: artTop },
+      { input: Buffer.from(textSvg), top: 0, left: 0 }
+    ])
+    .png()
+    .toBuffer();
+}
+
+// Helper: Generate PDF buffer
+async function generatePdfBuffer(svgContent, asset) {
+  const safeSvg = sanitizeSvgContent(svgContent);
+  const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
+  
+  const pdfDoc = await PDFDocument.create();
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  
+  // Page 1: Artwork
+  const pngBuffer = await sharp(Buffer.from(safeSvg))
+    .resize({ width: 2480, fit: 'inside' })
+    .png()
+    .toBuffer();
+  
+  const pngImage = await pdfDoc.embedPng(pngBuffer);
+  const page1 = pdfDoc.addPage([595.28, 841.89]);
+  const { width, height } = page1.getSize();
+  const margin = 28.35;
+  const imgDims = pngImage.scaleToFit(width - margin * 2, height - margin * 2);
+  
+  page1.drawImage(pngImage, {
+    x: (width - imgDims.width) / 2,
+    y: (height - imgDims.height) / 2,
+    width: imgDims.width,
+    height: imgDims.height,
+  });
+  
+  return await pdfDoc.save();
+}
+
+// Helper: Upload file to R2 via internal API
+async function uploadFile(apiUrl, token, bucket, key, buffer, contentType) {
+  const endpoint = bucket === 'public' ? 'upload-public' : 'upload-private';
+  const res = await fetchWithRetry(`${apiUrl}/api/internal/${endpoint}?key=${encodeURIComponent(key)}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'X-Content-Type': contentType
+    },
+    body: buffer
+  });
+  
+  if (!res.ok) {
+    throw new Error(`Upload failed: ${res.status}`);
+  }
+  console.log(`[Queue] Uploaded ${key}`);
+}
+
+// Helper: Escape XML
+function escapeXml(str) {
+  return String(str || '').replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[c]);
+}
+
 /**
  * Generate OG Image
  * POST /og-image
@@ -1340,15 +1574,6 @@ app.post('/colorize', async (req, res) => {
 function truncate(str, maxLength) {
   if (str.length <= maxLength) return str;
   return str.substring(0, maxLength - 3) + '...';
-}
-
-function escapeXml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 }
 
 function wrapTextToSvg(text, maxLength, x, startY, lineHeight) {

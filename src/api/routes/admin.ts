@@ -429,81 +429,7 @@ app.post("/assets", async (c) => {
            console.log(`[Parallel] All uploads completed for ${assetId}.`);
         }
 
-        // B. Background Processing (Slow Container Calls)
-        // We use c.executionCtx.waitUntil to ensure this runs after response is returned
-        c.executionCtx.waitUntil((async () => {
-          try {
-            // Small delay to allow response to flush
-            await new Promise(resolve => setTimeout(resolve, 500));
-            console.log(`[Background] Starting UNIFIED processing for ${assetId} (UUID: ${idPath})...`);
-            
-            const svgContent = sourceSvgContent;
-            
-            if (hasSourceUpload && !svgContent) {
-               console.error(`[Background] Error: Has source upload but content is missing!`);
-               return;
-            }
-
-            // Base URL for internal uploads
-            const apiBaseUrl = c.env.API_URL || 'https://api.huepress.co';
-            const uploadToken = c.env.INTERNAL_API_TOKEN;
-
-            // Use UNIFIED /generate-all endpoint for sequential processing
-            if (hasSourceUpload && svgContent) {
-                console.log(`[Background] Calling /generate-all for ${assetId}...`);
-                try {
-                    const container = (await import("@cloudflare/containers")).getContainer(c.env.PROCESSING, "main");
-                    
-                    const response = await fetchWithRetry(() => container.fetch("http://container/generate-all", {
-                        method: "POST",
-                        headers: { 
-                            "Content-Type": "application/json",
-                            "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET || ""
-                        },
-                        body: JSON.stringify({
-                            svgContent,
-                            title: (title as string) || "",
-                            assetId: assetId,
-                            slug: slug,
-                            description: (description as string) || "",
-                            // Thumbnail settings
-                            thumbnailUploadUrl: !hasThumbnailUpload ? `${apiBaseUrl}/api/internal/upload-public` : null,
-                            thumbnailUploadKey: !hasThumbnailUpload ? thumbnailKey : null,
-                            // OG settings
-                            ogUploadUrl: `${apiBaseUrl}/api/internal/upload-public`,
-                            ogUploadKey: ogKey,
-                            // PDF settings
-                            pdfUploadUrl: `${apiBaseUrl}/api/internal/upload-private`,
-                            pdfUploadKey: pdfKey,
-                            pdfFilename: `${assetId}-${slug}.pdf`,
-                            // Auth
-                            uploadToken
-                        })
-                    }));
-                    
-                    if (response.ok) {
-                        const result = await response.json() as { success: boolean; results: Record<string, unknown>; elapsedMs: number };
-                        console.log(`[Background] /generate-all completed for ${assetId} in ${result.elapsedMs}ms:`, JSON.stringify(result.results));
-                    } else {
-                        const errorText = await response.text();
-                        console.error(`[Background] /generate-all failed for ${assetId}: ${response.status} - ${errorText}`);
-                    }
-                } catch (err) {
-                    console.error(`[Background] /generate-all dispatch failed after retries:`, err);
-                }
-            }
-            
-            console.log(`[Background] Processing complete for ${assetId}.`);
-
-          } catch (err) {
-            console.error(`[Background] Error processing ${assetId}:`, err);
-          }
-        })());
-        
-        // 4. Upsert / Finalize (Transaction Commit)
-        // If we made it here, uploads were successful (or background task dispatched)
-        // Now we update the DB record to "Active" (or requested status) and potentially update metadata.
-
+        // 4. Upsert / Finalize (Transaction Commit) - DO THIS FIRST
         // Build Dynamic Update Query
         const fields: string[] = [];
         const values: unknown[] = [];
@@ -536,12 +462,36 @@ app.post("/assets", async (c) => {
           fields.push("r2_key_og = ?"); values.push(ogKey);
         }
 
-        // Add WHERE clause ID (we resolved `id` earlier)
         values.push(id);
-
         const query = `UPDATE assets SET ${fields.join(", ")} WHERE id = ?`;
-        
         await c.env.DB.prepare(query).bind(...values).run();
+
+        // 5. INSERT JOB INTO PROCESSING QUEUE (if source was uploaded)
+        if (hasSourceUpload) {
+          const jobId = crypto.randomUUID();
+          await c.env.DB.prepare(`
+            INSERT INTO processing_queue (id, asset_id, job_type, status)
+            VALUES (?, ?, 'generate_all', 'pending')
+          `).bind(jobId, id).run();
+          
+          console.log(`[Queue] Job ${jobId} created for asset ${assetId}`);
+          
+          // 6. FIRE LIGHTWEIGHT KICK TO CONTAINER (no waiting, no retries)
+          // Container will poll the queue and process jobs
+          c.executionCtx.waitUntil((async () => {
+            try {
+              const container = (await import("@cloudflare/containers")).getContainer(c.env.PROCESSING, "main");
+              // Just kick the container awake - don't wait for response
+              container.fetch("http://container/wakeup", { 
+                method: "GET",
+                headers: { "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET || "" }
+              }).catch(() => {}); // Ignore errors - container will process queue eventually
+              console.log(`[Queue] Kicked container for job ${jobId}`);
+            } catch (_err) {
+              // Container kick is best-effort - queue is the source of truth
+            }
+          })());
+        }
 
         // Notify IndexNow for published assets (fire-and-forget)
         if (status === 'published') {
@@ -551,6 +501,7 @@ app.post("/assets", async (c) => {
           );
         }
 
+        // 7. RETURN RESPONSE IMMEDIATELY - queue job will be processed in background
         return c.json({ success: true, id, assetId });
 
     } catch (error) {
