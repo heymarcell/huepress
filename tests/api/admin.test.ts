@@ -848,18 +848,19 @@ describe("Admin API", () => {
             await backgroundPromise;
         }
 
-        // Verify container was called
+        // Verify DB was checked for existing job
+        expect(mockFirst).toHaveBeenCalledTimes(2); // 1. Asset check, 2. Queue check
+
+        // Verify container wakeup was called
         expect(mockContainerFetch).toHaveBeenCalled();
         const callArgs = mockContainerFetch.mock.calls[0];
-        // Ensure the correct container URL is called
-        expect(callArgs[0]).toBe("http://container/generate-all");
-        
-        // Ensure body has correct SVG content from R2
-        const body = JSON.parse(callArgs[1].body);
-        expect(body).toMatchObject({
-            assetId: assetId,
-            svgContent: "<svg>content</svg>"
+        expect(callArgs[0]).toBe("http://container/wakeup");
+        expect(callArgs[1]).toMatchObject({
+            method: "GET"
         });
+        
+        // Verify we DID NOT fetch R2 source (container does that now)
+        expect(mockR2Get).not.toHaveBeenCalled();
     });
 
     describe("Admin Requests", () => {

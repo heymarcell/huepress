@@ -788,94 +788,62 @@ app.post("/assets/bulk-regenerate", async (c) => {
     console.log(`[Bulk Regenerate] Starting for ${ids.length} assets...`);
 
     let queuedCount = 0;
-    const apiBaseUrl = c.env.API_URL || 'https://api.huepress.co';
-    const uploadToken = c.env.INTERNAL_API_TOKEN;
 
-    // Process each asset - dispatch to background
+    // Process each asset - insert into queue
+    let jobsCreated = 0;
+
     for (const id of ids) {
-      const asset = await c.env.DB.prepare(
-        "SELECT id, asset_id, slug, title, description, r2_key_source FROM assets WHERE id = ?"
-      ).bind(id).first<{ 
-        id: string; 
-        asset_id: string; 
-        slug: string; 
-        title: string; 
-        description: string;
-        r2_key_source: string | null;
-      }>();
+       // Verify asset exists and has source
+       const asset = await c.env.DB.prepare(
+        "SELECT id, asset_id, r2_key_source FROM assets WHERE id = ?"
+      ).bind(id).first<{ id: string; asset_id: string; r2_key_source: string | null }>();
 
       if (!asset || !asset.r2_key_source) {
-        console.warn(`[Bulk Regenerate] Skipping ${id} - no source SVG`);
+        console.warn(`[Bulk Regenerate] Skipping ${id} - not found or no source`);
         continue;
       }
 
-      // Fetch source SVG
-      const sourceFile = await c.env.ASSETS_PRIVATE.get(asset.r2_key_source);
-      if (!sourceFile) {
-        console.warn(`[Bulk Regenerate] Skipping ${id} - source not found in R2`);
-        continue;
+      // Check for existing pending job
+      const existingJob = await c.env.DB.prepare(
+        "SELECT id FROM processing_queue WHERE asset_id = ? AND status = 'pending' AND job_type = 'generate_all'"
+      ).bind(id).first();
+
+      if (existingJob) {
+         console.log(`[Bulk Regenerate] Pending job already exists for ${asset.asset_id}, skipping`);
+         continue;
       }
 
-      const svgContent = await sourceFile.text();
-      const assetId = asset.asset_id;
-      const idPath = asset.id;
+      // Create Job
+      const jobId = crypto.randomUUID();
+      await c.env.DB.prepare(`
+        INSERT INTO processing_queue (id, asset_id, job_type, status)
+        VALUES (?, ?, 'generate_all', 'pending')
+      `).bind(jobId, id).run();
+      
+      console.log(`[Bulk Regenerate] Enqueued job ${jobId} for ${asset.asset_id}`);
+      jobsCreated++;
+      queuedCount++;
+    }
 
-      // Keys for regenerated files
-      const thumbnailKey = `thumbnails/${idPath}.webp`;
-      const ogKey = `og-images/${idPath}.png`;
-      const pdfKey = `pdfs/${idPath}.pdf`;
-
-      // Dispatch to container via waitUntil (background)
+    // Trigger Container Wakeup if jobs were created
+    if (jobsCreated > 0) {
       c.executionCtx.waitUntil((async () => {
         try {
-          console.log(`[Bulk Regenerate] Processing ${assetId}...`);
-          
           const container = getContainer(c.env.PROCESSING, "main");
-          const containerUrl = "http://container/generate-all";
-          console.log(`[Bulk Regenerate] POST ${containerUrl} for ${assetId}`);
+          console.log(`[Bulk Regenerate] Sending wakeup to container...`);
           
-          const response = await fetchWithRetry(() => container.fetch("http://container/generate-all", {
-            method: "POST",
+          await fetchWithRetry(() => container.fetch("http://container/wakeup", { 
+            method: "GET",
             headers: { 
-              "Content-Type": "application/json",
-              "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET || ""
-            },
-            body: JSON.stringify({
-              svgContent,
-              title: asset.title || "",
-              assetId: assetId,
-              slug: asset.slug,
-              description: asset.description || "",
-              // Thumbnail
-              thumbnailUploadUrl: `${apiBaseUrl}/api/internal/upload-public`,
-              thumbnailUploadKey: thumbnailKey,
-              // OG
-              ogUploadUrl: `${apiBaseUrl}/api/internal/upload-public`,
-              ogUploadKey: ogKey,
-              // PDF
-              pdfUploadUrl: `${apiBaseUrl}/api/internal/upload-private`,
-              pdfUploadKey: pdfKey,
-              pdfFilename: `${assetId}-${asset.slug}.pdf`,
-              // Auth
-              uploadToken
-            })
+              "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET || "",
+              "X-Set-Internal-Token": c.env.INTERNAL_API_TOKEN || "",
+              "X-Set-Auth-Secret": c.env.CONTAINER_AUTH_SECRET || ""
+            }
           }));
-          
-          
-          if (response.ok) {
-            const result = await response.json() as { success: boolean; elapsedMs: number };
-            console.log(`[Bulk Regenerate] Completed ${assetId} in ${result.elapsedMs}ms. Success: ${result.success}`);
-          } else {
-            console.error(`[Bulk Regenerate] Failed ${assetId}: Status ${response.status}`);
-            const errorText = await response.text();
-            console.error(`[Bulk Regenerate] Container Error Body: ${errorText}`);
-          }
         } catch (err) {
-          console.error(`[Bulk Regenerate] Exception for ${assetId}:`, err);
+          console.error(`[Bulk Regenerate] Failed to wakeup container:`, err);
         }
       })());
-
-      queuedCount++;
     }
 
     console.log(`[Bulk Regenerate] Queued ${queuedCount} assets for processing`);
