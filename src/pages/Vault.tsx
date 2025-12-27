@@ -225,7 +225,7 @@ export default function VaultPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Tag</label>
                 <Combobox
                   value={selectedTags}
-                  onChange={(val) => setSelectedTags(val)}
+                  onChange={(val: any) => setSelectedTags(val)}
                   options={themesUI}
                   placeholder="Select Tags"
                   className="w-full"
@@ -292,7 +292,7 @@ export default function VaultPage() {
                 setSearchQuery("");
                 setSelectedCategory("");
                 setSelectedSkill("");
-                setSelectedTag("");
+                setSelectedTags([]);
               }}
               className="text-primary font-medium hover:underline"
             >
