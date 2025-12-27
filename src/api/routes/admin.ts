@@ -600,7 +600,7 @@ app.delete("/assets/:id", async (c) => {
     // Get asset to find R2 keys
     const asset = await c.env.DB.prepare(
       "SELECT r2_key_private, r2_key_public, r2_key_source, r2_key_og FROM assets WHERE id = ?"
-    ).bind(id).first<{ r2_key_private: string; r2_key_public: string; r2_key_source: string; r2_key_og: string }>();
+    ).bind(id).first<{ r2_key_private: string | null; r2_key_public: string | null; r2_key_source: string | null; r2_key_og: string | null }>();
 
     if (!asset) {
       console.log(`[Delete] Asset ${id} not found`);
@@ -609,16 +609,16 @@ app.delete("/assets/:id", async (c) => {
 
     console.log(`[Delete] Deleting Asset ${id}. Keys found: Private=${asset.r2_key_private}, Public=${asset.r2_key_public}, OG=${asset.r2_key_og}, Source=${asset.r2_key_source}`);
 
-    // Delete from R2
-    if (asset.r2_key_private && !asset.r2_key_private.startsWith("__draft__")) {
+    // Delete from R2 - with proper null checks for older assets
+    if (asset.r2_key_private && !asset.r2_key_private.startsWith("__draft__") && !asset.r2_key_private.startsWith("__pending__")) {
       await c.env.ASSETS_PRIVATE.delete(asset.r2_key_private);
       console.log(`[Delete] Deleted Private: ${asset.r2_key_private}`);
     }
-    if (asset.r2_key_public && !asset.r2_key_public.startsWith("__draft__")) {
+    if (asset.r2_key_public && !asset.r2_key_public.startsWith("__draft__") && !asset.r2_key_public.startsWith("__pending__")) {
       await c.env.ASSETS_PUBLIC.delete(asset.r2_key_public);
       console.log(`[Delete] Deleted Public: ${asset.r2_key_public}`);
     }
-    if (asset.r2_key_og && !asset.r2_key_og.startsWith("__draft__")) {
+    if (asset.r2_key_og && !asset.r2_key_og.startsWith("__draft__") && !asset.r2_key_og.startsWith("__pending__")) {
        console.log(`[Delete] Attempting to delete OG: ${asset.r2_key_og}`);
        await c.env.ASSETS_PUBLIC.delete(asset.r2_key_og);
        console.log(`[Delete] Deleted OG: ${asset.r2_key_og}`);
@@ -626,7 +626,7 @@ app.delete("/assets/:id", async (c) => {
        console.log(`[Delete] OG key skipped (Missing or Draft): ${asset.r2_key_og}`);
     }
     
-    if (asset.r2_key_source) {
+    if (asset.r2_key_source && !asset.r2_key_source.startsWith("__draft__") && !asset.r2_key_source.startsWith("__pending__")) {
       await c.env.ASSETS_PRIVATE.delete(asset.r2_key_source);
       console.log(`[Delete] Deleted Source: ${asset.r2_key_source}`);
     }

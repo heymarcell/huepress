@@ -125,7 +125,7 @@ export function AboutDesign({
                 <ul className="space-y-2">
                   {(section.content as string[]).map((item, i) => (
                     <li key={i} className="text-gray-700 flex gap-2">
-                      <span className="text-amber-500 mt-1.5">•</span>
+                      <span className="text-amber-500 mt-1">•</span>
                       <span>{item}</span>
                     </li>
                   ))}

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
 import { apiClient } from "@/lib/api-client";
 import { Asset, Tag } from "@/api/types";
@@ -14,15 +14,16 @@ import { FreeSampleBanner } from "@/components/features/FreeSampleBanner";
 
 export default function VaultPage() {
   const { isSubscriber } = useSubscription();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [tags, setTags] = useState<Record<string, Tag[]>>({});
   
-  // Filter States
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedSkill, setSelectedSkill] = useState("");
-  const [selectedTag, setSelectedTag] = useState(""); // General tag filter (Theme/Age)
+  // Filter States - Initialize from URL query params
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "");
+  const [selectedSkill, setSelectedSkill] = useState(searchParams.get("skill") || "");
+  const [selectedTag, setSelectedTag] = useState(searchParams.get("tag") || ""); // General tag filter (Theme/Age)
   const [sortBy, setSortBy] = useState("newest");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const debouncedSearch = useDebounce(searchQuery, 500);
 
   const [isLoading, setIsLoading] = useState(true);
