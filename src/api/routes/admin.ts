@@ -496,7 +496,11 @@ app.post("/assets", async (c) => {
               
               const res = await container.fetch("http://container/wakeup", { 
                 method: "GET",
-                headers: { "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET || "" }
+                headers: { 
+                  "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET || "",
+                  "X-Set-Internal-Token": c.env.INTERNAL_API_TOKEN || "",
+                  "X-Set-Auth-Secret": c.env.CONTAINER_AUTH_SECRET || ""
+                }
               });
               
               console.log(`[Queue] Wakeup sent. Status: ${res.status}`);

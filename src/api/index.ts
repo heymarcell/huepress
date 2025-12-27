@@ -136,7 +136,11 @@ const worker = {
           console.log("[Cron] Pending jobs found. Waking container...");
           const container = (await import("@cloudflare/containers")).getContainer(env.PROCESSING, "main");
           const res = await container.fetch("http://container/wakeup", {
-             headers: { "X-Internal-Secret": env.CONTAINER_AUTH_SECRET || "" }
+             headers: { 
+               "X-Internal-Secret": env.CONTAINER_AUTH_SECRET || "",
+               "X-Set-Internal-Token": env.INTERNAL_API_TOKEN || "",
+               "X-Set-Auth-Secret": env.CONTAINER_AUTH_SECRET || ""
+             }
           });
           console.log(`[Cron] Wakeup sent. Status: ${res.status}`);
        } else {
