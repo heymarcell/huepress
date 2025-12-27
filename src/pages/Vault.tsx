@@ -14,7 +14,7 @@ import { FreeSampleBanner } from "@/components/features/FreeSampleBanner";
 
 export default function VaultPage() {
   const { isSubscriber } = useSubscription();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [tags, setTags] = useState<Record<string, Tag[]>>({});
   
