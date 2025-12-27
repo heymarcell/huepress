@@ -197,7 +197,11 @@ The project is deployed to the Cloudflare ecosystem.
    Deploys the Hono worker.
 
 3. **Container**:
-   Managed via `wrangler deploy` (defined in `wrangler.toml`).
+   Managed via `wrangler deploy` (implicitly updates container if defined in `wrangler.toml`).
+   To force an update of the container image only:
+   ```bash
+   npm run deploy:worker -- --force
+   ```
 
 ## Security notes
 
@@ -212,7 +216,7 @@ The project is deployed to the Cloudflare ecosystem.
 - **`wrangler` command not found**: Run `npm install` or use `npx wrangler`.
 - **Local Database errors**: Ensure you ran `npm run db:migrate`.
 - **Api Network Errors**: Verify `npm run dev` is running and `vite.config.ts` proxy is pointing to port 8787.
-- **Container failures**: Check `container/server.js` logs. Local testing of the container requires building the Docker image manually if not using Wrangler's local emulation.
+- **Container failures**: Check `container/server.js` logs. Updates to the container code are deployed via `npm run deploy:worker`.
 
 ## Contributing
 

@@ -65,6 +65,8 @@ npm run deploy:pages
 npm run deploy:worker
 ```
 
+**Note**: This command also deploys and updates the Processing Container defined in `wrangler.toml`.
+
 ## Step 7: Configure Cloudflare Analytics
 
 1. Go to Cloudflare Dashboard → Analytics → Web Analytics
