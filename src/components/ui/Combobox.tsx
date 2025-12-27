@@ -13,6 +13,7 @@ interface ComboboxProps {
   placeholder?: string;
   label?: string;
   className?: string;
+  icon?: React.ReactNode;
 }
 
 export function Combobox({ 
@@ -21,7 +22,8 @@ export function Combobox({
   onChange, 
   placeholder = "Select...", 
   label,
-  className = ""
+  className = "",
+  icon
 }: ComboboxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -84,9 +86,12 @@ export function Combobox({
           ${!value ? "text-gray-500" : "text-ink"}
         `}
       >
-        <span className="truncate block mr-2">
-          {selectedLabel || placeholder}
-        </span>
+        <div className="flex items-center gap-2 overflow-hidden mr-2">
+          {icon}
+          <span className="truncate">
+            {selectedLabel || placeholder}
+          </span>
+        </div>
         <ChevronDown 
           className={`w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${isOpen ? "rotate-180" : ""}`} 
         />

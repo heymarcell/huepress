@@ -192,17 +192,14 @@ export default function VaultPage() {
           <div className="hidden sm:block w-px h-6 bg-gray-200" />
           
           {/* Sort Dropdown */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg">
-            <ArrowUpDown className="w-4 h-4 text-gray-400" />
-            <select 
-              value={sortBy} 
-              onChange={(e) => setSortBy(e.target.value)}
-              className="text-sm font-medium text-ink bg-transparent border-none outline-none focus:ring-0 cursor-pointer"
-            >
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-            </select>
-          </div>
+            <Combobox
+              value={sortBy}
+              onChange={(val) => setSortBy(val)}
+              options={[{ label: "Newest", value: "newest" }, { label: "Oldest", value: "oldest" }]}
+              placeholder="Sort by"
+              icon={<ArrowUpDown className="w-4 h-4 text-gray-400" />}
+              className="w-40"
+            />
         </div>
         
         {/* Collapsible Filter Panel */}
@@ -212,16 +209,12 @@ export default function VaultPage() {
               {/* Category */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
-                >
-                  <option value="">All Categories</option>
-                  {categoriesUI.map(c => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
-                  ))}
-                </select>
+                  <Combobox
+                    value={selectedCategory}
+                    onChange={(val) => setSelectedCategory(val)}
+                    options={[{ label: "All Categories", value: "" }, ...categoriesUI]}
+                    placeholder="All Categories"
+                  />
               </div>
               
               {/* Theme */}
@@ -229,7 +222,6 @@ export default function VaultPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
                   <Combobox
-                    label="Theme"
                     value={selectedTag}
                     onChange={(val) => setSelectedTag(val)}
                     options={[{ label: "All Themes", value: "" }, ...themesUI]}
@@ -241,16 +233,12 @@ export default function VaultPage() {
               {/* Skill */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Skill Level</label>
-                <select
-                  value={selectedSkill}
-                  onChange={(e) => setSelectedSkill(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
-                >
-                  <option value="">All Levels</option>
-                  {skillsUI.map(s => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
+                  <Combobox
+                    value={selectedSkill}
+                    onChange={(val) => setSelectedSkill(val)}
+                    options={[{ label: "All Levels", value: "" }, ...skillsUI]}
+                    placeholder="All Levels"
+                  />
               </div>
             </div>
           </div>
@@ -372,15 +360,13 @@ export default function VaultPage() {
             </button>
             
             {/* Sort (Simplified) */}
-              <div className="flex items-center">
-                  <select 
-                    value={sortBy} 
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="text-sm font-medium text-ink bg-transparent border-none outline-none focus:ring-0 cursor-pointer max-w-[80px]"
-                  >
-                      <option value="newest">Newest</option>
-                      <option value="oldest">Oldest</option>
-                  </select>
+              <div className="w-32">
+                  <Combobox
+                    value={sortBy}
+                    onChange={(val) => setSortBy(val)}
+                    options={[{ label: "Newest", value: "newest" }, { label: "Oldest", value: "oldest" }]}
+                    placeholder="Sort"
+                  />
               </div>
           </div>
 
