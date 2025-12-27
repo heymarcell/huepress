@@ -24,6 +24,7 @@ import { FreeSampleCapture } from "@/components/features/FreeSampleCapture";
 import { ReviewForm } from "@/components/features/ReviewForm";
 import { ReviewList } from "@/components/features/ReviewList";
 import { AboutDesign } from "@/components/features/AboutDesign";
+import { LikeButton } from "@/components/features/LikeButton";
 
 // Mock asset removed - fetching from API now
 
@@ -138,6 +139,9 @@ function DownloadSection({ assetId, formattedAssetId, title }: { assetId: string
       
       // Track successful download
       analytics.fileDownload(assetId, title);
+      
+      // Record activity in user history
+      apiClient.user.recordActivity(assetId, 'download').catch(() => {});
     } catch (error) {
       console.error("Download error:", error);
       setAlertState({
@@ -190,6 +194,9 @@ function DownloadSection({ assetId, formattedAssetId, title }: { assetId: string
       };
       
       analytics.fileDownload(assetId, title);
+      
+      // Record activity in user history
+      apiClient.user.recordActivity(assetId, 'print').catch(() => {});
     } catch (error) {
       console.error("Print error:", error);
       setAlertState({
@@ -498,6 +505,9 @@ export default function ResourceDetailPage() {
 
               <h1 className="font-serif text-3xl lg:text-4xl text-ink mb-2 leading-tight">
                 {asset.title}
+                <div className="inline-block ml-3 align-middle">
+                   <LikeButton assetId={asset.id} variant="icon" className="shadow-sm border border-gray-100" />
+                </div>
               </h1>
 
               {/* Asset ID and Rating */}

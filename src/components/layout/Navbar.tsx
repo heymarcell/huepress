@@ -87,7 +87,10 @@ export function Navbar() {
     // Only show Pricing if NOT subscribed
     ...(!isSubscriber ? [{ to: "/pricing", label: "Pricing" }] : []),
     // Only show Request a Design if subscribed
-    ...(isSubscriber ? [{ to: "/request-design", label: "Request a Design" }] : []),
+    ...(isSubscriber ? [
+      { to: "/request-design", label: "Request a Design" },
+      { to: "/dashboard", label: "My Dashboard" }
+    ] : []),
   ];
 
   return (

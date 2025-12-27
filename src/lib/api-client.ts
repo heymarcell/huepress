@@ -4,6 +4,11 @@ import { Asset, Tag } from "@/api/types";
 const API_URL = import.meta.env.VITE_API_URL || "/api"; // Default to relative proxy in dev
 
 // Types
+declare global {
+  interface Window {
+    Clerk: any;
+  }
+}
 
 
 // Private helper for fetch
@@ -222,6 +227,35 @@ export const apiClient = {
       return fetchApi<{ url: string }>("/api/portal", {
         method: "POST",
         token
+      });
+    }
+  },
+  user: {
+    getLikes: async () => {
+      const token = await window.Clerk?.session?.getToken();
+      return fetchApi<{ likes: Asset[] }>("/api/user/likes", {
+        token
+      });
+    },
+    toggleLike: async (assetId: string) => {
+      const token = await window.Clerk?.session?.getToken();
+      return fetchApi<{ liked: boolean }>(`/api/user/likes/${assetId}`, {
+        method: "POST",
+        token
+      });
+    },
+    getHistory: async () => {
+      const token = await window.Clerk?.session?.getToken();
+      return fetchApi<{ history: (Asset & { downloaded_at: string, type: string })[] }>("/api/user/history", {
+        token
+      });
+    },
+    recordActivity: async (assetId: string, type: 'download' | 'print') => {
+      const token = await window.Clerk?.session?.getToken();
+      return fetchApi<{ success: boolean }>(`/api/user/activity`, {
+        method: "POST",
+        token,
+        body: JSON.stringify({ assetId, type })
       });
     }
   }

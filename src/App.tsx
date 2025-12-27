@@ -23,11 +23,13 @@ const AdminAssets = lazy(() => import("./pages/admin/Assets"));
 const AdminAssetForm = lazy(() => import("./pages/admin/AssetForm"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const AdminDesignRequests = lazy(() => import("./pages/admin/DesignRequests"));
+const UserDashboard = lazy(() => import("./pages/UserDashboard"));
 
 import ScrollToTop from "./components/ScrollToTop";
 import { ConsentProvider } from "./context/ConsentContext";
 import { ConsentBanner } from "./components/privacy/ConsentBanner";
 import { ConsentPreferences } from "./components/privacy/ConsentPreferences";
+import { Toaster } from "sonner";
 
 // Loading fallback component - Clean, subtle loader
 function PageLoader() {
@@ -70,6 +72,7 @@ export default function App() {
         <Route path="request-design" element={<RequestDesignPage />} />
         <Route path="privacy" element={<PrivacyPolicyPage />} />
         <Route path="terms" element={<TermsOfServicePage />} />
+        <Route path="dashboard" element={<UserDashboard />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 
@@ -88,6 +91,7 @@ export default function App() {
       </Route>
       </Routes>
       </Suspense>
+      <Toaster position="top-center" />
     </ConsentProvider>
   );
 }
