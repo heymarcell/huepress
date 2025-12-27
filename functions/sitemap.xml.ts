@@ -8,7 +8,14 @@ interface AssetRow {
   id: string;
   slug: string;
   asset_id: string | null;
-  updated_at: string;
+  updated_at: string | null;
+  created_at: string | null;
+}
+
+interface PostRow {
+  slug: string;
+  published_at: string | null;
+  updated_at: string | null;
 }
 
 export const onRequest: PagesFunction<Env> = async (context) => {
@@ -21,16 +28,32 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     { loc: `${baseUrl}/vault`, priority: 0.9, changefreq: "daily" },
     { loc: `${baseUrl}/pricing`, priority: 0.8, changefreq: "weekly" },
     { loc: `${baseUrl}/about`, priority: 0.7, changefreq: "monthly" },
+    { loc: `${baseUrl}/blog`, priority: 0.8, changefreq: "weekly" },
     { loc: `${baseUrl}/request-design`, priority: 0.7, changefreq: "monthly" },
     { loc: `${baseUrl}/privacy`, priority: 0.5, changefreq: "monthly" },
     { loc: `${baseUrl}/terms`, priority: 0.5, changefreq: "monthly" },
   ];
 
+  // Helper to format date safely
+  const formatDate = (dateStr: string | null | undefined): string => {
+    if (!dateStr) return new Date().toISOString().split('T')[0];
+    try {
+      return new Date(dateStr).toISOString().split('T')[0];
+    } catch {
+      return new Date().toISOString().split('T')[0];
+    }
+  };
+
   try {
     // Fetch dynamic assets from D1
-    const { results } = await env.DB.prepare(
-      "SELECT id, slug, asset_id, updated_at FROM assets WHERE status = 'published' ORDER BY created_at DESC"
+    const { results: assets } = await env.DB.prepare(
+      "SELECT id, slug, asset_id, updated_at, created_at FROM assets WHERE status = 'published' ORDER BY created_at DESC"
     ).all<AssetRow>();
+
+    // Fetch published blog posts
+    const { results: posts } = await env.DB.prepare(
+      "SELECT slug, published_at, updated_at FROM posts WHERE status = 'published' ORDER BY published_at DESC"
+    ).all<PostRow>();
 
     // Generate XML
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -45,18 +68,31 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   </url>`
     )
     .join("")}
-  ${(results || [])
+  ${(assets || [])
     .map((asset) => {
        const slug = asset.slug || "design";
        const id = asset.asset_id || asset.id;
        const url = `${baseUrl}/coloring-pages/${slug}-${id}`;
-       const lastMod = new Date(asset.updated_at).toISOString().split('T')[0]; // YYYY-MM-DD
+       const lastMod = formatDate(asset.updated_at || asset.created_at);
        return `
   <url>
     <loc>${url}</loc>
     <lastmod>${lastMod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
+  </url>`;
+    })
+    .join("")}
+  ${(posts || [])
+    .map((post) => {
+       const url = `${baseUrl}/blog/${post.slug}`;
+       const lastMod = formatDate(post.updated_at || post.published_at);
+       return `
+  <url>
+    <loc>${url}</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>`;
     })
     .join("")}
