@@ -1,0 +1,1611 @@
+const express = require('express');
+const sharp = require('sharp');
+const cors = require('cors');
+const isSvg = require('is-svg');
+const createDOMPurify = require('dompurify');
+const { JSDOM } = require('jsdom');
+
+// Setup DOMPurify
+const window = new JSDOM('').window;
+const DOMPurify = createDOMPurify(window);
+
+const app = express();
+const PORT = process.env.PORT || 4000;
+
+// ============================================
+// PROCESSING QUEUES (Concurrency Control)
+// Each queue allows only 1 concurrent job to prevent resource contention
+// ============================================
+let thumbnailQueue, ogQueue, pdfQueue;
+
+// Initialize queues (p-queue is ESM, requires dynamic import)
+(async () => {
+  const PQueue = (await import('p-queue')).default;
+  
+  thumbnailQueue = new PQueue({ concurrency: 1 });
+  ogQueue = new PQueue({ concurrency: 1 });
+  pdfQueue = new PQueue({ concurrency: 1 });
+  
+  console.log('[Queue] Processing queues initialized (concurrency: 1 each)');
+  
+  // Queue monitoring - log status every 10 seconds if there are pending jobs
+  setInterval(() => {
+    const pending = thumbnailQueue.pending + ogQueue.pending + pdfQueue.pending;
+    const size = thumbnailQueue.size + ogQueue.size + pdfQueue.size;
+    if (pending > 0 || size > 0) {
+      console.log(`[Queue] Status - Thumbnail: ${thumbnailQueue.size}/${thumbnailQueue.pending}, OG: ${ogQueue.size}/${ogQueue.pending}, PDF: ${pdfQueue.size}/${pdfQueue.pending} (queued/running)`);
+    }
+  }, 10000);
+})();
+
+// Helper to wait for queues to be ready
+const waitForQueues = async () => {
+  while (!thumbnailQueue || !ogQueue || !pdfQueue) {
+    await new Promise(r => setTimeout(r, 100));
+  }
+};
+
+// Helper: Fetch with retry and exponential backoff
+async function fetchWithRetry(url, options, maxRetries = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      return response;
+    } catch (err) {
+      lastError = err;
+      console.warn(`[Fetch] Attempt ${attempt}/${maxRetries} failed for ${url}: ${err.message}`);
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // 1s, 2s, 4s max 5s
+        console.log(`[Fetch] Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '10mb' })); // Reduced from 50MB for DoS protection [F-004]
+
+// SECURITY [F-001]: Container Authentication
+// Validates X-Internal-Secret header against CONTAINER_AUTH_SECRET env var
+const CONTAINER_SECRET = process.env.CONTAINER_AUTH_SECRET;
+
+function validateAuthSecret(req, res, next) {
+  // Skip auth for health checks
+  if (req.path === '/health') return next();
+  
+  // If secret not configured, log warning but allow (for backwards compatibility during rollout)
+  if (!CONTAINER_SECRET) {
+    console.warn('[Security] CONTAINER_AUTH_SECRET not set - authentication disabled');
+    return next();
+  }
+  
+  const providedSecret = req.headers['x-internal-secret'];
+  if (providedSecret !== CONTAINER_SECRET) {
+    console.error('[Security] Unauthorized request - invalid or missing X-Internal-Secret');
+    return res.status(401).json({ error: 'Unauthorized: Invalid or missing X-Internal-Secret' });
+  }
+  
+  next();
+}
+
+app.use(validateAuthSecret);
+
+// SECURITY [F-001/F-003]: Validate uploadUrl against whitelist to prevent SSRF
+function validateUploadUrl(url) {
+  if (!url) return true; // null/undefined is fine (sync mode)
+  
+  const ALLOWED_PREFIXES = [
+    'https://api.huepress.co/',
+  ];
+  
+  // SECURITY [F-003]: Only allow localhost in non-production environments
+  if (process.env.NODE_ENV !== 'production') {
+    ALLOWED_PREFIXES.push('http://localhost:');
+  }
+  
+  const isAllowed = ALLOWED_PREFIXES.some(prefix => url.startsWith(prefix));
+  if (!isAllowed) {
+    throw new Error(`Upload URL not allowed: ${url}`);
+  }
+  return true;
+}
+
+// Helper: Parse color string to RGB values
+// Supports: #000, #000000, rgb(0,0,0), rgba(0,0,0,1), named colors
+function parseColorToRGB(color) {
+  if (!color || color === 'none' || color === 'transparent' || color === 'inherit' || color === 'currentColor') {
+    return null; // Not a solid color
+  }
+  
+  color = color.trim().toLowerCase();
+  
+  // Named colors mapping (common ones)
+  const namedColors = {
+    'black': { r: 0, g: 0, b: 0 },
+    'white': { r: 255, g: 255, b: 255 },
+    'red': { r: 255, g: 0, b: 0 },
+    'green': { r: 0, g: 128, b: 0 },
+    'blue': { r: 0, g: 0, b: 255 },
+    'gray': { r: 128, g: 128, b: 128 },
+    'grey': { r: 128, g: 128, b: 128 },
+    'darkgray': { r: 169, g: 169, b: 169 },
+    'darkgrey': { r: 169, g: 169, b: 169 },
+    'lightgray': { r: 211, g: 211, b: 211 },
+    'lightgrey': { r: 211, g: 211, b: 211 },
+    'dimgray': { r: 105, g: 105, b: 105 },
+    'dimgrey': { r: 105, g: 105, b: 105 },
+    'yellow': { r: 255, g: 255, b: 0 },
+    'orange': { r: 255, g: 165, b: 0 },
+    'pink': { r: 255, g: 192, b: 203 },
+    'purple': { r: 128, g: 0, b: 128 },
+    'cyan': { r: 0, g: 255, b: 255 },
+    'magenta': { r: 255, g: 0, b: 255 },
+  };
+  
+  if (namedColors[color]) {
+    return namedColors[color];
+  }
+  
+  // Hex format: #RGB or #RRGGBB
+  if (color.startsWith('#')) {
+    let hex = color.slice(1);
+    if (hex.length === 3) {
+      hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    }
+    if (hex.length === 6) {
+      return {
+        r: parseInt(hex.slice(0, 2), 16),
+        g: parseInt(hex.slice(2, 4), 16),
+        b: parseInt(hex.slice(4, 6), 16)
+      };
+    }
+  }
+  
+  // RGB/RGBA format
+  const rgbMatch = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  if (rgbMatch) {
+    return {
+      r: parseInt(rgbMatch[1], 10),
+      g: parseInt(rgbMatch[2], 10),
+      b: parseInt(rgbMatch[3], 10)
+    };
+  }
+  
+  return null; // Unknown format
+}
+
+// Helper: Check if color is near-black (threshold: all RGB < 40)
+const NEAR_BLACK_THRESHOLD = 40;
+function isNearBlack(rgb) {
+  if (!rgb) return false;
+  return rgb.r <= NEAR_BLACK_THRESHOLD && rgb.g <= NEAR_BLACK_THRESHOLD && rgb.b <= NEAR_BLACK_THRESHOLD;
+}
+
+// Helper: Normalize SVG colors - convert near-black to pure black, remove non-black elements
+function normalizeSvgColors(svgContent) {
+  const dom = new JSDOM(svgContent, { contentType: 'image/svg+xml' });
+  const doc = dom.window.document;
+  const svg = doc.querySelector('svg');
+  
+  if (!svg) return svgContent; // No SVG found, return as-is
+  
+  // Process all elements recursively
+  const processElement = (el) => {
+    // Skip the root SVG element itself and structural elements
+    if (el.tagName === 'svg' || el.tagName === 'defs' || el.tagName === 'style') {
+      // Still process children
+      Array.from(el.children).forEach(child => processElement(child));
+      return;
+    }
+    
+    // Check fill attribute
+    let fill = el.getAttribute('fill');
+    let stroke = el.getAttribute('stroke');
+    
+    // Also extract from inline style
+    const style = el.getAttribute('style') || '';
+    const fillFromStyle = style.match(/fill\s*:\s*([^;]+)/i);
+    const strokeFromStyle = style.match(/stroke\s*:\s*([^;]+)/i);
+    
+    if (fillFromStyle) fill = fillFromStyle[1].trim();
+    if (strokeFromStyle) stroke = strokeFromStyle[1].trim();
+    
+    // Parse colors
+    const fillRGB = parseColorToRGB(fill);
+    const strokeRGB = parseColorToRGB(stroke);
+    
+    // Determine if element should be kept
+    let keepElement = false;
+    
+    // Check fill
+    if (fillRGB) {
+      if (isNearBlack(fillRGB)) {
+        // Normalize to pure black
+        el.setAttribute('fill', '#000000');
+        keepElement = true;
+      }
+      // Non-black fill = don't keep (unless stroke saves it)
+    } else if (fill === 'none' || !fill) {
+      // No fill is OK, might have stroke
+    }
+    
+    // Check stroke
+    if (strokeRGB) {
+      if (isNearBlack(strokeRGB)) {
+        // Normalize to pure black
+        el.setAttribute('stroke', '#000000');
+        keepElement = true;
+      }
+      // Non-black stroke = don't contribute to keeping
+    } else if (stroke === 'none' || !stroke) {
+      // No stroke, that's fine
+    }
+    
+    // If element has no black fill AND no black stroke, remove it
+    // But be careful: elements with neither fill nor stroke set might inherit
+    // For safety, if an element has a non-black color set explicitly, remove it
+    const hasExplicitNonBlackFill = fillRGB && !isNearBlack(fillRGB);
+    const hasExplicitNonBlackStroke = strokeRGB && !isNearBlack(strokeRGB);
+    
+    if (hasExplicitNonBlackFill || hasExplicitNonBlackStroke) {
+      // Check if it has any black attribute that saves it
+      if (!keepElement) {
+        el.remove();
+        return;
+      }
+      // If it has a good fill/stroke but also a bad one, just remove the bad attribute
+      if (hasExplicitNonBlackFill && fill) {
+        el.setAttribute('fill', 'none');
+      }
+      if (hasExplicitNonBlackStroke && stroke) {
+        el.setAttribute('stroke', 'none');
+      }
+    }
+    
+    // Clean up style attribute (remove fill/stroke from inline styles, we've set them as attributes)
+    if (style) {
+      const newStyle = style
+        .replace(/fill\s*:\s*[^;]+;?/gi, '')
+        .replace(/stroke\s*:\s*[^;]+;?/gi, '')
+        .trim();
+      if (newStyle) {
+        el.setAttribute('style', newStyle);
+      } else {
+        el.removeAttribute('style');
+      }
+    }
+    
+    // Process children
+    Array.from(el.children).forEach(child => processElement(child));
+  };
+  
+  // Start processing from SVG root's children
+  Array.from(svg.children).forEach(child => processElement(child));
+  
+  return svg.outerHTML;
+}
+
+// Helper: Sanitize SVG [F-004 Enhanced]
+function sanitizeSvgContent(input) {
+  if (!input) return input; // Let endpoints handle missing input
+  
+  // Early size check to prevent DoS [F-004]
+  if (input.length > 5 * 1024 * 1024) { // 5MB max for SVGs
+    throw new Error("SVG content too large (max 5MB)");
+  }
+  
+  if (!isSvg(input)) {
+    throw new Error("Invalid SVG format");
+  }
+  
+  // Step 1: Security sanitization - strip scripts, foreignObjects, event handlers
+  const sanitized = DOMPurify.sanitize(input, { 
+    USE_PROFILES: { svg: true, svgFilters: true },
+    ADD_TAGS: ['style', 'defs', 'linearGradient', 'stop', 'rect', 'circle', 'path', 'g', 'text', 'tspan', 'clipPath'], // Ensure standard SVG tags are kept
+    ADD_ATTR: ['id', 'class', 'width', 'height', 'viewBox', 'fill', 'stroke', 'style', 'd', 'transform', 'x', 'y', 'r', 'cx', 'cy', 'rx', 'ry', 'offset', 'stop-color', 'stop-opacity'] 
+  });
+  
+  // Step 2: Color normalization - convert near-black to black, remove non-black elements
+  return normalizeSvgColors(sanitized);
+}
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'huepress-processing' });
+});
+
+// ============================================
+// QUEUE PROCESSING
+// ============================================
+let isProcessingQueue = false;
+
+/**
+ * GET /wakeup - Wake up container and start processing queue
+ * Called by Worker after inserting a job into processing_queue
+ */
+app.get('/wakeup', async (req, res) => {
+  console.log('[Queue] Wakeup received');
+  res.json({ status: 'awake', processing: isProcessingQueue });
+  
+  // Start queue processing in background (don't block response)
+  if (!isProcessingQueue) {
+    processQueue().catch(err => console.error('[Queue] Processing error:', err));
+  }
+});
+
+/**
+ * Process jobs from the queue
+ * Fetches pending jobs from D1, processes them, updates status
+ */
+async function processQueue() {
+  if (isProcessingQueue) {
+    console.log('[Queue] Already processing, skipping');
+    return;
+  }
+  
+  isProcessingQueue = true;
+  console.log('[Queue] Starting queue processing...');
+  
+  try {
+    // Worker's API URL for D1 access and file uploads
+    const apiUrl = process.env.API_URL || 'https://api.huepress.co';
+    const internalToken = process.env.INTERNAL_API_TOKEN;
+    
+    if (!internalToken) {
+      console.error('[Queue] INTERNAL_API_TOKEN not set');
+      return;
+    }
+    
+    // Fetch pending jobs via internal API
+    const jobsRes = await fetchWithRetry(`${apiUrl}/api/internal/queue/pending`, {
+      headers: { 'Authorization': `Bearer ${internalToken}` }
+    });
+    
+    if (!jobsRes.ok) {
+      console.error(`[Queue] Failed to fetch jobs: ${jobsRes.status}`);
+      return;
+    }
+    
+    const { jobs } = await jobsRes.json();
+    console.log(`[Queue] Found ${jobs?.length || 0} pending jobs`);
+    
+    for (const job of (jobs || [])) {
+      try {
+        console.log(`[Queue] Processing job ${job.id} for asset ${job.asset_id}`);
+        
+        // Mark as processing
+        await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}/status`, {
+          method: 'PATCH',
+          headers: { 
+            'Authorization': `Bearer ${internalToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: 'processing' })
+        });
+        
+        // Fetch asset details and source SVG
+        const assetRes = await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}/asset`, {
+          headers: { 'Authorization': `Bearer ${internalToken}` }
+        });
+        
+        if (!assetRes.ok) {
+          throw new Error(`Failed to fetch asset: ${assetRes.status}`);
+        }
+        
+        const { asset, svgContent } = await assetRes.json();
+        
+        if (!svgContent) {
+          throw new Error('No SVG content found');
+        }
+        
+        // Generate all files
+        console.log(`[Queue] Generating files for ${asset.asset_id}...`);
+        
+        // 1. Thumbnail
+        const thumbnailBuffer = await generateThumbnailBuffer(svgContent);
+        await uploadFile(apiUrl, internalToken, 'public', asset.r2_key_public, thumbnailBuffer, 'image/webp');
+        
+        // 2. OG Image
+        const ogBuffer = await generateOgBuffer(svgContent, asset.title);
+        await uploadFile(apiUrl, internalToken, 'public', asset.r2_key_og, ogBuffer, 'image/png');
+        
+        // 3. PDF
+        const pdfBuffer = await generatePdfBuffer(svgContent, asset);
+        await uploadFile(apiUrl, internalToken, 'private', asset.r2_key_private, pdfBuffer, 'application/pdf');
+        
+        // Mark as completed
+        await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}/status`, {
+          method: 'PATCH',
+          headers: { 
+            'Authorization': `Bearer ${internalToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: 'completed' })
+        });
+        
+        console.log(`[Queue] Job ${job.id} completed successfully`);
+        
+      } catch (err) {
+        console.error(`[Queue] Job ${job.id} failed:`, err.message);
+        
+        // Mark as failed or pending for retry
+        const newStatus = job.attempts >= job.max_attempts ? 'failed' : 'pending';
+        await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}/status`, {
+          method: 'PATCH',
+          headers: { 
+            'Authorization': `Bearer ${internalToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: newStatus, error: err.message })
+        }).catch(() => {});
+      }
+    }
+    
+  } finally {
+    isProcessingQueue = false;
+    console.log('[Queue] Processing complete');
+  }
+}
+
+// Helper: Generate thumbnail buffer
+async function generateThumbnailBuffer(svgContent) {
+  const safeSvg = sanitizeSvgContent(svgContent);
+  return await sharp(Buffer.from(safeSvg))
+    .resize(1024, null, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
+    .flatten({ background: { r: 255, g: 255, b: 255 } })
+    .webp({ quality: 90 })
+    .toBuffer();
+}
+
+// Helper: Generate OG image buffer 
+async function generateOgBuffer(svgContent, title) {
+  // Simplified OG generation - uses existing logic
+  const safeSvg = sanitizeSvgContent(svgContent);
+  const width = 1200, height = 630;
+  
+  const templatePath = require('path').join(__dirname, 'og_template.svg');
+  let baseImage = sharp({ create: { width, height, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } } });
+  
+  if (require('fs').existsSync(templatePath)) {
+    baseImage = sharp(templatePath).resize(width, height);
+  }
+  
+  const artBuffer = await sharp(Buffer.from(safeSvg))
+    .resize(450, 500, { fit: 'inside' })
+    .flatten({ background: { r: 255, g: 255, b: 255 } })
+    .png()
+    .toBuffer();
+  
+  const artMeta = await sharp(artBuffer).metadata();
+  const artLeft = 900 - Math.round((artMeta.width || 450) / 2);
+  const artTop = 315 - Math.round((artMeta.height || 500) / 2);
+  
+  // Text overlay
+  const textSvg = `<svg width="${width}" height="${height}">
+    <style>.title { font: bold 48px sans-serif; fill: #0f766e; }</style>
+    <text x="60" y="300" class="title">${escapeXml(title || 'Coloring Page')}</text>
+  </svg>`;
+  
+  return await baseImage
+    .composite([
+      { input: artBuffer, left: artLeft, top: artTop },
+      { input: Buffer.from(textSvg), top: 0, left: 0 }
+    ])
+    .png()
+    .toBuffer();
+}
+
+// Helper: Generate PDF buffer
+async function generatePdfBuffer(svgContent, asset) {
+  const safeSvg = sanitizeSvgContent(svgContent);
+  const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
+  
+  const pdfDoc = await PDFDocument.create();
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  
+  // Page 1: Artwork
+  const pngBuffer = await sharp(Buffer.from(safeSvg))
+    .resize({ width: 2480, fit: 'inside' })
+    .png()
+    .toBuffer();
+  
+  const pngImage = await pdfDoc.embedPng(pngBuffer);
+  const page1 = pdfDoc.addPage([595.28, 841.89]);
+  const { width, height } = page1.getSize();
+  const margin = 28.35;
+  const imgDims = pngImage.scaleToFit(width - margin * 2, height - margin * 2);
+  
+  page1.drawImage(pngImage, {
+    x: (width - imgDims.width) / 2,
+    y: (height - imgDims.height) / 2,
+    width: imgDims.width,
+    height: imgDims.height,
+  });
+  
+  return await pdfDoc.save();
+}
+
+// Helper: Upload file to R2 via internal API
+async function uploadFile(apiUrl, token, bucket, key, buffer, contentType) {
+  const endpoint = bucket === 'public' ? 'upload-public' : 'upload-private';
+  const res = await fetchWithRetry(`${apiUrl}/api/internal/${endpoint}?key=${encodeURIComponent(key)}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'X-Content-Type': contentType
+    },
+    body: buffer
+  });
+  
+  if (!res.ok) {
+    throw new Error(`Upload failed: ${res.status}`);
+  }
+  console.log(`[Queue] Uploaded ${key}`);
+}
+
+// Helper: Escape XML
+function escapeXml(str) {
+  return String(str || '').replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[c]);
+}
+
+/**
+ * Generate OG Image
+ * POST /og-image
+ * Body: { title, thumbnailBase64, thumbnailMimeType, uploadUrl?, uploadToken?, uploadKey? }
+ * Returns: PNG buffer as base64 (sync) or 202 Accepted (async)
+ */
+app.post('/og-image', async (req, res) => {
+  try {
+    const { title, thumbnailBase64, thumbnailMimeType = 'image/webp', svgContent, uploadUrl, uploadToken, uploadKey } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ error: 'title is required' });
+    }
+
+    // SSRF Protection [F-001]
+    validateUploadUrl(uploadUrl);
+
+    console.log(`[OG Image] Generating for: "${title}"`);
+
+    const generateOg = async () => {
+      // Decode thumbnail if provided
+      let thumbnailBuffer = null;
+      if (thumbnailBase64) {
+        thumbnailBuffer = Buffer.from(thumbnailBase64, 'base64');
+      }
+
+      // Create OG image (1200x630)
+      const width = 1200;
+      const height = 630;
+
+      // 1. Base Layer: Template
+      // Use og_template.svg if available, otherwise fall back to white background
+      const templatePath = require('path').join(__dirname, 'og_template.svg');
+      let templateBuffer = null;
+      if (require('fs').existsSync(templatePath)) {
+        templateBuffer = require('fs').readFileSync(templatePath);
+      }
+
+      const layers = [];
+
+      // Add template as first layer
+      if (templateBuffer) {
+        layers.push({ input: templateBuffer, top: 0, left: 0 });
+      }
+
+      // 2. Art Layer (Right Side)
+      // Prefer SVG Content (Vector)
+      if (svgContent) {
+         try {
+           const ogArt = await sharp(Buffer.from(svgContent))
+            .resize(450, 500, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 0 } })
+            .flatten({ background: { r: 255, g: 255, b: 255 } })
+            .png()
+            .toBuffer();
+          
+          const artMeta = await sharp(ogArt).metadata();
+          const artW = artMeta.width || 450;
+          const artH = artMeta.height || 500;
+          
+          // Center in right area (center x: 900, center y: 315)
+          const artLeft = 900 - Math.round(artW / 2);
+          const artTop = 315 - Math.round(artH / 2);
+
+          layers.push({ input: ogArt, left: artLeft, top: artTop });
+         } catch (e) {
+            console.error('[OG Image] SVG processing error:', e.message);
+         }
+      } 
+      // Fallback to Thumbnail (Raster) logic
+      else if (thumbnailBuffer) {
+        try {
+          // Resize to fit in the right area
+          const thumbnail = await sharp(thumbnailBuffer)
+            .resize(500, 500, { fit: 'cover' })
+            .png()
+            .toBuffer();
+
+          layers.push({
+            input: thumbnail,
+            top: 65,
+            left: 650
+          });
+        } catch (e) {
+          console.error('[OG Image] Thumbnail processing error:', e.message);
+        }
+      }
+
+      // 3. Text Overlay Layer
+      // Calculate lines for title
+      const maxTitleChars = 22;
+      const titleLines = [];
+      const words = (title || 'Coloring Page').split(' ');
+      let currentLine = words[0];
+
+      for (let i = 1; i < words.length; i++) {
+        if ((currentLine + " " + words[i]).length < maxTitleChars) {
+          currentLine += " " + words[i];
+        } else {
+          titleLines.push(currentLine);
+          currentLine = words[i];
+        }
+      }
+      titleLines.push(currentLine);
+      
+      const displayLines = titleLines.slice(0, 3);
+      if (titleLines.length > 3) {
+         displayLines[2] = displayLines[2].substring(0, displayLines[2].length - 3) + "...";
+      }
+
+      // Positioning
+      const startY = 280;
+      const lineHeight = 60;
+      const titleHeight = displayLines.length * lineHeight;
+      const subtitleY = startY + titleHeight + 20;
+
+      const titleSvg = displayLines.map((line, i) => 
+        `<tspan x="60" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`
+      ).join('');
+
+      // We ONLY draw the dynamic text. 
+      // The Template already contains the Logo (Top Left) and Batch (Bottom Left).
+      // We also do NOT use the full white overlay anymore, because it would hide the template.
+      // But we might need a slight gradient if the text is prolonged? 
+      // The user's template likely handles the background.
+      
+      const textSvg = `
+        <svg width="${width}" height="${height}">
+          <style>
+            .title { font: bold 48px 'Inter', 'FreeSans', sans-serif; fill: #0f766e; }
+            .subtitle { font: 24px 'Inter', 'FreeSans', sans-serif; fill: #374151; }
+          </style>
+          
+          <text x="60" y="${startY}" class="title">${titleSvg}</text>
+          <text x="60" y="${subtitleY}" class="subtitle">Printable Coloring Page</text>
+        </svg>
+      `;
+
+      layers.push({
+        input: Buffer.from(textSvg),
+        top: 0,
+        left: 0
+      });
+
+      // Composite all layers
+      const result = await image
+        .composite(layers)
+        .png()
+        .toBuffer();
+
+      console.log(`[OG Image] Generated successfully, size: ${result.length} bytes`);
+      return result;
+    };
+
+    // Async Mode
+    if (uploadUrl && uploadToken && uploadKey) {
+      res.status(202).json({ status: 'accepted', message: 'OG Image processing started' });
+      
+      (async () => {
+        try {
+          const imageBuffer = await generateOg();
+          const uploadRes = await fetch(`${uploadUrl}?key=${encodeURIComponent(uploadKey)}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${uploadToken}`,
+              'X-Content-Type': 'image/png'
+            },
+            body: imageBuffer
+          });
+          if (!uploadRes.ok) {
+            throw new Error(`Upload failed: ${uploadRes.status}`);
+          }
+          console.log(`[OG Image] Async upload success: ${uploadKey}`);
+        } catch (err) {
+          console.error(`[OG Image] Async error:`, err);
+        }
+      })();
+      return;
+    }
+
+    // Sync Mode
+    const result = await generateOg();
+    res.json({
+      success: true,
+      imageBase64: result.toString('base64'),
+      mimeType: 'image/png'
+    });
+
+  } catch (error) {
+    console.error('[OG Image] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Generate PDF from SVG
+ * POST /pdf
+ * Body: { svgContent, filename, metadata }
+ * Metadata: { title, assetId, description, qrCodeUrl }
+ * Returns: PDF buffer as base64
+ */
+
+
+// Import PDF generation libs
+const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
+const fs = require('fs');
+const path = require('path');
+
+// Load Template SVG once at startup
+const templatePath = path.join(__dirname, 'marketing_template.svg');
+// Verify template existence
+if (fs.existsSync(templatePath)) {
+  console.log('[Processing] Template file found at:', templatePath);
+} else {
+  console.error('[Processing] WARNING: Marketing template NOT found at:', templatePath);
+}
+
+/**
+ * Generate PDF from SVG (Fast Mode via pdf-lib + sharp)
+ * POST /pdf
+ * Body: { svgContent, filename, metadata, uploadUrl, uploadToken }
+ * Metadata: { title, assetId, description, qrCodeUrl }
+ */
+app.post('/pdf', async (req, res) => {
+  try {
+    const { svgContent, filename, metadata, uploadUrl, uploadToken } = req.body;
+    
+    // Validate inputs
+    if (!svgContent) {
+      return res.status(400).json({ error: 'Missing svgContent' });
+    }
+
+    // SSRF Protection [F-001]
+    validateUploadUrl(uploadUrl);
+
+    // SANITIZE INPUT
+    const safeSvgContent = sanitizeSvgContent(svgContent);
+
+    // Processing Logic (Encapsulated)
+    const generatePdf = async () => {
+        const pdfDoc = await PDFDocument.create();
+        const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        
+        // --- PAGE 1: Artwork ---
+        // Render SVG to PNG Buffer using Sharp (Proven working)
+        // High density for print quality (72dpi * 4 ~ 300dpi effectiveness or just high width)
+        // A4 width @ 300dpi is ~2480px.
+        const pngBuffer = await sharp(Buffer.from(safeSvgContent))
+            .resize({ width: 2480, fit: 'inside' })
+            .png()
+            .toBuffer();
+            
+        const pngImage = await pdfDoc.embedPng(pngBuffer);
+
+        const page1 = pdfDoc.addPage([595.28, 841.89]); // A4
+        const { width, height } = page1.getSize();
+        const margin = 28.35;
+        const imgDims = pngImage.scaleToFit(width - (margin * 2), height - (margin * 2));
+        page1.drawImage(pngImage, {
+            x: (width - imgDims.width) / 2,
+            y: (height - imgDims.height) / 2,
+            width: imgDims.width,
+            height: imgDims.height,
+        });
+
+        // --- PAGE 2: Marketing Template ---
+        // Only render if template exists locally
+        if (metadata && fs.existsSync(templatePath)) {
+            const page2 = pdfDoc.addPage([595.28, 841.89]);
+            const p2w = page2.getSize().width;
+            const p2h = page2.getSize().height;
+
+            // 1. Render Template SVG to PNG
+            const tplPng = await sharp(templatePath)
+                 .resize({ width: 2480, fit: 'inside' })
+                 .png()
+                 .toBuffer();
+
+            const tplImage = await pdfDoc.embedPng(tplPng);
+            
+            page2.drawImage(tplImage, { x: 0, y: 0, width: p2w, height: p2h });
+
+            // 2. Dynamic Footer Overlay
+            // Mask the bottom area to "delete" static footer art
+            page2.drawRectangle({
+                x: 0,
+                y: 0,
+                width: p2w,
+                height: 60, // Covers bottom ~21mm
+                color: rgb(1, 1, 1), // White mask
+            });
+
+            const currentYear = new Date().getFullYear();
+            const displayId = (metadata.assetId || "").replace(/^HP-[A-Z]+-/, '');
+            const footerColor = rgb(0.59, 0.59, 0.59); // #969696
+            const centerX = p2w / 2;
+
+            // Helper to draw centered text
+            const drawCentered = (text, y, size) => {
+                const widthResult = fontRegular.widthOfTextAtSize(text, size);
+                page2.drawText(text, {
+                    x: centerX - (widthResult / 2),
+                    y,
+                    size,
+                    font: fontRegular,
+                    color: footerColor,
+                });
+            };
+
+            // Coordinates based on SVG (inverted Y): 799->43, 816->26, 833->9
+            drawCentered("Need help? Email us anytime: hello@huepress.co", 43, 8);
+            drawCentered(`© ${currentYear} HuePress. All rights reserved.`, 26, 8);
+            drawCentered(`Asset ID: #${displayId}`, 9, 8);
+        }
+
+        return await pdfDoc.save();
+    };
+
+
+    // Check for Async Mode (uploadUrl present)
+    if (uploadUrl && uploadToken && uploadKey) {
+       // Respond immediately
+       res.status(202).json({ status: 'accepted', message: 'Processing started in Container' });
+       
+       // Background Process
+       (async () => {
+         try {
+             console.log(`[PDFContainer] Starting Async PDF Gen (Sharp)...`);
+             const pdfBuffer = await generatePdf();
+             
+             console.log(`[PDFContainer] Generated ${pdfBuffer.length} bytes. Uploading to ${uploadKey}...`);
+             
+             // Upload back with key in query param
+             const uploadRes = await fetch(`${uploadUrl}?key=${encodeURIComponent(uploadKey)}`, {
+                method: 'PUT',
+                headers: {
+                   'Authorization': `Bearer ${uploadToken}`,
+                   'X-Content-Type': 'application/pdf',
+                   'X-Filename': filename || 'document.pdf'
+                },
+                body: Buffer.from(pdfBuffer)
+             });
+             
+             if (!uploadRes.ok) {
+                 throw new Error(`Upload failed: ${uploadRes.status} ${await uploadRes.text()}`);
+             }
+             console.log(`[PDFContainer] Async Upload Success: ${uploadKey}`);
+         } catch (err) {
+             console.error(`[PDFContainer] Async Error:`, err);
+         }
+       })();
+       return;
+    }
+
+    // Synchronous Mode
+    console.log('[PDFContainer] Sync Mode (Sharp)...');
+    const pdfBuffer = await generatePdf();
+    
+    res.json({
+      success: true,
+      pdfBase64: Buffer.from(pdfBuffer).toString('base64'),
+      mimeType: 'application/pdf',
+      filename: filename || 'document.pdf'
+    });
+
+  } catch (error) {
+    console.error('[PDFContainer] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Helper: Generate QR
+async function generateQrWithRetry(url) {
+    if (!url) return '';
+    try {
+        return await QRCode.toDataURL(url, { margin: 0, width: 150 });
+    } catch (e) {
+        console.error('QR Error:', e);
+        return '';
+    }
+}
+
+// Helper: HTML Template
+function getHtmlTemplate(svgContent, metadata, qrDataUri) {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          /* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap'); REMOVED for Speed */
+          @page { size: A4 portrait; margin: 0; }
+          body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
+          .page { width: 210mm; height: 297mm; position: relative; box-sizing: border-box; background: white; overflow: hidden; page-break-after: always; }
+          .artwork-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 10mm; }
+          svg { max-width: 100%; max-height: 100%; }
+          .marketing-page { padding: 20mm; color: #374151; }
+          .header { text-align: center; margin-bottom: 20px; }
+          .logo { font-size: 24px; font-weight: 700; color: #0f766e; margin-bottom: 5px; display: block; }
+          .tagline { font-size: 14px; color: #6b7280; font-style: italic; }
+          .divider { height: 1px; background: #e5e7eb; margin: 20px 40px; }
+          .section { margin-bottom: 30px; }
+          .section-title { font-weight: 700; color: #1f2937; font-size: 16px; margin-bottom: 10px; }
+          .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; }
+          .list-item { font-size: 13px; color: #4b5563; margin-bottom: 5px; padding-left: 10px; }
+          .footer { position: absolute; bottom: 20mm; left: 0; width: 100%; text-align: center; font-size: 11px; color: #9ca3af; }
+        </style>
+      </head>
+      <body>
+        <div class="page artwork-page"><div class="artwork-container">${svgContent}</div></div>
+        ${metadata ? `
+        <div class="page marketing-page">
+          <div class="header"><span class="logo">HuePress</span><div class="tagline">Therapy-Grade Coloring Pages for Calm & Focus</div></div>
+          <div class="divider"></div>
+          <div class="section"><div class="section-title">Printing Tips</div><div class="card"><div class="list-item">• Select 'Fit to Page' in your printer settings</div><div class="list-item">• We recommend thick cardstock for best results</div><div class="list-item">• Choose 'High Quality' print mode for crisp lines</div></div></div>
+          <div class="section"><div class="section-title">Love This Design?</div><div class="card"><div style="font-size: 13px; margin-bottom: 5px;"><strong>Leave a review!</strong> It helps us create more of what you love.</div><div style="font-size: 12px; color: #6b7280;">Scan the QR code below or visit <strong>huepress.co/review</strong></div>${qrDataUri ? `<div style="margin-top:10px;"><img src="${qrDataUri}" width="80" /></div>` : ''}</div></div>
+          <div class="section"><div class="section-title">Share Your Masterpiece</div><div style="font-size: 13px;">Tag us <strong>@huepressco</strong> on Instagram or Facebook!</div></div>
+          <div class="footer">Need help? hello@huepress.co<br>&copy; ${new Date().getFullYear()} HuePress. All rights reserved.<br>Asset ID: #${metadata.assetId}</div>
+        </div>` : ''}
+      </body>
+      </html>`;
+}
+
+/**
+ * Generate WebP Thumbnail from SVG
+ * POST /thumbnail
+ * Body: { svgContent, width, uploadUrl?, uploadToken?, uploadKey? }
+ * Returns: WebP buffer as base64 (sync) or 202 Accepted (async)
+ */
+app.post('/thumbnail', async (req, res) => {
+  try {
+    const { svgContent, width = 1024, uploadUrl, uploadToken, uploadKey } = req.body;
+
+    if (!svgContent) {
+      return res.status(400).json({ error: 'Missing svgContent' });
+    }
+
+    // SSRF Protection [F-001]
+    validateUploadUrl(uploadUrl);
+
+    // SANITIZE INPUT
+    const safeSvgContent = sanitizeSvgContent(svgContent);
+
+    const generateThumbnail = async () => {
+      console.log(`[Thumbnail] Generating (width: ${width})...`);
+      const imageBuffer = await sharp(Buffer.from(safeSvgContent))
+        .resize(width, null, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
+        .flatten({ background: { r: 255, g: 255, b: 255 } })
+        .webp({ quality: 90 })
+        .toBuffer();
+      console.log(`[Thumbnail] Generated, size: ${imageBuffer.length} bytes`);
+      return imageBuffer;
+    };
+
+    // Async Mode
+    if (uploadUrl && uploadToken && uploadKey) {
+      res.status(202).json({ status: 'accepted', message: 'Thumbnail processing started' });
+      
+      (async () => {
+        try {
+          const imageBuffer = await generateThumbnail();
+          const uploadRes = await fetch(`${uploadUrl}?key=${encodeURIComponent(uploadKey)}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${uploadToken}`,
+              'X-Content-Type': 'image/webp'
+            },
+            body: imageBuffer
+          });
+          if (!uploadRes.ok) {
+            throw new Error(`Upload failed: ${uploadRes.status}`);
+          }
+          console.log(`[Thumbnail] Async upload success: ${uploadKey}`);
+        } catch (err) {
+          console.error(`[Thumbnail] Async error:`, err);
+        }
+      })();
+      return;
+    }
+
+    // Sync Mode
+    const imageBuffer = await generateThumbnail();
+    res.json({
+      success: true,
+      imageBase64: imageBuffer.toString('base64'),
+      mimeType: 'image/webp'
+    });
+
+  } catch (error) {
+    console.error('[Thumbnail] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * UNIFIED: Generate All Assets (Thumbnail, OG, PDF)
+ * POST /generate-all
+ * Body: { 
+ *   svgContent, title, assetId, description,
+ *   thumbnailUploadUrl, thumbnailUploadKey,
+ *   ogUploadUrl, ogUploadKey,
+ *   pdfUploadUrl, pdfUploadKey, pdfFilename,
+ *   uploadToken
+ * }
+ * Returns: { success: true, results: { thumbnail, og, pdf } }
+ * 
+ * This endpoint processes all assets SEQUENTIALLY to ensure:
+ * - Thumbnail is generated first
+ * - OG uses the generated thumbnail
+ * - PDF is fully generated before response
+ */
+app.post('/generate-all', async (req, res) => {
+  const startTime = Date.now();
+  const results = { thumbnail: null, og: null, pdf: null };
+  
+  try {
+    const {
+      svgContent, title, assetId, description = '', slug,
+      thumbnailUploadUrl, thumbnailUploadKey,
+      ogUploadUrl, ogUploadKey,
+      pdfUploadUrl, pdfUploadKey, pdfFilename,
+      uploadToken
+    } = req.body;
+
+    const displayId = (assetId || "").replace(/^HP-[A-Z]+-/, '');
+    const publicUrl = slug ? `https://huepress.co/coloring-pages/${slug}-${assetId}` : `https://huepress.co`;
+
+    if (!svgContent) {
+      return res.status(400).json({ error: 'Missing svgContent' });
+    }
+    if (!uploadToken) {
+      return res.status(400).json({ error: 'Missing uploadToken' });
+    }
+
+    // SSRF Protection [F-001] - Validate all upload URLs
+    validateUploadUrl(thumbnailUploadUrl);
+    validateUploadUrl(ogUploadUrl);
+    validateUploadUrl(pdfUploadUrl);
+
+    // SANITIZE INPUT
+    const safeSvgContent = sanitizeSvgContent(svgContent);
+
+    // Ensure queues are initialized before processing
+    await waitForQueues();
+    
+    console.log(`[GenerateAll] Starting for "${title}" (assetId: ${assetId})`);
+
+    // [F-004] PARALLEL PROCESSING: Thumbnail and OG are independent - run in parallel
+    // PDF generation follows after (depends on safeSvgContent being ready, which it already is)
+    
+    // Define async generators that return results
+    const generateThumbnail = async () => {
+      if (!thumbnailUploadUrl || !thumbnailUploadKey) return null;
+      
+      console.log(`[GenerateAll] Generating Thumbnail...`);
+      const thumbSize = 600;
+      const bannerHeight = 50;
+      const totalHeight = thumbSize + bannerHeight;
+      
+      // Step 1a: Resize SVG to 1:1 square
+      const artBuffer = await sharp(Buffer.from(safeSvgContent))
+        .resize(thumbSize, thumbSize, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+        .flatten({ background: { r: 255, g: 255, b: 255 } })
+        .png()
+        .toBuffer();
+      
+      // Step 1b: Create banner SVG with copyright info
+      const currentYear = new Date().getFullYear();
+      const bannerSvg = `
+        <svg width="${thumbSize}" height="${bannerHeight}">
+          <rect fill="#1F2937" width="${thumbSize}" height="${bannerHeight}"/>
+          <style>
+            .domain { font: bold 16px 'Inter', 'FreeSans', sans-serif; fill: #FFFFFF; }
+            .id { font: 24px 'Inter', 'FreeSans', sans-serif; fill: #9CA3AF; }
+            .meta { font: 10px 'Inter', 'FreeSans', sans-serif; fill: #9CA3AF; }
+            .notice { font: 9px 'Inter', 'FreeSans', sans-serif; fill: #6B7280; }
+          </style>
+          <text x="15" y="17" class="domain">huepress.co</text>
+          <text x="${thumbSize - 15}" y="32" text-anchor="end" class="id">#${displayId}</text>
+          <text x="15" y="32" class="meta">${currentYear} HuePress. All rights reserved.</text>
+          <text x="15" y="44" class="notice">Low-res preview only. Get print-quality PDFs at huepress.co</text>
+        </svg>
+      `;
+      
+      // Step 1c: Composite art + banner
+      const thumbnailBuffer = await sharp({
+        create: { width: thumbSize, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
+      })
+      .composite([
+        { input: artBuffer, top: 0, left: 0 },
+        { input: Buffer.from(bannerSvg), top: thumbSize, left: 0 }
+      ])
+      .webp({ quality: 85 })
+      .toBuffer();
+      
+      console.log(`[GenerateAll] Thumbnail generated: ${thumbnailBuffer.length} bytes. Uploading...`);
+      
+      const thumbRes = await fetchWithRetry(`${thumbnailUploadUrl}?key=${encodeURIComponent(thumbnailUploadKey)}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${uploadToken}`,
+          'X-Content-Type': 'image/webp'
+        },
+        body: thumbnailBuffer
+      });
+      
+      if (!thumbRes.ok) {
+        throw new Error(`Thumbnail upload failed: ${thumbRes.status}`);
+      }
+      console.log(`[GenerateAll] Thumbnail uploaded successfully`);
+      return { success: true, size: thumbnailBuffer.length };
+    };
+    
+    const generateOgImage = async () => {
+      if (!ogUploadUrl || !ogUploadKey) return null;
+      
+      console.log(`[GenerateAll] Generating OG Image...`);
+      const width = 1200;
+      const height = 630;
+      
+      // 1. Base Layer: Generic Template Overlay
+      const templatePath = path.join(__dirname, 'og_template.svg');
+      let templateBuffer = null;
+      if (fs.existsSync(templatePath)) {
+        templateBuffer = fs.readFileSync(templatePath);
+      }
+
+      // 2. Prepare Layers
+      const layers = [];
+      
+      // Add Template Layer FIRST
+      if (templateBuffer) {
+        layers.push({ input: templateBuffer, top: 0, left: 0 });
+      }
+
+      // Layer A: Art from SVG (NO banner) - placed on the RIGHT side
+      if (safeSvgContent) {
+        try {
+          const ogArt = await sharp(Buffer.from(safeSvgContent))
+            .resize(450, 500, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 0 } })
+            .flatten({ background: { r: 255, g: 255, b: 255 } })
+            .png()
+            .toBuffer();
+          
+          const artMeta = await sharp(ogArt).metadata();
+          const artW = artMeta.width || 450;
+          const artH = artMeta.height || 500;
+          
+          const artLeft = 900 - Math.round(artW / 2);
+          const artTop = 315 - Math.round(artH / 2);
+          
+          console.log(`[GenerateAll] OG Art: ${artW}x${artH}, pos: (${artLeft}, ${artTop})`);
+          
+          layers.push({ input: ogArt, left: artLeft, top: artTop });
+        } catch (e) {
+          console.error('[GenerateAll] OG art processing error:', e.message);
+        }
+      }
+
+      // Layer C: Dynamic Text
+      const maxTitleChars = 22;
+      const titleLines = [];
+      const words = (title || 'Coloring Page').split(' ');
+      let currentLine = words[0];
+
+      for (let i = 1; i < words.length; i++) {
+        if ((currentLine + " " + words[i]).length < maxTitleChars) {
+          currentLine += " " + words[i];
+        } else {
+          titleLines.push(currentLine);
+          currentLine = words[i];
+        }
+      }
+      titleLines.push(currentLine);
+      
+      const displayLines = titleLines.slice(0, 3);
+      if (titleLines.length > 3) {
+         displayLines[2] = displayLines[2].substring(0, displayLines[2].length - 3) + "...";
+      }
+
+      const lineHeight = 60;
+      const startY = 280;
+      const titleHeight = displayLines.length * lineHeight;
+      const subtitleY = startY + titleHeight + 20;
+
+      const safeDescription = "Printable Coloring Page"; 
+
+      const titleSvg = displayLines.map((line, i) => 
+        `<tspan x="60" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`
+      ).join('');
+
+      const textSvg = `
+        <svg width="${width}" height="${height}">
+          <style>
+             .title { font: bold 48px 'Inter', 'FreeSans', sans-serif; fill: #0f766e; }
+             .subtitle { font: 24px 'Inter', 'FreeSans', sans-serif; fill: #374151; }
+          </style>
+          <text x="60" y="${startY}" class="title">${titleSvg}</text>
+          <text x="60" y="${subtitleY}" class="subtitle">${safeDescription}</text>
+        </svg>
+      `;
+      layers.push({ input: Buffer.from(textSvg), top: 0, left: 0 });
+
+      
+      // Composite all
+      const ogBuffer = await sharp({
+        create: { width, height, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
+      })
+      .composite(layers)
+      .png()
+      .toBuffer();
+      console.log(`[GenerateAll] OG generated: ${ogBuffer.length} bytes. Uploading...`);
+      
+      const ogRes = await fetchWithRetry(`${ogUploadUrl}?key=${encodeURIComponent(ogUploadKey)}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${uploadToken}`,
+          'X-Content-Type': 'image/png'
+        },
+        body: ogBuffer
+      });
+      
+      if (!ogRes.ok) {
+        throw new Error(`OG upload failed: ${ogRes.status}`);
+      }
+      console.log(`[GenerateAll] OG uploaded successfully`);
+      return { success: true, size: ogBuffer.length };
+    };
+    
+    // [F-004] Execute Thumbnail and OG via queues (concurrency=1 each)
+    // This ensures only one thumbnail and one OG image is generated at a time across all requests
+    console.log(`[GenerateAll] Queuing image generation (Thumb queue: ${thumbnailQueue.size}, OG queue: ${ogQueue.size})...`);
+    
+    const [thumbnailResult, ogResult] = await Promise.all([
+      thumbnailQueue.add(async () => {
+        console.log(`[Queue] Thumbnail job started for ${assetId}`);
+        return generateThumbnail();
+      }).catch(err => {
+        console.error(`[GenerateAll] Thumbnail generation FAILED:`, err.message, err.stack);
+        return { success: false, error: err.message };
+      }),
+      ogQueue.add(async () => {
+        console.log(`[Queue] OG job started for ${assetId}`);
+        return generateOgImage();
+      }).catch(err => {
+        console.error(`[GenerateAll] OG generation FAILED:`, err.message, err.stack);
+        return { success: false, error: err.message };
+      })
+    ]);
+    
+    results.thumbnail = thumbnailResult;
+    results.og = ogResult;
+    
+    // Log detailed results including any errors
+    if (thumbnailResult?.success === false && thumbnailResult?.error) {
+      console.error(`[GenerateAll] Thumbnail error detail: ${thumbnailResult.error}`);
+    }
+    if (ogResult?.success === false && ogResult?.error) {
+      console.error(`[GenerateAll] OG error detail: ${ogResult.error}`);
+    }
+    console.log(`[GenerateAll] Parallel generation complete. Thumbnail: ${thumbnailResult?.success}, OG: ${ogResult?.success}`);
+
+    // 3. PDF - Generate TRUE VECTOR PDF using pdfkit + svg-to-pdfkit via queue
+    // This converts SVG paths directly to PDF vector drawing commands - no rasterization!
+    if (pdfUploadUrl && pdfUploadKey) {
+      console.log(`[GenerateAll] Queuing PDF generation (PDF queue: ${pdfQueue.size})...`);
+      
+      await pdfQueue.add(async () => {
+        console.log(`[Queue] PDF job started for ${assetId}`);
+      
+      const PDFDocument = require('pdfkit');
+      const SVGtoPDF = require('svg-to-pdfkit');
+      const fs = require('fs');
+      const path = require('path');
+      
+      try {
+        // A4 dimensions in points (72 dpi)
+        const A4_WIDTH_PT = 595.28;
+        const A4_HEIGHT_PT = 841.89;
+        const MARGIN = 28.35; // 10mm margin safe for most printers
+
+        // 1. Parse SVG Dimensions FIRST to determine orientation
+        const svgWidthMatch = safeSvgContent.match(/width=["']?(\d+(?:\.\d+)?)/);
+        const svgHeightMatch = safeSvgContent.match(/height=["']?(\d+(?:\.\d+)?)/);
+        const viewBoxMatch = safeSvgContent.match(/viewBox=["']([^"']+)/);
+        
+        let svgWidth = svgWidthMatch ? parseFloat(svgWidthMatch[1]) : 800;
+        let svgHeight = svgHeightMatch ? parseFloat(svgHeightMatch[1]) : 800;
+        
+        if (viewBoxMatch) {
+          const parts = viewBoxMatch[1].split(/\s+|,/).map(parseFloat);
+          if (parts.length === 4) {
+            svgWidth = parts[2];
+            svgHeight = parts[3];
+          }
+        }
+        
+        // 2. Determine best orientation to maximize size
+        // If wider than tall, rotate page to Landscape
+        const isLandscape = svgWidth > svgHeight;
+        const pageLayout = isLandscape ? 'landscape' : 'portrait';
+        
+        console.log(`[GenerateAll] SVG Size: ${svgWidth}x${svgHeight}. selecting layout: ${pageLayout}`);
+
+        // Create PDF document with determined layout
+        const chunks = [];
+        const pdfDoc = new PDFDocument({
+          size: 'A4',
+          layout: pageLayout, // Dynamic layout
+          margin: MARGIN,
+          autoFirstPage: true,
+          info: {
+            Title: title || 'Coloring Page',
+            Author: 'HuePress',
+            Subject: (description || 'Therapy-Grade Coloring Page') + ` • ID: #${displayId} • ${publicUrl}`,
+            Keywords: `coloring, page, printable, kids, art, huepress, therapy, vector, #${displayId}`,
+            Creator: 'HuePress',
+            Producer: 'HuePress'
+          }
+        });
+        
+        pdfDoc.on('data', chunk => chunks.push(chunk));
+        
+        // 3. Calculate scaling to fit within SAFE MARGINS
+        // Determine available page width/height based on orientation
+        const pageWidth = isLandscape ? A4_HEIGHT_PT : A4_WIDTH_PT; // Width is 842 in landscape
+        const pageHeight = isLandscape ? A4_WIDTH_PT : A4_HEIGHT_PT; // Height is 595 in landscape
+        
+        const availWidth = pageWidth - (2 * MARGIN);
+        const availHeight = pageHeight - (2 * MARGIN);
+        
+        const scaleX = availWidth / svgWidth;
+        const scaleY = availHeight / svgHeight;
+        const scale = Math.min(scaleX, scaleY);
+        
+        const scaledWidth = svgWidth * scale;
+        const scaledHeight = svgHeight * scale;
+        
+        // Center content in the safe area
+        const x = MARGIN + (availWidth - scaledWidth) / 2;
+        const y = MARGIN + (availHeight - scaledHeight) / 2;
+        
+        console.log(`[GenerateAll] Scaling to fit ${availWidth.toFixed(1)}x${availHeight.toFixed(1)} safe area. Scale: ${scale.toFixed(3)}`);
+        
+        // Convert SVG to PDF (TRUE VECTOR CONVERSION!)
+        SVGtoPDF(pdfDoc, safeSvgContent, x, y, {
+          width: scaledWidth,
+          height: scaledHeight,
+          preserveAspectRatio: 'xMidYMid meet'
+        });
+        
+        console.log(`[GenerateAll] Page 1: Vector artwork added (${pageLayout})`);
+        
+        // Page 2: Marketing page (ALWAYS PORTRAIT)
+        // Layer 1: Vector Background
+        // Note: Intentionally switching back to Portrait for standardized marketing page
+        pdfDoc.addPage({ size: 'A4', layout: 'portrait', margin: 0 });
+        
+        const templatePath = path.join(__dirname, 'marketing_template.svg');
+        if (fs.existsSync(templatePath)) {
+          const templateSvg = fs.readFileSync(templatePath, 'utf8');
+          // Draw the template as background (full A4)
+          SVGtoPDF(pdfDoc, templateSvg, 0, 0, {
+            width: A4_WIDTH_PT,
+            height: A4_HEIGHT_PT,
+            preserveAspectRatio: 'xMidYMid meet'
+          });
+          console.log(`[GenerateAll] Page 2: Background SVG added`);
+        }
+        
+        const currentYear = new Date().getFullYear();
+        
+        // --- NATIVE TEXT OVERLAYS ---
+        // Coordinates ADJUSTED based on user feedback/screenshots
+        
+        // 1. Tagline (Under Logo)
+        // Matches visual: "Therapy-Grade..." under HuePress logo
+        pdfDoc.fontSize(12).font('Helvetica-Oblique').fillColor('#787878');
+        pdfDoc.text('Therapy-Grade Coloring Pages for Calm & Focus', 0, 120, { align: 'center', width: A4_WIDTH_PT });
+        
+        // 2. Section: Printing Tips
+        // The header is ABOVE the first box in the screenshot
+        // Updated based on final local test: 168
+        const sectionY = 168;
+        pdfDoc.fontSize(12).font('Helvetica-Bold').fillColor('#333333');
+        pdfDoc.text('Printing Tips', 57, sectionY);
+        
+        // Inside First Box (was overlapping header, needs to move down)
+        pdfDoc.fontSize(10).font('Helvetica').fillColor('#4f4f4f');
+        const tipY = 202; 
+        pdfDoc.text("• Select 'Fit to Page' in your printer settings", 75, tipY);
+        pdfDoc.text("• We recommend thick cardstock for the best results", 75, tipY + 16);
+        pdfDoc.text("• Choose 'High Quality' print mode for crisp lines", 75, tipY + 32);
+        
+        // 3. Section: Love This Design?
+        // Header above 2nd box, updated to 285
+        const loveY = 285; 
+        pdfDoc.fontSize(12).font('Helvetica-Bold').fillColor('#333333');
+        pdfDoc.text("Love This Design? We'd Love to Hear!", 57, loveY);
+        
+        // Inside Second Box
+        const reviewTextY = 321;
+        
+        // Right side text
+        pdfDoc.fontSize(11).font('Helvetica-Bold').fillColor('#333333');
+        pdfDoc.text("Leave a quick review — it means the world to us!", 180, reviewTextY + 5);
+        
+        pdfDoc.fontSize(10).font('Helvetica').fillColor('#4f4f4f');
+        pdfDoc.text("Scan the QR or visit huepress.co/review", 180, reviewTextY + 25);
+        pdfDoc.text("Your feedback shapes our future designs.", 180, reviewTextY + 40);
+        
+        // 4. Section: Share Your Masterpiece
+        const shareY = 419;
+        pdfDoc.fontSize(12).font('Helvetica-Bold').fillColor('#333333');
+        pdfDoc.text("Share Your Masterpiece!", 57, shareY);
+        
+        // Inside Third Box
+        const shareTextY = 454;
+        pdfDoc.fontSize(10).font('Helvetica').fillColor('#4f4f4f');
+        pdfDoc.text("We love seeing your finished work! Tag us on social and inspire other parents & kids.", 75, shareTextY);
+        
+        pdfDoc.fontSize(11).font('Helvetica-Bold').fillColor('#000000');
+        pdfDoc.text("@huepressco  #HuePressColoring", 75, shareTextY + 20);
+        
+        // 5. Section: Connect With Us
+        const connectY = 527; 
+        pdfDoc.fontSize(12).font('Helvetica-Bold').fillColor('#333333');
+        pdfDoc.text("Connect With Us", 57, connectY);
+        
+        // Inside Fourth Box
+        const socialY = 560;
+        
+        pdfDoc.fontSize(10).font('Helvetica').fillColor('#4f4f4f');
+        // Adjusted X columns for perfect icon alignment
+        const col1X = 102;
+        const col2X = 300;
+
+        pdfDoc.text("instagram.com/huepressco", col1X, socialY);
+        pdfDoc.text("facebook.com/huepressco", col2X, socialY);
+
+        pdfDoc.text("pinterest.com/huepressco", col1X, socialY + 24);
+        pdfDoc.text("huepress.co", col2X, socialY + 24);
+        
+        // 6. Section: Discover More
+        const discoverY = 646;
+        pdfDoc.fontSize(12).font('Helvetica-Bold').fillColor('#333333');
+        pdfDoc.text("Discover 500+ More Designs", 57, discoverY);
+        
+        // Inside Fifth Box
+        const discoverTextY = 680;
+        pdfDoc.fontSize(10).font('Helvetica').fillColor('#4f4f4f');
+        pdfDoc.text("New therapy-grade coloring pages added every week.", 75, discoverTextY);
+        pdfDoc.text("Visit huepress.co to explore our full collection — animals, nature, holidays, and much more!", 75, discoverTextY + 20);
+        
+        // Footer
+        const footerY = A4_HEIGHT_PT - 50;
+        pdfDoc.fontSize(8).font('Helvetica').fillColor('#969696');
+        pdfDoc.text("Need help? Email us anytime: hello@huepress.co", 0, footerY, { align: 'center', width: A4_WIDTH_PT });
+        pdfDoc.text(`© ${currentYear} HuePress. All rights reserved.`, 0, footerY + 12, { align: 'center', width: A4_WIDTH_PT });
+        pdfDoc.text(`Asset ID: #${displayId}`, 0, footerY + 24, { align: 'center', width: A4_WIDTH_PT });
+        
+        console.log(`[GenerateAll] Page 2: Hybrid Page generated (SVG Background + Native Text)`);
+        
+        // Finalize PDF and get buffer
+        const pdfPromise = new Promise((resolve, reject) => {
+          pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+          pdfDoc.on('error', reject);
+        });
+        
+        pdfDoc.end();
+        const pdfBuffer = await pdfPromise;
+        
+        console.log(`[GenerateAll] VECTOR PDF generated: ${pdfBuffer.length} bytes. Uploading...`);
+        
+        const pdfRes = await fetchWithRetry(`${pdfUploadUrl}?key=${encodeURIComponent(pdfUploadKey)}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${uploadToken}`,
+            'X-Content-Type': 'application/pdf',
+            'X-Filename': pdfFilename || 'document.pdf'
+          },
+          body: pdfBuffer
+        });
+        
+        if (!pdfRes.ok) {
+          throw new Error(`PDF upload failed: ${pdfRes.status}`);
+        }
+        results.pdf = { success: true, size: pdfBuffer.length, type: 'vector-pdfkit' };
+        console.log(`[GenerateAll] VECTOR PDF uploaded successfully`);
+        
+        } catch (pdfErr) {
+          console.error('[GenerateAll] PDF Error:', pdfErr.message);
+          results.pdf = { success: false, error: pdfErr.message };
+        }
+      }); // End pdfQueue.add()
+    }
+
+    const elapsed = Date.now() - startTime;
+    console.log(`[GenerateAll] ALL DONE for "${title}" in ${elapsed}ms`);
+    
+    res.json({ success: true, results, elapsedMs: elapsed });
+    
+  } catch (error) {
+    console.error('[GenerateAll] Error:', error);
+    res.status(500).json({ error: error.message, results });
+  }
+});
+
+/**
+ * Future: AI Colorization endpoint
+ * POST /colorize
+ */
+app.post('/colorize', async (req, res) => {
+  // TODO: Implement Gemini + vectorizer.ai integration
+  res.status(501).json({ 
+    error: 'Not implemented yet',
+    message: 'AI colorization coming soon'
+  });
+});
+
+// Helper functions
+function truncate(str, maxLength) {
+  if (str.length <= maxLength) return str;
+  return str.substring(0, maxLength - 3) + '...';
+}
+
+function wrapTextToSvg(text, maxLength, x, startY, lineHeight) {
+  if (!text) return "";
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const word = words[i];
+    if ((currentLine + " " + word).length < maxLength) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  lines.push(currentLine);
+
+  // Return tspan elements
+  // We limit to 3 lines max to prevent overflow
+  const maxLines = 3;
+  return lines.slice(0, maxLines).map((line, i) => {
+     // If it's the last allowed line but we have more, append ...
+     if (i === maxLines - 1 && lines.length > maxLines) {
+        line += "...";
+     }
+     return `<tspan x="${x}" y="${startY + (i * lineHeight)}">${escapeXml(line)}</tspan>`;
+  }).join('');
+}
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`[Processing] Server running on port ${PORT} (v1.1 - Queue Enabled)`);
+});
