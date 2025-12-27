@@ -44,7 +44,7 @@ const plans = [
 const faqs = [
   { question: "What makes HuePress different from free sites?", answer: "We focus on quality over quantity. Every design features therapy-grade bold lines, no ads, instant downloads, and a curated aesthetic you'd be proud to display on your fridge." },
   { question: "Can I cancel anytime?", answer: "Absolutely! Cancel with one click, no questions asked. You'll keep access until your billing period ends." },
-  { question: "What format are the downloads?", answer: "All downloads are high-resolution vector PDFs. Print at any size without quality loss—perfect for standard paper or poster-sized prints." },
+  { question: "What format are the downloads?", answer: "All downloads are high-resolution vector PDFs. Print at any size without quality loss. Perfect for standard paper or poster-sized prints." },
   { question: "Are these good for kids with motor delays?", answer: "Yes! Our 'Bold & Easy' designs feature thick, clear lines specifically designed to support fine motor development. Many OTs and therapists use our pages in sessions." },
   { question: "How often do you add new designs?", answer: "New designs drop every Sunday. We also create trending theme packs (like Capybara, Coquette) within 48 hours of viral moments." },
 ];
@@ -148,7 +148,7 @@ export default function PricingPage() {
               >
                 {plan.popular && (
                 <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-secondary text-white text-sm font-bold px-6 py-2 rounded-md whitespace-nowrap shadow-lg ring-2 ring-white flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-current" /> BEST VALUE — Save 25%
+                    <Star className="w-4 h-4 fill-current" /> BEST VALUE | Save 25%
                   </div>
                 )}
                 <div className="text-center mb-6">

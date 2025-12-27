@@ -12,7 +12,7 @@ interface SEOProps {
 
 const defaults = {
   title: "HuePress | Curated Coloring Pages for Modern Moms",
-  description: "Therapy-grade, bold coloring pages curated for design-conscious parents and pediatric therapists. No ads, no clutter—just fridge-worthy art.",
+  description: "Therapy-grade, bold coloring pages curated for design-conscious parents and pediatric therapists. No ads, no clutter. Just fridge-worthy art.",
   image: "/og-image.png",
   url: "https://huepress.co",
   type: "website" as const,

@@ -507,7 +507,7 @@ export default function ResourceDetailPage() {
              <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Link to="/" className="hover:text-primary transition-colors">Home</Link>
                 <ChevronRight className="w-4 h-4 text-gray-300" />
-                <Link to="/vault" className="hover:text-primary transition-colors">Library</Link>
+                <Link to="/vault" className="hover:text-primary transition-colors">Vault</Link>
                 {asset.category && (
                   <>
                     <ChevronRight className="w-4 h-4 text-gray-300" />

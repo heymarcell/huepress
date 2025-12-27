@@ -26,7 +26,7 @@ export default function AboutPage() {
               Hi, I'm Sarah. I started HuePress with a simple mission: to create coloring pages that don't frustrate kids (or parents).
             </p>
             <p className="mb-6">
-              We've all been there—searching for "free coloring pages" only to find low-quality pixelated images, aggressive ads, or designs so complex they end up in the trash bin after 5 minutes of struggle.
+              We've all been there: searching for "free coloring pages" only to find low-quality pixelated images, aggressive ads, or designs so complex they end up in the trash bin after 5 minutes of struggle.
             </p>
             <h3 className="font-serif text-ink text-2xl font-bold mt-10 mb-4">Why "Bold & Easy"?</h3>
             <p className="mb-6">
@@ -42,14 +42,14 @@ export default function AboutPage() {
               <li>Themes that spark legitimate joy</li>
             </ul>
             <p>
-              HuePress is a small, independent publisher. When you join the club, you're not just buying PDFs—you're supporting a philosophy that childhood should be creative, calm, and ad-free.
+              HuePress is a small, independent publisher. When you join the club, you're not just buying PDFs. You're supporting a philosophy that childhood should be creative, calm, and ad-free.
             </p>
           </div>
 
           <div className="mt-16 text-center border-t border-gray-100 pt-10">
             <h3 className="font-serif text-ink text-xl font-bold mb-4">Ready to join us?</h3>
             <Link to="/pricing">
-              <Button variant="primary" size="lg">Join the Club — $5/mo</Button>
+              <Button variant="primary" size="lg">Join the Club ($5/mo)</Button>
             </Link>
           </div>
         </div>

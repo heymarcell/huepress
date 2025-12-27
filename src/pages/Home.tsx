@@ -43,7 +43,7 @@ const features = [
   },
   { 
     title: "Zero Ads, Zero Clutter", 
-    description: "A calm, focused experience. No pop-ups, no distractions—just beautiful art.", 
+    description: "A calm, focused experience. No pop-ups, no distractions. Just beautiful art.", 
     icon: Leaf 
   },
   { 
@@ -116,7 +116,7 @@ export default function HomePage() {
                   </Heading>
                   
                   <Text variant="large" className="mb-8 max-w-lg mx-auto lg:mx-0">
-                    Your full library awaits. New designs drop every Sunday — 
+                    Your full library awaits. New designs drop every Sunday. 
                     dive in and find your next masterpiece.
                   </Text>
                   
@@ -242,7 +242,7 @@ export default function HomePage() {
                </div>
             </div>
             <p className="text-gray-500 text-sm">
-               "The only coloring pages my son actually finishes." — <span className="font-bold text-ink">Sarah, Mom of 2</span>
+               "The only coloring pages my son actually finishes." <span className="font-bold text-ink">Sarah, Mom of 2</span>
             </p>
             <div className="hidden md:block w-px h-8 bg-gray-200"></div>
             <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">Trusted by Teachers & OTs</p>
@@ -510,7 +510,7 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
              <div>
                 <h3 className="font-serif text-2xl mb-1">Your next masterpiece awaits </h3>
-                <p className="text-white/70 text-sm">New designs added every Sunday — dive in!</p>
+                <p className="text-white/70 text-sm">New designs added every Sunday. Dive in!</p>
              </div>
              <Link to="/vault">
                <Button variant="secondary" className="shadow-lg shadow-white/10 hover:scale-105 transition-transform">Browse the Vault</Button>

@@ -122,7 +122,7 @@ export default function UserDashboard() {
                       <Button>Explore Designs</Button>
                     </Link>
                   </div>
-                ) : (
+                ) : likes.length <= 8 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {likes.map((asset) => (
                       <ResourceCard 
@@ -136,6 +136,31 @@ export default function UserDashboard() {
                         isLocked={false} 
                         isSubscriber={true}
                       />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-neutral-100 shadow-sm overflow-hidden">
+                    {likes.map((asset, idx) => (
+                      <Link 
+                        key={asset.id} 
+                        to={asset.asset_id && asset.slug ? `/coloring-pages/${asset.slug}-${asset.asset_id}` : `/vault/${asset.id}`}
+                        className={`flex items-center gap-4 px-4 py-3 hover:bg-neutral-50 transition-colors ${idx !== likes.length - 1 ? 'border-b border-neutral-100' : ''}`}
+                      >
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-neutral-100 flex-shrink-0">
+                          {asset.image_url ? (
+                            <img src={asset.image_url} alt={asset.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-neutral-300">
+                              <Heart className="w-5 h-5" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-neutral-900 truncate">{asset.title}</h4>
+                          {asset.asset_id && <span className="text-xs text-neutral-400">#{asset.asset_id}</span>}
+                        </div>
+                        <Heart className="w-4 h-4 text-red-400 fill-red-400 flex-shrink-0" />
+                      </Link>
                     ))}
                   </div>
                 )}
@@ -154,27 +179,37 @@ export default function UserDashboard() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                      {history.map((item, idx) => (
-                        <div key={`${item.id}-${idx}`} className="group relative">
-                           <ResourceCard 
-                             id={item.id}
-                             assetId={item.asset_id}
-                             title={item.title}
-                             imageUrl={item.image_url}
-                             slug={item.slug}
-                             tags={item.tags}
-                             isLocked={false}
-                             isSubscriber={true}
-                           />
-                           <div className="mt-2 text-xs text-neutral-400 flex justify-between px-1">
-                              <span className="capitalize">{item.type || "download"}</span>
-                              <span>{new Date(item.downloaded_at).toLocaleDateString()}</span>
-                           </div>
+                  <div className="bg-white rounded-xl border border-neutral-100 shadow-sm overflow-hidden">
+                    {history.map((item, idx) => (
+                      <Link 
+                        key={`${item.id}-${idx}`}
+                        to={item.asset_id && item.slug ? `/coloring-pages/${item.slug}-${item.asset_id}` : `/vault/${item.id}`}
+                        className={`flex items-center gap-4 px-4 py-3 hover:bg-neutral-50 transition-colors ${idx !== history.length - 1 ? 'border-b border-neutral-100' : ''}`}
+                      >
+                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-neutral-100 flex-shrink-0">
+                          {item.image_url ? (
+                            <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-neutral-300">
+                              <History className="w-4 h-4" />
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-neutral-900 truncate">{item.title}</h4>
+                          <span className="text-xs text-neutral-400">
+                            {new Date(item.downloaded_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 ${
+                          item.type === 'print' 
+                            ? 'bg-blue-50 text-blue-600' 
+                            : 'bg-green-50 text-green-600'
+                        }`}>
+                          {item.type === 'print' ? 'Printed' : 'Downloaded'}
+                        </span>
+                      </Link>
+                    ))}
                   </div>
                 )}
               </>
