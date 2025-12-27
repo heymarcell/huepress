@@ -116,156 +116,154 @@ export default function VaultPage() {
         keywords="coloring pages, bold lines, therapy grade, printable pdf, autism friendly, adhd friendly"
       />
       
-      <div className="container mx-auto px-6 py-12 lg:py-16">
-        <div className="flex flex-col md:flex-row items-end justify-between gap-6 mb-10">
-          <div>
-            <Heading as="h1" variant="h1" className="mb-2">The Vault</Heading>
-            <p className="text-gray-500">500+ fridge-worthy designs, ready to print</p>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <Heading as="h1" variant="h1" className="mb-2">The Vault</Heading>
+          <p className="text-gray-500">500+ fridge-worthy designs, ready to print</p>
+        </div>
 
-        {/* Search Bar */}
-        <SearchBar onSearch={handleSearch} placeholder="Try 'Dinosaur', 'Space', or 'Calm'..." />
-
-        {/* Sorting & Applied Filters */}
-        <div className="flex flex-col gap-4 mb-6">
-          <div className="flex items-center justify-between">
-            {/* Filter Button + Applied Filter Chips */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <button
-                onClick={() => setShowMobileFilters(!showMobileFilters)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
-                  showMobileFilters 
-                    ? 'bg-primary text-white border-primary' 
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
-                }`}
-              >
-                <Filter className="w-4 h-4" />
-                Filters
-                {(selectedCategory || selectedSkill || selectedTag) && (
-                  <span className="bg-white/20 text-xs px-1.5 py-0.5 rounded-full">
-                    {[selectedCategory, selectedSkill, selectedTag].filter(Boolean).length}
-                  </span>
-                )}
-              </button>
-              
-              {/* Applied Filter Chips */}
-              {selectedCategory && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
-                  {selectedCategory}
-                  <button onClick={() => setSelectedCategory("")} className="hover:bg-primary/20 rounded-full p-0.5">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {selectedTag && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
-                  {selectedTag}
-                  <button onClick={() => setSelectedTag("")} className="hover:bg-primary/20 rounded-full p-0.5">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {selectedSkill && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
-                  {selectedSkill}
-                  <button onClick={() => setSelectedSkill("")} className="hover:bg-primary/20 rounded-full p-0.5">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              
-              {(selectedCategory || selectedSkill || selectedTag) && (
-                <button 
-                  onClick={() => {
-                    setSelectedCategory("");
-                    setSelectedSkill("");
-                    setSelectedTag("");
-                  }}
-                  className="text-sm text-gray-500 hover:text-primary"
-                >
-                  Clear all
-                </button>
-              )}
-            </div>
-            
-            {/* Sort */}
-            <div className="flex items-center gap-2">
-              <ArrowUpDown className="w-4 h-4 text-gray-400" />
-              <select 
-                value={sortBy} 
-                onChange={(e) => setSortBy(e.target.value)}
-                className="text-sm font-medium text-ink bg-transparent border-none outline-none focus:ring-0 cursor-pointer"
-              >
-                 <option value="newest">Newest First</option>
-                 <option value="oldest">Oldest First</option>
-              </select>
-            </div>
+        {/* Search + Filters Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-6">
+          {/* Search Bar - Takes up most space */}
+          <div className="flex-1">
+            <SearchBar onSearch={handleSearch} placeholder="Try 'Dinosaur', 'Space', or 'Calm'..." />
           </div>
           
-          {/* Collapsible Filter Panel */}
-          {showMobileFilters && (
-            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm animate-in slide-in-from-top-2 duration-200">
-              <div className="grid gap-4 md:grid-cols-3">
-                {/* Category */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="">All Categories</option>
-                    {categoriesUI.map(c => (
-                      <option key={c.value} value={c.value}>{c.label}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                {/* Theme */}
-                {themesUI.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
-                    <select
-                      value={selectedTag}
-                      onChange={(e) => setSelectedTag(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
-                    >
-                      <option value="">All Themes</option>
-                      {themesUI.map(t => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                
-                {/* Skill */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Skill Level</label>
-                  <select
-                    value={selectedSkill}
-                    onChange={(e) => setSelectedSkill(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="">All Levels</option>
-                    {skillsUI.map(s => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
-                    ))}
-                  </select>
-                </div>
+          {/* Filter Button */}
+          <button
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-all whitespace-nowrap ${
+              showMobileFilters 
+                ? 'bg-primary text-white border-primary' 
+                : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
+            }`}
+          >
+            <Filter className="w-4 h-4" />
+            <span>Filters</span>
+            {(selectedCategory || selectedSkill || selectedTag) && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${showMobileFilters ? 'bg-white/20' : 'bg-primary text-white'}`}>
+                {[selectedCategory, selectedSkill, selectedTag].filter(Boolean).length}
+              </span>
+            )}
+          </button>
+          
+          {/* Sort Dropdown */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg">
+            <ArrowUpDown className="w-4 h-4 text-gray-400" />
+            <select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)}
+              className="text-sm font-medium text-ink bg-transparent border-none outline-none focus:ring-0 cursor-pointer"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+            </select>
+          </div>
+        </div>
+        
+        {/* Applied Filter Chips */}
+        {(selectedCategory || selectedSkill || selectedTag) && (
+          <div className="flex items-center gap-2 flex-wrap mb-4">
+            {selectedCategory && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
+                {selectedCategory}
+                <button onClick={() => setSelectedCategory("")} className="hover:bg-primary/20 rounded-full p-0.5">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {selectedTag && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
+                {selectedTag}
+                <button onClick={() => setSelectedTag("")} className="hover:bg-primary/20 rounded-full p-0.5">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {selectedSkill && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
+                {selectedSkill}
+                <button onClick={() => setSelectedSkill("")} className="hover:bg-primary/20 rounded-full p-0.5">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            <button 
+              onClick={() => {
+                setSelectedCategory("");
+                setSelectedSkill("");
+                setSelectedTag("");
+              }}
+              className="text-sm text-gray-500 hover:text-primary ml-2"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
+        
+        {/* Collapsible Filter Panel */}
+        {showMobileFilters && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-6 animate-in slide-in-from-top-2 duration-200">
+            <div className="grid gap-4 md:grid-cols-3">
+              {/* Category */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">All Categories</option>
+                  {categoriesUI.map(c => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
               </div>
               
-              <div className="flex justify-end mt-4 pt-4 border-t border-gray-100">
-                <button
-                  onClick={() => setShowMobileFilters(false)}
-                  className="text-sm font-medium text-primary hover:underline"
+              {/* Theme */}
+              {themesUI.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
+                  <select
+                    value={selectedTag}
+                    onChange={(e) => setSelectedTag(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">All Themes</option>
+                    {themesUI.map(t => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              {/* Skill */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Skill Level</label>
+                <select
+                  value={selectedSkill}
+                  onChange={(e) => setSelectedSkill(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
                 >
-                  Done
-                </button>
+                  <option value="">All Levels</option>
+                  {skillsUI.map(s => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
-          )}
-        </div>
-      </div>
+            
+            <div className="flex justify-end mt-4 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => setShowMobileFilters(false)}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
 
       {/* Grid with Injected Banner */}
         {isLoading ? (
