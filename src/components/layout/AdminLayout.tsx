@@ -1,7 +1,7 @@
 import { useUser, RedirectToSignIn } from "@clerk/clerk-react";
 import { Outlet } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Images, Plus, Settings, Sparkles } from "lucide-react";
+import { LayoutDashboard, Images, Plus, Settings, Sparkles, FileText } from "lucide-react";
 
 export function AdminLayout() {
   const { user, isLoaded } = useUser();
@@ -50,6 +50,7 @@ export function AdminLayout() {
     { path: "/admin/requests", label: "Requests", icon: Sparkles },
     { path: "/admin/assets", label: "Assets", icon: Images },
     { path: "/admin/assets/new", label: "Add Asset", icon: Plus },
+    { path: "/admin/blog", label: "Blog", icon: FileText },
   ];
 
   return (

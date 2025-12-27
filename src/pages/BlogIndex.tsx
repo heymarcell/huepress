@@ -79,12 +79,20 @@ export default function BlogIndex() {
         {/* Posts Grid */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {error ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">{error}</p>
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-32 h-44 mb-6 animate-fade-in">
+                <img src="/404-robot.svg" alt="Error robot" className="w-full h-full object-contain" />
+              </div>
+              <h2 className="font-serif text-h2 text-ink mb-2">Oops! Something went wrong</h2>
+              <p className="text-gray-500 max-w-md">We couldn't load the blog posts. Please try again later.</p>
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No posts yet. Check back soon!</p>
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-32 h-44 mb-6 animate-fade-in">
+                <img src="/404-robot.svg" alt="No posts robot" className="w-full h-full object-contain" />
+              </div>
+              <h2 className="font-serif text-h2 text-ink mb-2">Coming Soon!</h2>
+              <p className="text-gray-500 max-w-md">We're busy writing amazing content. Check back soon for parenting tips and coloring insights!</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

@@ -68,10 +68,13 @@ export default function BlogPost() {
     return (
       <>
         <SEO title="Post Not Found" />
-        <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
+          <div className="w-32 h-44 mb-6 animate-fade-in">
+            <img src="/404-robot.svg" alt="Post not found" className="w-full h-full object-contain" />
+          </div>
           <h1 className="font-serif text-h1 text-ink mb-4">Post Not Found</h1>
-          <p className="text-gray-500 mb-8">
-            Sorry, the post you're looking for doesn't exist.
+          <p className="text-gray-500 mb-8 max-w-md">
+            Sorry, the post you're looking for doesn't exist or has been removed.
           </p>
           <Link
             to="/blog"
