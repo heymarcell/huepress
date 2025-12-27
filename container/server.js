@@ -1607,5 +1607,5 @@ function wrapTextToSvg(text, maxLength, x, startY, lineHeight) {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`[Processing] Server running on port ${PORT}`);
+  console.log(`[Processing] Server running on port ${PORT} (v1.1 - Queue Enabled)`);
 });
