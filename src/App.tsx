@@ -24,6 +24,7 @@ const AdminAssetForm = lazy(() => import("./pages/admin/AssetForm"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const AdminDesignRequests = lazy(() => import("./pages/admin/DesignRequests"));
 const UserDashboard = lazy(() => import("./pages/UserDashboard"));
+const SettingsPage = lazy(() => import("./pages/Settings"));
 
 import ScrollToTop from "./components/ScrollToTop";
 import { ConsentProvider } from "./context/ConsentContext";
@@ -73,6 +74,7 @@ export default function App() {
         <Route path="privacy" element={<PrivacyPolicyPage />} />
         <Route path="terms" element={<TermsOfServicePage />} />
         <Route path="dashboard" element={<UserDashboard />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 

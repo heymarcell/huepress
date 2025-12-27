@@ -1,7 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useUser, useAuth } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useUser } from "@clerk/clerk-react";
 import { Link } from "react-router-dom";
-import { createPortalSession } from "./stripe";
 import { useState } from "react";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { Button } from "@/components/ui";
@@ -23,30 +22,12 @@ export function useSubscription() {
 
 
 export function AuthButtons() {
-  const { isSubscriber } = useSubscription();
-  const { getToken } = useAuth();
-  const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
+   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
     isOpen: false,
     title: "",
     message: "",
     variant: "info",
   });
-
-  const handleManageSubscription = async () => {
-    try {
-      const token = await getToken();
-      if (!token) return;
-      await createPortalSession(token);
-    } catch (error) {
-      console.error("Failed to open portal:", error);
-      setAlertState({
-        isOpen: true,
-        title: "Portal Error",
-        message: "Something went wrong loading the customer portal. Please try again.",
-        variant: "error"
-      });
-    }
-  };
 
   return (
     <div className="flex items-center gap-4">
@@ -63,14 +44,6 @@ export function AuthButtons() {
         </SignUpButton>
       </SignedOut>
       <SignedIn>
-        {isSubscriber && (
-          <button 
-            onClick={handleManageSubscription}
-            className="text-sm font-medium text-ink/70 hover:text-primary mr-4 transition-colors"
-          >
-            Manage Subscription
-          </button>
-        )}
         <UserButton afterSignOutUrl="/" />
       </SignedIn>
 

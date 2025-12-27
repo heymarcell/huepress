@@ -309,9 +309,10 @@ export default function ResourceDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [imageError, setImageError] = useState(false);
-  const { isSubscriber } = useSubscription();
+  const { isSubscriber, isSignedIn } = useSubscription();
 
   const [reviewStats, setReviewStats] = useState<{ avg: number | null; count: number }>({ avg: null, count: 0 });
+  const [isLiked, setIsLiked] = useState(false);
 
   useEffect(() => {
     const fetchAsset = async () => {
@@ -335,6 +336,16 @@ export default function ResourceDetailPage() {
 
         const data = await apiClient.assets.get(lookupId);
         setAsset(data);
+
+        // Check availability of like status
+        if (isSignedIn && data.id) {
+           apiClient.user.getLikes()
+             .then(res => {
+                const liked = res.likes?.some(l => l.id === data.id);
+                setIsLiked(!!liked);
+             })
+             .catch(() => {});
+        }
 
         // Fetch related items
         if (data.category) {
@@ -364,7 +375,7 @@ export default function ResourceDetailPage() {
     };
 
     fetchAsset();
-  }, [id, slug]);
+  }, [id, slug, isSignedIn]);
 
   if (isLoading) {
     return (
@@ -505,7 +516,7 @@ export default function ResourceDetailPage() {
 
               <h1 className="font-serif text-3xl lg:text-4xl text-ink mb-2 leading-tight flex items-center gap-3">
                 {asset.title}
-                <LikeButton assetId={asset.id} variant="icon" className="shadow-sm border border-gray-100" />
+                <LikeButton assetId={asset.id} initialLiked={isLiked} variant="icon" className="shadow-sm border border-gray-100" />
               </h1>
 
               {/* Asset ID and Rating */}
