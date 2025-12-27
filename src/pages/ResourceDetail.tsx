@@ -12,6 +12,7 @@ import {
   Sparkles,
   Star,
   Download,
+  Gift,
   Unlock,
   ImageIcon,
   ArrowRight,
@@ -261,12 +262,17 @@ function DownloadSection({ assetId, formattedAssetId, title }: { assetId: string
       
       {/* Social Proof - NEW */}
       <div className="flex items-center justify-center gap-2 mb-4">
-         <div className="flex -space-x-1">
-            {[1,2,3,4].map(i => (
-               <div key={i} className="w-5 h-5 rounded-full bg-gray-200 border-2 border-white" />
+         <div className="flex -space-x-2">
+            {[
+              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64&h=64&q=80&fit=crop",
+              "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=64&h=64&q=80&fit=crop",
+              "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&q=80&fit=crop",
+              "https://images.unsplash.com/photo-1521119989659-a83eee488058?w=64&h=64&q=80&fit=crop"
+            ].map((src, i) => (
+               <img key={i} src={src} alt="User" className="w-6 h-6 rounded-full border-2 border-white object-cover" />
             ))}
          </div>
-         <span className="text-xs text-gray-500 font-medium">Trusted by 1,000+ parents & therapists</span>
+         <span className="text-xs text-gray-500 font-medium ml-1">Trusted by 1,000+ parents & therapists</span>
       </div>
 
       <p className="text-center text-xs text-gray-400">
@@ -289,7 +295,8 @@ function DownloadSection({ assetId, formattedAssetId, title }: { assetId: string
           onClick={() => setShowEmailCapture(true)}
           className="w-full py-3 px-4 bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-sm rounded-md transition-colors text-sm font-bold flex items-center justify-center gap-2"
         >
-          🎁 Get 3 Free Pages
+          <Gift className="w-4 h-4" />
+          Get 3 Free Pages
         </button>
       ) : (
         <div className="pt-2">
