@@ -135,7 +135,20 @@ export default function BlogPost() {
           </header>
 
           {/* Markdown Content */}
-          <div className="prose lg:prose-xl prose-primary max-w-none dark:prose-invert">
+          <div className="prose prose-lg lg:prose-xl max-w-none 
+            prose-headings:font-serif prose-headings:text-ink prose-headings:font-bold
+            prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
+            prose-p:text-gray-600 prose-p:leading-relaxed
+            prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+            prose-strong:text-ink prose-strong:font-semibold
+            prose-ul:text-gray-600 prose-ol:text-gray-600
+            prose-li:marker:text-primary
+            prose-blockquote:border-l-primary prose-blockquote:text-gray-500 prose-blockquote:italic
+            prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
+            prose-pre:bg-gray-900 prose-pre:text-gray-100
+            prose-img:rounded-xl prose-img:shadow-lg
+            prose-hr:border-gray-200
+          ">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {post.content}
             </ReactMarkdown>
