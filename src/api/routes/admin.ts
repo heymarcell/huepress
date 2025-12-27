@@ -397,22 +397,35 @@ app.post("/assets", async (c) => {
     }
 
 
-        // A. Synchronous Uploads (Fast R2 PUTs)
+        // A. Parallel Uploads (Fast R2 PUTs - run concurrently)
         let sourceSvgContent: string | null = null;
 
+        // Read SVG content first if needed (required synchronously for background task)
+        if (hasSourceUpload) {
+           sourceSvgContent = await (sourceFile as File).text();
+        }
+
+        // Run all R2 uploads in parallel
+        const uploadPromises: Promise<void>[] = [];
+        
         if (hasThumbnailUpload) {
-           console.log(`Uploading provided thumbnail for ${assetId}...`);
-           await c.env.ASSETS_PUBLIC.put(thumbnailKey!, thumbnailFile as File);
+           console.log(`Uploading thumbnail for ${assetId}...`);
+           uploadPromises.push(c.env.ASSETS_PUBLIC.put(thumbnailKey!, thumbnailFile as File).then(() => {}));
         }
         if (hasPdfUpload) {
-           console.log(`Uploading provided PDF for ${assetId}...`);
-           await c.env.ASSETS_PRIVATE.put(pdfKey!, pdfFile as File);
+           console.log(`Uploading PDF for ${assetId}...`);
+           uploadPromises.push(c.env.ASSETS_PRIVATE.put(pdfKey!, pdfFile as File).then(() => {}));
         }
-        if (hasSourceUpload) {
-           console.log(`[Sync] Reading & Uploading Source SVG for ${assetId}...`);
-           // Read content into memory to ensure availability for background task
-           sourceSvgContent = await (sourceFile as File).text();
-           await c.env.ASSETS_PRIVATE.put(sourceKey!, sourceSvgContent);
+        if (hasSourceUpload && sourceSvgContent) {
+           console.log(`Uploading Source SVG for ${assetId}...`);
+           uploadPromises.push(c.env.ASSETS_PRIVATE.put(sourceKey!, sourceSvgContent).then(() => {}));
+        }
+
+        // Wait for all uploads to complete in parallel
+        if (uploadPromises.length > 0) {
+           console.log(`[Parallel] Uploading ${uploadPromises.length} files concurrently...`);
+           await Promise.all(uploadPromises);
+           console.log(`[Parallel] All uploads completed for ${assetId}.`);
         }
 
         // B. Background Processing (Slow Container Calls)

@@ -47,9 +47,9 @@ describe("Admin API", () => {
         mockBind = vi.fn();
         mockPrepare = vi.fn();
         mockBatch = vi.fn().mockResolvedValue([]);
-        mockR2Put = vi.fn();
-        mockR2Get = vi.fn();
-        mockR2Delete = vi.fn();
+        mockR2Put = vi.fn().mockResolvedValue(undefined); // R2 put returns promise
+        mockR2Get = vi.fn().mockResolvedValue(null);
+        mockR2Delete = vi.fn().mockResolvedValue(undefined);
         mockGetAuth = getAuth as unknown as Mock;
         // Mock admin user with publicMetadata.role = 'admin'
         mockGetAuth.mockReturnValue({ 
