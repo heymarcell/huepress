@@ -259,6 +259,25 @@ describe("Assets API", () => {
         expect(res.status).toBe(404);
     });
 
+    it("GET /download/:id should return 404 if r2_key_private is missing", async () => {
+        vi.mock("@hono/clerk-auth", () => ({
+            getAuth: vi.fn(() => ({ userId: "user_123" }))
+        }));
+
+        const mockAsset = { id: "1", r2_key_private: null };
+        mockFirst
+            .mockResolvedValueOnce({ subscription_status: "active" })
+            .mockResolvedValueOnce(mockAsset);
+
+        const res = await app.request("http://localhost/download/1", {
+            headers: { "Authorization": "Bearer token" }
+        }, mockEnv);
+
+        expect(res.status).toBe(404);
+        const data = await res.json() as { error: string };
+        expect(data.error).toBe("PDF not available");
+    });
+
     it("GET /download/:id should handle download error", async () => {
         vi.mock("@hono/clerk-auth", () => ({
             getAuth: vi.fn(() => ({ userId: "user_123" }))

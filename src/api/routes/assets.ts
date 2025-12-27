@@ -178,6 +178,9 @@ app.get("/download/:id", async (c) => {
     }
 
     // Checking private R2 bucket
+    if (!asset.r2_key_private) {
+        return c.json({ error: "PDF not available" }, 404);
+    }
     const file = await c.env.ASSETS_PRIVATE.get(asset.r2_key_private as string);
 
     if (!file) {
