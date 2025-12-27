@@ -78,18 +78,6 @@ export default function VaultPage() {
     setSearchQuery(query);
   };
 
-  const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value);
-  };
-
-  const handleSkillChange = (value: string) => {
-    setSelectedSkill(value);
-  };
-
-  const handleTagChange = (value: string) => {
-    setSelectedTag(value); // Assuming single tag selection for now
-  };
-
   const filteredAssets = useMemo(() => {
     // Client-side sorting only (Search is server-side now)
     return [...assets].sort((a, b) => {
@@ -386,65 +374,33 @@ export default function VaultPage() {
               </div>
           </div>
 
-          {/* Expanded Mobile Filters */}
-          {showMobileFilters && (
-            <div className="pt-4 pb-2 space-y-4 animate-in slide-in-from-top-2 h-[70vh] overflow-y-auto">
-              <div className="space-y-2">
-                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Category</p>
-                 <div className="flex flex-wrap gap-2">
-                   {categoriesUI.map(cat => (
-                     <button
-                       key={cat.value}
-                       onClick={() => handleCategoryChange(selectedCategory === cat.value ? "" : cat.value)}
-                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                         selectedCategory === cat.value 
-                           ? "bg-ink text-white border-ink" 
-                           : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
-                       }`}
-                     >
-                       {cat.label}
-                     </button>
-                   ))}
-                 </div>
-              </div>
-
-              <div className="space-y-2">
-                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Theme</p>
-                 <div className="flex flex-wrap gap-2">
-                   {themesUI.map(theme => (
-                     <button
-                       key={theme.value}
-                       onClick={() => handleTagChange(selectedTag === theme.value ? "" : theme.value)}
-                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                         selectedTag === theme.value 
-                           ? "bg-ink text-white border-ink" 
-                           : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
-                       }`}
-                     >
-                       {theme.label}
-                     </button>
-                   ))}
-                 </div>
-              </div>
-
-              <div className="space-y-2">
-                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Skill</p>
-                 <div className="flex flex-wrap gap-2">
-                   {skillsUI.map(skill => (
-                     <button
-                       key={skill.value}
-                       onClick={() => handleSkillChange(selectedSkill === skill.value ? "" : skill.value)}
-                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                         selectedSkill === skill.value 
-                           ? "bg-ink text-white border-ink" 
-                           : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
-                       }`}
-                     >
-                       {skill.label}
-                     </button>
-                   ))}
-                 </div>
-              </div>
+          {/* Active filter chips - compact summary */}
+          {(selectedCategory || selectedSkill || selectedTag) && (
+            <div className="flex items-center gap-2 flex-wrap mt-2">
+              {selectedCategory && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
+                  {selectedCategory}
+                  <button onClick={() => setSelectedCategory("")} className="hover:bg-primary/20 rounded-full">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {selectedTag && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
+                  {selectedTag}
+                  <button onClick={() => setSelectedTag("")} className="hover:bg-primary/20 rounded-full">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {selectedSkill && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
+                  {selectedSkill}
+                  <button onClick={() => setSelectedSkill("")} className="hover:bg-primary/20 rounded-full">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
             </div>
           )}
         </div>
