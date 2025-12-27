@@ -214,6 +214,7 @@ export default function VaultPage() {
                     onChange={(val) => setSelectedCategory(val)}
                     options={[{ label: "All Categories", value: "" }, ...categoriesUI]}
                     placeholder="All Categories"
+                    className="w-full"
                   />
               </div>
               
@@ -226,6 +227,7 @@ export default function VaultPage() {
                     onChange={(val) => setSelectedTag(val)}
                     options={[{ label: "All Themes", value: "" }, ...themesUI]}
                     placeholder="All Themes"
+                    className="w-full"
                   />
                 </div>
               )}
@@ -238,6 +240,7 @@ export default function VaultPage() {
                     onChange={(val) => setSelectedSkill(val)}
                     options={[{ label: "All Levels", value: "" }, ...skillsUI]}
                     placeholder="All Levels"
+                    className="w-full"
                   />
               </div>
             </div>

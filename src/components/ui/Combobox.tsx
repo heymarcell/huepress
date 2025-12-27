@@ -53,7 +53,7 @@ export function Combobox({
   const selectedLabel = options.find(opt => opt.value === value)?.label || "";
 
   return (
-    <div className={`w-full relative ${className}`} ref={wrapperRef}>
+    <div className={`relative ${className}`} ref={wrapperRef}>
       {label && (
         <label className="block text-xs font-bold text-gray-700 mb-1 ml-1">
           {label}
