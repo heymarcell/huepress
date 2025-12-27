@@ -111,7 +111,7 @@ export function Navbar() {
                 className={`font-medium transition-colors ${
                   // @ts-expect-error - isPrimary is a custom property not in the text link type
                   link.isPrimary 
-                    ? "text-primary bg-primary/10 px-4 py-2 rounded-md hover:bg-primary/20" 
+                    ? "text-primary bg-primary/10 px-4 py-2 rounded-full hover:bg-primary/20" 
                     : "text-ink/70 hover:text-primary"
                 }`}
                 style={{ fontSize: '15px' }} 

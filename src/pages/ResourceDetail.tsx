@@ -267,7 +267,7 @@ function DownloadSection({ assetId, formattedAssetId, title }: { assetId: string
               "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64&h=64&q=80&fit=crop",
               "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=64&h=64&q=80&fit=crop",
               "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&q=80&fit=crop",
-              "https://images.unsplash.com/photo-1521119989659-a83eee488058?w=64&h=64&q=80&fit=crop"
+              "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=64&h=64&q=80&fit=crop"
             ].map((src, i) => (
                <img key={i} src={src} alt="User" className="w-6 h-6 rounded-full border-2 border-white object-cover" />
             ))}
