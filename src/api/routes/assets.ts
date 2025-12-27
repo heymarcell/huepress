@@ -11,7 +11,8 @@ app.get("/assets", async (c) => {
   const limit = parseInt(c.req.query("limit") || "50");
   const offset = parseInt(c.req.query("offset") || "0");
 
-  let query = "SELECT * FROM assets WHERE status = 'published'";
+  // Select only fields needed for list view/cards to reduce payload size
+  let query = "SELECT id, title, category, skill, asset_id, slug, r2_key_public, tags, created_at, description FROM assets WHERE status = 'published'";
   const params: string[] = [];
 
   if (category) {
@@ -73,13 +74,28 @@ app.get("/assets/:id", async (c) => {
   const id = c.req.param("id");
 
   try {
-    const asset = await c.env.DB.prepare(
-      "SELECT * FROM assets WHERE (id = ? OR asset_id = ? OR slug = ?) AND status = 'published'"
-    )
-      .bind(id, id, id)
-      .first();
+    // Optimization: Detect ID type to use specific index
+    // 1. UUID (very distinct format)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    // 2. Asset ID (starts with HP-)
+    const isAssetId = id.startsWith("HP-");
+    
+    let asset: Record<string, unknown> | null = null;
 
-    if (!asset) {
+    if (isUUID) {
+       asset = await c.env.DB.prepare("SELECT * FROM assets WHERE id = ?").bind(id).first();
+    } else if (isAssetId) {
+       asset = await c.env.DB.prepare("SELECT * FROM assets WHERE asset_id = ?").bind(id).first();
+    } else {
+       // Fallback: Check slug (most common for SEO URLS)
+       // If lookup fails, try asset_id one last time just in case it's a legacy numeric format
+       asset = await c.env.DB.prepare("SELECT * FROM assets WHERE slug = ?").bind(id).first();
+       if (!asset) {
+         asset = await c.env.DB.prepare("SELECT * FROM assets WHERE asset_id = ?").bind(id).first();
+       }
+    }
+
+    if (!asset || asset.status !== 'published') {
       return c.json({ error: "Asset not found" }, 404);
     }
 
@@ -98,6 +114,9 @@ app.get("/assets/:id", async (c) => {
       ogImageUrl = ogKey.startsWith("http") ? ogKey : `${cdnUrl}/${ogKey}`;
     }
     
+    // Add Cache-Control for public GET requests of published assets
+    c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+
     return c.json({
       ...asset,
       tags: asset.tags ? JSON.parse(asset.tags as string) : [],

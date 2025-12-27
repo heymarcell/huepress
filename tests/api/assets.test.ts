@@ -52,11 +52,12 @@ describe("Assets API", () => {
     });
 
     it("GET /assets/:id should return asset", async () => {
-        const mockAsset = { id: "1", title: "Test", tags: '[]' };
+        const mockAsset = { id: "1", title: "Test", tags: '[]', status: 'published' };
         mockFirst.mockResolvedValue(mockAsset);
 
         const res = await app.request("http://localhost/assets/1", {}, mockEnv);
         expect(res.status).toBe(200);
+        expect(res.headers.get("Cache-Control")).toBe("public, max-age=60, stale-while-revalidate=300");
     });
 
     it("GET /download/:id should return file", async () => {

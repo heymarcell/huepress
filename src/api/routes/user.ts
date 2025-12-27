@@ -11,6 +11,28 @@ async function getDbUser(c: Context<{ Bindings: Bindings }>, clerkId: string) {
   return await c.env.DB.prepare("SELECT id FROM users WHERE clerk_id = ?").bind(clerkId).first();
 }
 
+// GET /likes/:assetId/status - Check if single asset is liked (Optimized)
+app.get("/likes/:assetId/status", async (c) => {
+  const auth = getAuth(c);
+  // If not logged in, clearly not liked
+  if (!auth?.userId) return c.json({ liked: false });
+
+  const userId = auth.userId;
+  // Use a fast query to get internal user ID first (cached potentially in future, but fast index lookup now)
+  const user = await c.env.DB.prepare("SELECT id FROM users WHERE clerk_id = ?").bind(userId).first<{ id: string }>();
+  
+  if (!user) return c.json({ liked: false });
+
+  const assetId = c.req.param("assetId");
+  
+  // Check existence only
+  const existing = await c.env.DB.prepare(
+    "SELECT 1 FROM likes WHERE user_id = ? AND asset_id = ?"
+  ).bind(user.id, assetId).first();
+
+  return c.json({ liked: !!existing });
+});
+
 // GET /likes - List liked assets
 app.get("/likes", async (c) => {
   const auth = getAuth(c);

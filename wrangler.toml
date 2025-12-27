@@ -39,6 +39,10 @@ GA4_MEASUREMENT_ID = "G-QTF6MPM5SQ"
 # Pages configuration
 pages_build_output_dir = "dist"
 
+# Optimize Worker location for data-heavy apps (moves worker close to D1)
+[placement]
+mode = "smart"
+
 
 # Cloudflare Container for resource-intensive processing
 # Cloudflare Container for resource-intensive processing

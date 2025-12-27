@@ -42,32 +42,8 @@ const trustBadges = [
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
-// Compact rating display for header
-function RatingSummary({ assetId }: { assetId: string }) {
-  const [rating, setRating] = useState<{ avg: number | null; count: number }>({ avg: null, count: 0 });
-  
-  useEffect(() => {
-    fetch(`${API_URL}/api/reviews/${assetId}`)
-      .then(res => res.json() as Promise<{ averageRating: number | null; totalReviews: number }>)
-      .then(data => {
-        setRating({ avg: data.averageRating, count: data.totalReviews });
-      })
-      .catch(() => {});
-  }, [assetId]);
-  
-  if (!rating.count) return null;
-  
-  return (
-    <div className="flex items-center gap-1.5">
-      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-      <span className="font-medium text-ink">{rating.avg?.toFixed(1)}</span>
-      <span className="text-gray-400">({rating.count})</span>
-    </div>
-  );
-}
-
 // Reviews section component
-function ReviewsSection({ assetId }: { assetId: string }) {
+function ReviewsSection({ assetId, stats }: { assetId: string, stats: { avg: number | null, count: number } }) {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { isSubscriber } = useSubscription();
 
@@ -78,7 +54,9 @@ function ReviewsSection({ assetId }: { assetId: string }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-6">
       <div className="p-6 lg:p-8">
-        <h2 className="font-serif text-h3 text-ink mb-6">Reviews</h2>
+        <h2 className="font-serif text-h3 text-ink mb-6">
+          Reviews {stats.count > 0 && <span className="text-gray-400 text-lg">({stats.count})</span>}
+        </h2>
         
         {/* Review List */}
         <ReviewList assetId={assetId} refreshTrigger={refreshTrigger} />
@@ -334,71 +312,78 @@ export default function ResourceDetailPage() {
       try {
         let lookupId = id;
         
-        // Handle SEO slug: cozy-capybara-HP-ANM-0001 OR cozy-capybara-00001
+        // Handle SEO slug
         if (!lookupId && slug) {
-            // Match legacy HP-ANM-0001 or new 00001 at end of string
             const match = slug.match(/((?:HP-[A-Z]{3}-)?\d{4,5})$/);
             lookupId = match ? match[1] : slug;
         }
 
         if (!lookupId) {
             setError("Asset not found");
+            setIsLoading(false);
             return;
         }
 
-        const data = await apiClient.assets.get(lookupId);
+        // 1. Fetch Asset Details (Primary)
+        const assetPromise = apiClient.assets.get(lookupId);
+        
+        // Await Asset first to ensure we have ID for subsequent calls & basic UI
+        const data = await assetPromise;
         setAsset(data);
+        setIsLoading(false); // Render main content immediately
 
-        // Check availability of like status
+        // 2. Parallel Fetch: Secondary Data (Likes, Related, Reviews)
+        // These don't block the main view
+        const secondaryPromises = [];
+
+        // Check Like Status (Optimized)
         if (isSignedIn && data.id) {
-           apiClient.user.getLikes()
-             .then(res => {
-                const liked = res.likes?.some(l => l.id === data.id);
-                setIsLiked(!!liked);
-             })
-             .catch(() => {});
+           secondaryPromises.push(
+               apiClient.user.getLikeStatus(data.id)
+                  .then(res => setIsLiked(res.liked))
+                  .catch(() => {}) 
+           );
         }
 
-        // Fetch related items - prioritize tags for visual similarity (e.g. "robot" > "animals")
+        // Related Items
         if (data.tags && data.tags.length > 0) {
-            try {
-              // Try to find items with the first tag (usually specific like "robot" or "cat")
-              const related = await apiClient.assets.list({ tag: data.tags[0], limit: 4 });
-              let filtered = related.assets?.filter(a => a.id !== data.id) || [];
-              
-              // Fallback to category if not enough tag matches
-              if (filtered.length < 3 && data.category) {
-                 const catRelated = await apiClient.assets.list({ category: data.category, limit: 4 });
-                 const catFiltered = catRelated.assets?.filter(a => a.id !== data.id && !filtered.find(f => f.id === a.id)) || [];
-                 filtered = [...filtered, ...catFiltered];
-              }
-              
-              setRelatedItems(filtered.slice(0, 4));
-            } catch(e) {
-               console.error("Failed to load related items by tag", e);
-            }
+            const tagPromise = (async () => {
+                try {
+                  const related = await apiClient.assets.list({ tag: data.tags![0], limit: 4 });
+                  let filtered = related.assets?.filter(a => a.id !== data.id) || [];
+                  if (filtered.length < 3 && data.category) {
+                     const catRelated = await apiClient.assets.list({ category: data.category, limit: 4 });
+                     const catFiltered = catRelated.assets?.filter(a => a.id !== data.id && !filtered.find(f => f.id === a.id)) || [];
+                     filtered = [...filtered, ...catFiltered];
+                  }
+                  setRelatedItems(filtered.slice(0, 4));
+                } catch(e) { console.error("Related items error", e); }
+            })();
+            secondaryPromises.push(tagPromise);
         } else if (data.category) {
-           try {
-             const related = await apiClient.assets.list({ category: data.category, limit: 4 });
-             setRelatedItems(related.assets?.filter(a => a.id !== data.id).slice(0, 4) || []);
-           } catch(e) {
-             console.error("Failed to load related items", e);
-           }
+            secondaryPromises.push(
+               apiClient.assets.list({ category: data.category, limit: 4 })
+                 .then(res => setRelatedItems(res.assets?.filter(a => a.id !== data.id).slice(0, 4) || []))
+                 .catch(e => console.error("Category related error", e))
+            );
         }
 
-        // Fetch review stats for SEO
-        try {
-           const res = await fetch(`${API_URL}/api/reviews/${data.id}`);
-           const reviewData = await res.json() as { averageRating: number; totalReviews: number };
-           setReviewStats({ avg: reviewData.averageRating, count: reviewData.totalReviews });
-        } catch (e) {
-           console.error("Failed to load review stats", e);
+        // Review Stats (Single Source of Truth)
+        if (data.id) {
+            secondaryPromises.push(
+                fetch(`${API_URL}/api/reviews/${data.id}`)
+                  .then(res => res.json() as Promise<{ averageRating: number; totalReviews: number }>)
+                  .then(stats => setReviewStats({ avg: stats.averageRating, count: stats.totalReviews }))
+                  .catch(() => {})
+            );
         }
+
+        // Run all secondary fetches in parallel
+        await Promise.allSettled(secondaryPromises);
 
       } catch (err) {
         console.error(err);
         setError("Failed to load asset");
-      } finally {
         setIsLoading(false);
       }
     };
@@ -568,7 +553,13 @@ export default function ResourceDetailPage() {
               {/* Asset ID and Rating */}
               <div className="flex items-center gap-3 mb-4 text-sm">
                 <span className="text-gray-400">#{asset.asset_id}</span>
-                <RatingSummary assetId={assetId} />
+                {reviewStats.count > 0 && (
+                   <div className="flex items-center gap-1.5">
+                     <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                     <span className="font-medium text-ink">{reviewStats.avg?.toFixed(1)}</span>
+                     <span className="text-gray-400">({reviewStats.count})</span>
+                   </div>
+                )}
               </div>
 
               <p className="text-gray-600 leading-relaxed mb-6">
@@ -658,7 +649,7 @@ export default function ResourceDetailPage() {
       <div className="py-8 bg-white border-t border-gray-100">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
-            <ReviewsSection assetId={assetId} />
+            <ReviewsSection assetId={assetId} stats={reviewStats} />
           </div>
         </div>
       </div>

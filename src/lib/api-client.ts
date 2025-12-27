@@ -262,6 +262,13 @@ export const apiClient = {
         token
       });
     },
+    getLikeStatus: async (assetId: string) => {
+      const token = await window.Clerk?.session?.getToken();
+      if (!token) return { liked: false }; // Fast fail if no token
+      return fetchApi<{ liked: boolean }>(`/api/user/likes/${assetId}/status`, {
+        token
+      });
+    },
     toggleLike: async (assetId: string) => {
       const token = await window.Clerk?.session?.getToken();
       return fetchApi<{ liked: boolean }>(`/api/user/likes/${assetId}`, {
