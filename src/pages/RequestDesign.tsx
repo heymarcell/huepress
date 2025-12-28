@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Sparkles } from "lucide-react";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { useSubscription } from "@/lib/auth";
+import SEO from "@/components/SEO";
 
 export default function RequestDesign() {
   const { user, isLoaded } = useUser();
@@ -70,6 +71,7 @@ export default function RequestDesign() {
   if (status === "success") {
     return (
       <div className="min-h-screen pt-32 pb-20 px-6 container mx-auto flex flex-col items-center justify-center text-center max-w-lg">
+        <SEO title="Request a Design" description="Submit your ideas for new coloring pages." />
         <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
           <Sparkles className="w-8 h-8" />
         </div>
@@ -95,6 +97,7 @@ export default function RequestDesign() {
 
   return (
     <div className="min-h-screen pt-32 pb-20">
+      <SEO title="Request a Design" description="Submit your ideas for new coloring pages." />
       <div className="container mx-auto px-6">
         <div className="max-w-2xl mx-auto">
           <Link to="/vault" className="inline-flex items-center gap-2 text-gray-500 hover:text-ink mb-8 transition-colors">

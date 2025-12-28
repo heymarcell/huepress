@@ -31,7 +31,7 @@ export function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 p-1 pl-2 pr-1 rounded-full border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="flex items-center gap-2 p-1 pl-3 pr-2 rounded-2xl border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
       >
         <div className="hidden sm:block text-right mr-1">
           <p className="text-xs font-semibold text-neutral-900 leading-none">
