@@ -242,6 +242,7 @@ describe("Assets API", () => {
         const mockExecutionCtx = {
             waitUntil: vi.fn(),
             passThroughOnException: vi.fn(),
+            props: {},
         };
 
         const res = await app.request("http://localhost/download/1", {

@@ -176,6 +176,7 @@ describe("User API", () => {
         const mockExecutionCtx = {
             waitUntil: vi.fn(),
             passThroughOnException: vi.fn(),
+            props: {},
         };
 
         const res = await app.request("http://localhost/activity", {
