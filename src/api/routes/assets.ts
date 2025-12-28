@@ -5,8 +5,20 @@ import { watermarkPdf } from "../../lib/pdf-watermark";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// Get all published assets
+// Get all published assets (with edge caching)
 app.get("/assets", async (c) => {
+  // Check edge cache first (caches.default is Cloudflare Workers API)
+  const cache = (caches as unknown as { default: Cache }).default;
+  const cacheKey = new Request(c.req.url, { method: "GET" });
+  
+  const cachedResponse = await cache.match(cacheKey);
+  if (cachedResponse) {
+    // Clone and add cache hit header for debugging
+    const response = new Response(cachedResponse.body, cachedResponse);
+    response.headers.set("X-Cache", "HIT");
+    return response;
+  }
+
   const category = c.req.query("category")?.trim();
   const skill = c.req.query("skill")?.trim();
   const limit = parseInt(c.req.query("limit") || "24");
@@ -76,24 +88,45 @@ app.get("/assets", async (c) => {
       };
     });
 
-    // Cache list results - short TTL as content changes frequently
-    c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
-    return c.json({ 
+    // Build response with caching headers
+    const responseData = { 
       assets, 
       total: countResult?.total || 0,
       limit,
       offset,
       count: assets?.length || 0 
-    });
+    };
+    
+    const response = c.json(responseData);
+    response.headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+    response.headers.set("X-Cache", "MISS");
+    
+    // Store in edge cache (clone since response body can only be read once)
+    c.executionCtx.waitUntil(
+      cache.put(cacheKey, response.clone())
+    );
+    
+    return response;
   } catch (error) {
     console.error("Database error:", error);
     return c.json({ error: "Failed to fetch assets" }, 500);
   }
 });
 
-// Get single asset by ID, Asset ID (HP-...), or Slug
+// Get single asset by ID, Asset ID (HP-...), or Slug (with edge caching)
 app.get("/assets/:id", async (c) => {
   const id = c.req.param("id");
+  
+  // Check edge cache first (caches.default is Cloudflare Workers API)
+  const cache = (caches as unknown as { default: Cache }).default;
+  const cacheKey = new Request(c.req.url, { method: "GET" });
+  
+  const cachedResponse = await cache.match(cacheKey);
+  if (cachedResponse) {
+    const response = new Response(cachedResponse.body, cachedResponse);
+    response.headers.set("X-Cache", "HIT");
+    return response;
+  }
 
   try {
     // Optimization: Detect ID type to use specific index
@@ -139,10 +172,7 @@ app.get("/assets/:id", async (c) => {
       ogImageUrl = ogKey.startsWith("http") ? ogKey : `${cdnUrl}/${ogKey}`;
     }
     
-    // Add Cache-Control for public GET requests of published assets
-    c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
-
-    return c.json({
+    const responseData = {
       ...asset,
       tags: asset.tags ? JSON.parse(asset.tags as string) : [],
       fun_facts: asset.fun_facts ? JSON.parse(asset.fun_facts as string) : [],
@@ -150,7 +180,18 @@ app.get("/assets/:id", async (c) => {
       image_url: imageUrl,
       thumbnail_url: imageUrl, // Alias for backwards compatibility
       og_image_url: ogImageUrl || imageUrl, // Fallback to thumbnail
-    });
+    };
+    
+    const response = c.json(responseData);
+    response.headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+    response.headers.set("X-Cache", "MISS");
+    
+    // Store in edge cache
+    c.executionCtx.waitUntil(
+      cache.put(cacheKey, response.clone())
+    );
+    
+    return response;
   } catch (error) {
     console.error("Database error:", error);
     return c.json({ error: "Failed to fetch asset" }, 500);
