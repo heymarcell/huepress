@@ -1,12 +1,17 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";
-import SEO from "@/components/SEO";
+import { Helmet } from "react-helmet-async";
 
-export default function NotFoundPage() {
+export default function NotFound() {
   return (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
-      <SEO title="Page Not Found | HuePress" />
+    <>
+      <Helmet>
+        <title>404 - Page Not Found | HuePress</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
+      
+      <div className="min-h-screen pt-32 pb-20 px-6 flex flex-col items-center justify-center text-center">
       
       {/* Robot Illustration */}
       <div className="w-40 h-56 mb-6 animate-fade-in">
@@ -35,5 +40,6 @@ export default function NotFoundPage() {
         </Link>
       </div>
     </div>
+    </>
   );
 }
