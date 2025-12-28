@@ -481,10 +481,26 @@ export default function ResourceDetailPage() {
                 "shippingDestination": {
                   "@type": "DefinedRegion",
                   "addressCountry": "US"
+                },
+                "deliveryTime": {
+                  "@type": "ShippingDeliveryTime",
+                  "handlingTime": {
+                    "@type": "QuantitativeValue",
+                    "minValue": 0,
+                    "maxValue": 0,
+                    "unitCode": "d"
+                  },
+                  "transitTime": {
+                    "@type": "QuantitativeValue",
+                    "minValue": 0,
+                    "maxValue": 0,
+                    "unitCode": "d"
+                  }
                 }
               },
               "hasMerchantReturnPolicy": {
                 "@type": "MerchantReturnPolicy",
+                "applicableCountry": "US",
                 "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted"
               }
             }
