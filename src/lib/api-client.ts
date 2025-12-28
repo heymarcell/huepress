@@ -362,7 +362,7 @@ export const apiClient = {
     },
     getLikeStatus: async (assetId: string) => {
       const token = await window.Clerk?.session?.getToken();
-      return fetchApi<{ liked: boolean }>(`/api/user/likes/${assetId}`, {
+      return fetchApi<{ liked: boolean }>(`/api/user/likes/${assetId}/status`, {
         token
       });
     }
