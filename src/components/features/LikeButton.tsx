@@ -5,6 +5,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface LikeButtonProps {
   assetId: string;
@@ -15,6 +16,7 @@ interface LikeButtonProps {
 
 export function LikeButton({ assetId, initialLiked = false, className, variant = "button" }: LikeButtonProps) {
   const { isSignedIn } = useAuth();
+  const queryClient = useQueryClient();
   const [liked, setLiked] = useState(initialLiked);
   const [loading, setLoading] = useState(false);
 
@@ -44,6 +46,9 @@ export function LikeButton({ assetId, initialLiked = false, className, variant =
       const res = await apiClient.user.toggleLike(assetId);
       setLiked(res.liked);
       toast.success(res.liked ? "Added to favorites" : "Removed from favorites");
+      
+      // Invalidate user likes cache so dashboard updates
+      queryClient.invalidateQueries({ queryKey: ['user', 'likes'] });
     } catch (error) {
       setLiked(previousState); // Revert
       toast.error("Failed to update favorite");

@@ -27,6 +27,7 @@ import { ReviewForm } from "@/components/features/ReviewForm";
 import { ReviewList } from "@/components/features/ReviewList";
 import { AboutDesign } from "@/components/features/AboutDesign";
 import { LikeButton } from "@/components/features/LikeButton";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Mock asset removed - fetching from API now
 
@@ -75,6 +76,7 @@ function ReviewsSection({ assetId, stats }: { assetId: string, stats: { avg: num
 function DownloadSection({ assetId, formattedAssetId, title }: { assetId: string; formattedAssetId: string; title: string }) {
   const { isSubscriber, isLoaded, isSignedIn } = useSubscription();
   const { getToken } = useAuth();
+  const queryClient = useQueryClient();
   const [showEmailCapture, setShowEmailCapture] = useState(false);
   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
     isOpen: false,
@@ -124,6 +126,9 @@ function DownloadSection({ assetId, formattedAssetId, title }: { assetId: string
       
       // Record activity in user history
       apiClient.user.recordActivity(assetId, 'download').catch(() => {});
+      
+      // Invalidate user history cache so dashboard updates
+      queryClient.invalidateQueries({ queryKey: ['user', 'history'] });
     } catch (error) {
       console.error("Download error:", error);
       setAlertState({
@@ -179,6 +184,9 @@ function DownloadSection({ assetId, formattedAssetId, title }: { assetId: string
       
       // Record activity in user history
       apiClient.user.recordActivity(assetId, 'print').catch(() => {});
+      
+      // Invalidate user history cache so dashboard updates
+      queryClient.invalidateQueries({ queryKey: ['user', 'history'] });
     } catch (error) {
       console.error("Print error:", error);
       setAlertState({
