@@ -186,9 +186,18 @@ async function generatePdfBuffer(svgContent, asset, publicUrl) {
       const description = asset.description || 'Therapy-Grade Coloring Page';
 
       // A4 dimensions in points (72 dpi)
-      const A4_WIDTH_PT = 595.28;
-      const A4_HEIGHT_PT = 841.89;
-      const MARGIN = 28.35; // 10mm margin safe for most printers
+      const A4_WIDTH_PT = 595.28;  // 210mm
+      const A4_HEIGHT_PT = 841.89; // 297mm
+      
+      // Safe margins for A4/US Letter compatibility
+      // US Letter is 279.4mm tall vs A4's 297mm = 17.6mm shorter
+      // To ensure content prints without cropping on BOTH paper sizes:
+      // - Side margins: 10mm (28.35pt) - safe for both
+      // - Top margin: 10mm (28.35pt) - safe for both  
+      // - Bottom margin: 28mm (79.37pt) - accounts for Letter being shorter + printer margin
+      const SIDE_MARGIN = 28.35;    // 10mm
+      const TOP_MARGIN = 28.35;     // 10mm
+      const BOTTOM_MARGIN = 79.37;  // 28mm - ensures content fits on US Letter
 
       // 1. Parse SVG Dimensions FIRST to determine orientation
       const svgWidthMatch = safeSvgContent.match(/width=["']?(\d+(?:\.\d+)?)/);
@@ -212,10 +221,11 @@ async function generatePdfBuffer(svgContent, asset, publicUrl) {
       const pageLayout = isLandscape ? 'landscape' : 'portrait';
 
       // Create PDF document with determined layout
+      // Note: We still use uniform margin for pdfDoc creation, but manually handle positioning
       const pdfDoc = new PDFDocument({
         size: 'A4',
         layout: pageLayout, // Dynamic layout
-        margin: MARGIN,
+        margin: SIDE_MARGIN, // Base margin for text helpers
         autoFirstPage: true,
         info: {
           Title: title,
@@ -237,8 +247,16 @@ async function generatePdfBuffer(svgContent, asset, publicUrl) {
       const pageWidth = isLandscape ? A4_HEIGHT_PT : A4_WIDTH_PT; // Width is 842 in landscape
       const pageHeight = isLandscape ? A4_WIDTH_PT : A4_HEIGHT_PT; // Height is 595 in landscape
       
-      const availWidth = pageWidth - (2 * MARGIN);
-      const availHeight = pageHeight - (2 * MARGIN);
+      // In landscape, swap the margin logic (what was bottom becomes right side margin)
+      // But for simplicity and max print compatibility, use symmetric side margins
+      // and asymmetric top/bottom in portrait, symmetric in landscape
+      const leftMargin = SIDE_MARGIN;
+      const rightMargin = SIDE_MARGIN;
+      const topMargin = isLandscape ? SIDE_MARGIN : TOP_MARGIN;
+      const bottomMargin = isLandscape ? SIDE_MARGIN : BOTTOM_MARGIN;
+      
+      const availWidth = pageWidth - leftMargin - rightMargin;
+      const availHeight = pageHeight - topMargin - bottomMargin;
       
       const scaleX = availWidth / svgWidth;
       const scaleY = availHeight / svgHeight;
@@ -247,9 +265,9 @@ async function generatePdfBuffer(svgContent, asset, publicUrl) {
       const scaledWidth = svgWidth * scale;
       const scaledHeight = svgHeight * scale;
       
-      // Center content in the safe area
-      const x = MARGIN + (availWidth - scaledWidth) / 2;
-      const y = MARGIN + (availHeight - scaledHeight) / 2;
+      // Center content in the safe area (slightly offset toward top due to larger bottom margin)
+      const x = leftMargin + (availWidth - scaledWidth) / 2;
+      const y = topMargin + (availHeight - scaledHeight) / 2;
       
       // Convert SVG to PDF (TRUE VECTOR CONVERSION!)
       SVGtoPDF(pdfDoc, safeSvgContent, x, y, {
