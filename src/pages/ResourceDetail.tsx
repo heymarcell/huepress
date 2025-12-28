@@ -417,7 +417,7 @@ export default function ResourceDetailPage() {
         <div className="max-w-md mx-auto text-center">
           <img src="/404-robot.svg" alt="Robot not found" className="w-48 h-48 mx-auto mb-6" />
           <h1 className="font-serif text-3xl font-bold text-gray-900 mb-4">{error || "Design Not Found"}</h1>
-          <p className="text-gray-600 mb-8">We couldn't find the coloring page you're looking for. It may have been moved or removed.</p>
+          <p className="text-gray-600 mb-8">I think my toddler hid this page (or colored over it). It's gone. Let's get you back to the Vault.</p>
           <Link to="/vault">
             <Button variant="primary" size="lg">Browse The Vault</Button>
           </Link>

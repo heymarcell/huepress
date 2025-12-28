@@ -133,9 +133,9 @@ export default function Onboarding() {
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-3xl text-primary">
               <Sparkles className="w-8 h-8" />
             </div>
-            <h1 className="font-serif text-3xl text-ink">Welcome, {user.firstName}!</h1>
+            <h1 className="font-serif text-3xl text-ink">Hi {user.firstName || 'there'}, I'm Sarah.</h1>
             <p className="text-gray-600">
-              We're so happy you're here. Let's personalize your experience to find the perfect coloring pages for your family.
+              I built HuePress to help you find peace (and good art). Let's customize your Vault so you see the right things first.
             </p>
             <Button onClick={() => setStep("role")} className="w-full h-12 text-lg">
               Let's Go! <ArrowRight className="ml-2 w-5 h-5" />
@@ -147,8 +147,8 @@ export default function Onboarding() {
         {step === "role" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
             <div className="text-center">
-              <h2 className="font-serif text-2xl text-ink">Tell us about you</h2>
-              <p className="text-gray-500 text-sm mt-1">This helps us customize your content.</p>
+              <h2 className="font-serif text-2xl text-ink">Tell me about you</h2>
+              <p className="text-gray-500 text-sm mt-1">This helps me customize your content.</p>
             </div>
             
             <div className="grid grid-cols-2 gap-3">
@@ -182,7 +182,7 @@ export default function Onboarding() {
         {step === "ages" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
             <div className="text-center">
-              <h2 className="font-serif text-2xl text-ink">Who is coloring?</h2>
+              <h2 className="font-serif text-2xl text-ink">Who are the little hands?</h2>
               <p className="text-gray-500 text-sm mt-1">Select all age ranges that apply.</p>
             </div>
             

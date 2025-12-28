@@ -164,12 +164,11 @@ export default function HomePage() {
                   
                   <Heading as="h1" variant="display" className="mb-4">
                     Therapy-Grade Coloring Pages.{" "}
-                    <span className="text-secondary">Print Calm in 60 Seconds</span>
+                    <span className="text-secondary">Guilt-Free Peace in 60 Seconds</span>
                   </Heading>
                   
                   <Text variant="large" className="mb-8 max-w-lg mx-auto lg:mx-0">
-                    Join 1,000+ families using our bold-line designs to reduce anxiety and build focus. 
-                    New drops every Sunday.
+                    Join 1,000+ families using our bold, clutter-free designs to buy themselves 20 minutes of silence. (And help kids build focus).
                   </Text>
                   
                   <div className="mb-8">
@@ -250,7 +249,7 @@ export default function HomePage() {
                </div>
             </div>
             <p className="text-gray-500 text-sm">
-               "The only coloring pages my son actually finishes." <span className="font-bold text-ink">Sarah, Mom of 2</span>
+               "The lines are thick enough for my patients to actually succeed." <span className="font-bold text-ink">Emily, Pediatric OT</span>
             </p>
             <div className="hidden md:block w-px h-8 bg-gray-200"></div>
             <p className="text-sm font-medium text-gray-600 uppercase tracking-wider">Trusted by Teachers & OTs</p>
@@ -332,10 +331,10 @@ export default function HomePage() {
               {/* Testimonial 1 */}
               <Card className="p-6">
                  <div className="flex items-center gap-3 mb-4">
-                    <img src="/avatars/avatar_mom_1.png" alt="Sarah" className="w-12 h-12 rounded-full object-cover" loading="lazy" />
+                    <img src="/avatars/avatar_mom_1.png" alt="Jessica" className="w-12 h-12 rounded-full object-cover" loading="lazy" />
                     <div>
-                       <p className="font-bold text-ink text-sm">Sarah M.</p>
-                       <p className="text-xs text-gray-500">Mom of 2</p>
+                       <p className="font-bold text-ink text-sm">Jessica</p>
+                       <p className="text-xs text-gray-500">Mom of 3</p>
                     </div>
                  </div>
                  <p className="text-gray-600 italic">"This is the only way I get 20 minutes of peace. My kids ask for these pages every day!"</p>
@@ -469,12 +468,12 @@ export default function HomePage() {
       {/* Problem/Agitation Section */}
       <Section background="muted" size="md">
           <Heading as="h2" variant="h1" className="text-center mb-6">
-            Tired of Chaotic Clip Art?
+            Tired of Visual Clutter?
           </Heading>
           <Text variant="large" className="text-center mb-8">
-            We get it. You search "free coloring pages" and get bombarded with ads, 
-            broken links, and designs so cluttered they give you a headache. 
-            Your kids deserve better. <span className="font-bold text-ink">So do you.</span>
+            I get it. You search "free coloring pages" and get bombarded with ads, 
+            broken links, and designs so chaotic they give you a headache. 
+            Your kids deserve better art. <span className="font-bold text-ink">And you deserve a break.</span>
           </Text>
           <div className="grid md:grid-cols-3 gap-6 mt-12">
             {painPoints.map((point) => (
@@ -493,7 +492,7 @@ export default function HomePage() {
       <Section background="accent">
           <div className="text-center mb-12">
             <Heading as="h2" variant="h1" className="mb-4">Why Parents Love HuePress</Heading>
-            <Text variant="large" className="max-w-2xl mx-auto">We obsess over quality so you can focus on quality time.</Text>
+            <Text variant="large" className="max-w-2xl mx-auto">I obsess over path closure and line weights so you can obsess over your coffee.</Text>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature) => (

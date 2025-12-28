@@ -23,26 +23,32 @@ export default function AboutPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="prose prose-lg mx-auto text-gray-600">
             <p className="mb-6">
-              Hi, I'm Sarah. I started HuePress with a simple mission: to create coloring pages that don't frustrate kids (or parents).
+              Hi, I'm Sarah. I’m a Senior Frontend Engineer, a mom to two (Leo and Maya), and the founder of HuePress.
             </p>
             <p className="mb-6">
-              We've all been there: searching for "free coloring pages" only to find low-quality pixelated images, aggressive ads, or designs so complex they end up in the trash bin after 5 minutes of struggle.
-            </p>
-            <h3 className="font-serif text-ink text-2xl font-bold mt-10 mb-4">Why "Bold & Easy"?</h3>
-            <p className="mb-6">
-              As I learned more about child development, I realized that super-thick lines aren't just an aesthetic choice. They act as "training wheels" for fine motor skills, helping young artists stay within the lines and build confidence.
+              The idea for HuePress happened on a rainy Tuesday. Leo (then 4) was melting down, and I needed 15 minutes of quiet to fix a critical bug for work. I Googled "dinosaur coloring page," and what I found made my designer brain hurt.
             </p>
             <p className="mb-6">
-              That's why every single page on HuePress is quality-checked against what I call "Therapy-Grade" standards:
+              The sites were a nightmare of pop-up ads, fake "Download" buttons, and pixelated clip-art that wasted my printer ink. It was pure <strong>friction</strong>.
+            </p>
+            <p className="mb-6">
+              I thought: <em>"I build scalable dashboards for a living. Why am I letting a spammy website ruin my morning?"</em>
+            </p>
+            <p className="mb-6">
+              So, I wrote a script to generate a perfect SVG dinosaur with 3pt thick lines—heavy enough for Leo to stay inside them. I printed it. He loved it. And for the first time in weeks, the living room was quiet.
+            </p>
+
+            <h3 className="font-serif text-ink text-2xl font-bold mt-10 mb-4">The "Bold Lines" Philosophy</h3>
+            <p className="mb-6">
+              I didn’t just build HuePress to look good. I built it to work. I worked with my friend Emily (a pediatric Occupational Therapist) to define our "Therapy-Grade" standard:
             </p>
             <ul className="list-disc pl-6 space-y-2 mb-8">
-              <li>Bold, consistent line weights</li>
-              <li>Clear, recognizable shapes</li>
-              <li>Zero visual clutter</li>
-              <li>Themes that spark legitimate joy</li>
+              <li><strong>Bold Lines (2pt+):</strong> To help little hands develop visual-motor control.</li>
+              <li><strong>Zero Clutter:</strong> No distractions on the page means more focus for the child.</li>
+              <li><strong>Vector Crisp:</strong> Professional outlines that look like art, not a xerox of a xerox.</li>
             </ul>
             <p>
-              HuePress is a small, independent publisher. When you join the club, you're not just buying PDFs. You're supporting a philosophy that childhood should be creative, calm, and ad-free.
+              HuePress isn't a unicorn startup. It's a small, calm corner of the internet designed to save you from "clutter anxiety." I hope it buys you a hot coffee and a moment of peace.
             </p>
           </div>
 

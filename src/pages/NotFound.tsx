@@ -23,7 +23,7 @@ export default function NotFound() {
       </h1>
       
       <p className="text-gray-500 text-lg mb-8 max-w-md mx-auto leading-relaxed">
-        We can't seem to find the page you're looking for. It might have been colored over or erased.
+        I think my toddler hid this page (or colored over it). It's gone. Let's get you back to safety.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4">

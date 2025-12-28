@@ -77,7 +77,7 @@ export default function RequestDesign() {
         </div>
         <h1 className="font-serif text-3xl text-ink mb-4">Request Received!</h1>
         <p className="text-gray-600 mb-8 text-lg">
-          Thanks for your idea! We review every request and add the best ones to our production queue.
+          Thanks for the idea! I'm adding "{title}" to my list. 📝 If it fits our bold-line philosophy, you might see it in The Vault soon.
         </p>
         <Link 
           to="/vault"
