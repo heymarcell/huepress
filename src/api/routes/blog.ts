@@ -1,19 +1,8 @@
 import { Hono } from "hono";
 import { Bindings } from "../types";
-import { getAuth } from "@hono/clerk-auth";
-import { Context } from "hono";
+import { verifyAdmin } from "../lib/verify-admin";
 
 const app = new Hono<{ Bindings: Bindings }>();
-
-// Helper: Verify admin role
-async function verifyAdmin(c: Context<{ Bindings: Bindings }>): Promise<boolean> {
-  const auth = getAuth(c);
-  if (!auth?.userId) return false;
-  
-  const claims = auth.sessionClaims;
-  const role = (claims?.publicMetadata as { role?: string })?.role;
-  return role === "admin";
-}
 
 // Helper: Generate slug from title
 function slugify(text: string): string {

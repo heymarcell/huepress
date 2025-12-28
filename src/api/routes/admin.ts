@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { Bindings } from "../types";
 import { notifyIndexNow, notifyIndexNowBatch, buildAssetUrl } from "../../lib/indexnow";
 import { getContainer } from "@cloudflare/containers";
+import { verifyAdmin } from "../lib/verify-admin";
 
 // Container calls are now fire-and-forget via direct fetch
 
@@ -41,92 +42,6 @@ async function fetchWithRetry(
 }
 
 const app = new Hono<{ Bindings: Bindings }>();
-
-import { getAuth } from "@hono/clerk-auth";
-
-// Admin Middleware Check
-import { Context } from "hono";
-
-// Admin Middleware Check
-async function verifyAdmin(c: Context<{ Bindings: Bindings }>): Promise<boolean> {
-  const auth = getAuth(c);
-  if (!auth?.userId) return false;
-
-  // Try 1: Check Clerk publicMetadata.role from session claims
-  // This works if custom claims are configured in Clerk Dashboard
-  const sessionClaims = auth.sessionClaims as { publicMetadata?: { role?: string } } | undefined;
-  const isAdminFromClaims = sessionClaims?.publicMetadata?.role === 'admin';
-
-  // [F-002] Check if allowlist is configured for defense-in-depth
-  const adminEmailsEnv = c.env.ADMIN_EMAILS?.trim();
-  const adminEmails = adminEmailsEnv ? adminEmailsEnv.split(',').map(e => e.trim().toLowerCase()) : [];
-  const hasAllowlist = adminEmails.length > 0;
-
-  // If admin from claims AND no allowlist configured, allow immediately (backwards compatible)
-  if (isAdminFromClaims && !hasAllowlist) {
-    return true;
-  }
-
-  // Try 2: Fallback to Clerk Backend API (required if allowlist is configured or claims don't confirm admin)
-  let isAdminRole = isAdminFromClaims;
-  let userEmail: string | null = null;
-  
-  try {
-    const clerkSecretKey = c.env.CLERK_SECRET_KEY;
-    if (!clerkSecretKey) {
-      console.error("CLERK_SECRET_KEY not configured");
-      return false;
-    }
-    
-    const response = await fetch(`https://api.clerk.com/v1/users/${auth.userId}`, {
-      headers: {
-        'Authorization': `Bearer ${clerkSecretKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (!response.ok) {
-      console.error("Clerk API error:", response.status);
-      return false;
-    }
-    
-    const userData = await response.json() as { 
-      public_metadata?: { role?: string };
-      email_addresses?: Array<{ email_address: string; verification?: { status: string } }>;
-      primary_email_address_id?: string;
-    };
-    
-    // Check role from API if not already confirmed
-    if (!isAdminRole && userData?.public_metadata?.role === 'admin') {
-      isAdminRole = true;
-    }
-    
-    // Extract primary verified email for allowlist check
-    const primaryEmail = userData.email_addresses?.find(
-      e => e.verification?.status === 'verified'
-    );
-    userEmail = primaryEmail?.email_address || null;
-    
-  } catch (e) {
-    console.error("Admin verification failed:", e);
-    return false;
-  }
-  
-  // [F-002] Defense-in-depth: If allowlist is configured, require email to be on it
-  if (hasAllowlist && isAdminRole) {
-    if (!userEmail) {
-      console.warn(`[Security] Admin user has no verified email for allowlist check`);
-      return false;
-    }
-    const isOnAllowlist = adminEmails.includes(userEmail.toLowerCase());
-    if (!isOnAllowlist) {
-      console.warn(`[Security] User ${userEmail} has admin role but is not on ADMIN_EMAILS allowlist`);
-      return false;
-    }
-  }
-  
-  return isAdminRole;
-}
 
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -338,6 +253,30 @@ app.post("/assets", async (c) => {
 
   try {
     const body = await c.req.parseBody();
+
+    // [F-004] Validation
+    const schema = z.object({
+      title: z.string().min(1, "Title is required"),
+      category: z.string().min(1, "Category is required"),
+      // Optional fields that come as strings
+      description: z.string().optional(),
+      skill: z.string().optional(),
+      status: z.enum(['draft', 'published', 'pending_upload']).optional(),
+      tags: z.string().optional(),
+      extended_description: z.string().optional(),
+      coloring_tips: z.string().optional(),
+      therapeutic_benefits: z.string().optional(),
+      meta_keywords: z.string().optional(),
+      fun_facts: z.string().optional(),
+      suggested_activities: z.string().optional(),
+      asset_id: z.string().optional(),
+      skip_processing: z.enum(['true', 'false']).optional()
+    }).passthrough(); // Allow file fields to pass through
+
+    const valResult = schema.safeParse(body);
+    if (!valResult.success) {
+        return c.json({ error: "Validation failed", details: valResult.error.format() }, 400);
+    }
     
     // Category Code Map and Slugify
     const CATEGORY_CODES: Record<string, string> = {

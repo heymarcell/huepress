@@ -7,6 +7,7 @@ describe("Assets API", () => {
     let mockAll: Mock;
     let mockFirst: Mock;
     let mockRun: Mock;
+    let mockBatch: Mock;
     let mockEnv: Record<string, unknown>;
     let mockR2Get: Mock; 
     
@@ -14,6 +15,7 @@ describe("Assets API", () => {
         mockAll = vi.fn();
         mockFirst = vi.fn();
         mockRun = vi.fn();
+        mockBatch = vi.fn().mockResolvedValue([]);
         mockBind = vi.fn().mockReturnValue({ all: mockAll, first: mockFirst, run: mockRun });
         mockPrepare = vi.fn().mockReturnValue({ bind: mockBind });
         
@@ -21,7 +23,8 @@ describe("Assets API", () => {
 
         mockEnv = {
             DB: {
-                prepare: mockPrepare
+                prepare: mockPrepare,
+                batch: mockBatch
             },
             ASSETS_PRIVATE: {
                 get: mockR2Get
@@ -237,7 +240,7 @@ describe("Assets API", () => {
 
         expect(res.status).toBe(200);
         expect(mockR2Get).toHaveBeenCalledWith("key.pdf");
-        expect(mockRun).toHaveBeenCalled(); // Update download count
+        expect(mockBatch).toHaveBeenCalled(); // Batch Update + Insert
         expect(res.headers.get("Cache-Control")).toBe("private, no-store"); // CRITICAL: No caching for user-specific PDFs
     });
 

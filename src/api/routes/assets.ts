@@ -207,11 +207,10 @@ app.get("/download/:id", async (c) => {
       return c.json({ error: "File not found" }, 404);
     }
 
-    await c.env.DB.prepare(
-      "UPDATE assets SET download_count = download_count + 1 WHERE id = ?"
-    )
-      .bind(id)
-      .run();
+    await c.env.DB.batch([
+      c.env.DB.prepare("UPDATE assets SET download_count = download_count + 1 WHERE id = ?").bind(id),
+      c.env.DB.prepare("INSERT INTO downloads (id, user_id, asset_id, downloaded_at) VALUES (?, ?, ?, datetime('now'))").bind(crypto.randomUUID(), internalUserId, id)
+    ]);
 
     // Apply invisible watermark with internal user UUID for leak tracking
     const watermarkedPdf = await watermarkPdf(

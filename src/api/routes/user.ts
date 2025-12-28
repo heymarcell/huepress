@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { getAuth } from "@hono/clerk-auth";
 import { Bindings } from "../types";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -165,15 +167,20 @@ app.get("/history", async (c) => {
   });
 });
 
+// Activity schema for Zod validation
+const activitySchema = z.object({
+  assetId: z.string().min(1, "Asset ID is required"),
+  type: z.enum(["download", "print"], { 
+    message: "Type must be 'download' or 'print'"
+  })
+});
+
 // POST /activity - Record download or print
-app.post("/activity", async (c) => {
+app.post("/activity", zValidator("json", activitySchema), async (c) => {
   const auth = getAuth(c);
   if (!auth?.userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const body = await c.req.json(); // { assetId, type: 'download' | 'print' }
-  const { assetId, type } = body;
-
-  if (!assetId || !type) return c.json({ error: "Missing fields" }, 400);
+  const { assetId, type } = c.req.valid("json");
 
   const user = await getDbUser(c, auth.userId);
   if (!user) return c.json({ error: "User not found" }, 404);
@@ -183,8 +190,7 @@ app.post("/activity", async (c) => {
     "INSERT INTO downloads (id, user_id, asset_id, type) VALUES (?, ?, ?, ?)"
   ).bind(id, user.id, assetId, type).run();
 
-  // Increment asset download count if typo is download (or print?)
-  // Maybe just increment for both
+  // Increment asset download count
   await c.env.DB.prepare(
     "UPDATE assets SET download_count = download_count + 1 WHERE id = ?"
   ).bind(assetId).run();
