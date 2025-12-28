@@ -61,7 +61,7 @@ describe("Reviews API", () => {
         const res = await app.request("http://localhost/asset_1", {}, mockEnv);
         expect(res.status).toBe(200);
         
-        const data = await res.json() as any;
+        const data = await res.json() as { reviews: unknown[]; averageRating: number; totalReviews: number };
         expect(data.reviews).toHaveLength(1);
         expect(data.averageRating).toBe(4.5);
         expect(data.totalReviews).toBe(10);
@@ -73,7 +73,7 @@ describe("Reviews API", () => {
 
         const res = await app.request("http://localhost/asset_1", {}, mockEnv);
         expect(res.status).toBe(200);
-        const data = await res.json() as any;
+        const data = await res.json() as { reviews: unknown[]; averageRating: number | null; totalReviews: number };
         expect(data.reviews).toHaveLength(0);
         expect(data.averageRating).toBeNull();
         expect(data.totalReviews).toBe(0);

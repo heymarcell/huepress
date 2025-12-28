@@ -8,7 +8,7 @@ export interface ComboboxOption {
 
 export interface ComboboxProps {
   value: string | string[];
-  onChange: (value: any) => void;
+  onChange: (value: string | string[]) => void;
   options: ComboboxOption[];
   placeholder?: string;
   className?: string;
@@ -49,7 +49,9 @@ export function Combobox({
     );
   }, [options, search, searchable]);
 
-  const selectedValues = Array.isArray(value) ? value : value ? [value] : [];
+  const selectedValues = useMemo(() => 
+    Array.isArray(value) ? value : value ? [value] : []
+  , [value]);
 
   const handleSelect = (optionValue: string) => {
     if (multiple) {

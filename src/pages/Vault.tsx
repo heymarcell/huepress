@@ -70,19 +70,18 @@ export default function VaultPage() {
     placeholderData: keepPreviousData,
   });
 
-  const assets = assetsData?.assets || [];
-
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
 
   const filteredAssets = useMemo(() => {
+    const assets = assetsData?.assets || [];
     // Client-side sorting only (Search is server-side now)
     return [...assets].sort((a, b) => {
       if (sortBy === "newest") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       return new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); // oldest
     });
-  }, [assets, sortBy]);
+  }, [assetsData?.assets, sortBy]);
 
   const showFreeSampleBanner = !isSubscriber;
 
@@ -195,7 +194,7 @@ export default function VaultPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
                   <Combobox
                     value={selectedCategory}
-                    onChange={(val) => setSelectedCategory(val)}
+                    onChange={(val) => setSelectedCategory(Array.isArray(val) ? val[0] || "" : val)}
                     options={[{ label: "All Categories", value: "" }, ...categoriesUI]}
                     placeholder="All Categories"
                     className="w-full"
@@ -207,7 +206,7 @@ export default function VaultPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Tag</label>
                 <Combobox
                   value={selectedTags}
-                  onChange={(val: any) => setSelectedTags(val)}
+                  onChange={(val: string | string[]) => setSelectedTags(Array.isArray(val) ? val : [val])}
                   options={themesUI}
                   placeholder="Select Tags"
                   className="w-full"
@@ -220,7 +219,7 @@ export default function VaultPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Skill Level</label>
                   <Combobox
                     value={selectedSkill}
-                    onChange={(val) => setSelectedSkill(val)}
+                    onChange={(val) => setSelectedSkill(Array.isArray(val) ? val[0] || "" : val)}
                     options={[{ label: "All Levels", value: "" }, ...skillsUI]}
                     placeholder="All Levels"
                     className="w-full"

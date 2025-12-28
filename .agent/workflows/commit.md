@@ -4,6 +4,8 @@ description: how to commit changes with proper linting and testing
 
 # Commit Workflow
 
+This workflow ensures all code quality checks pass before committing. **Fix all errors and warnings before proceeding to commit.**
+
 ## Step 1: Run TypeScript Check
 
 // turbo
@@ -12,9 +14,9 @@ description: how to commit changes with proper linting and testing
 npx tsc --noEmit
 ```
 
-If errors occur, fix them before proceeding.
+**If errors occur:** Fix all TypeScript errors before proceeding. Do not skip this step.
 
-## Step 2: Run Linter
+## Step 2: Run Linter and Fix Issues
 
 // turbo
 
@@ -22,20 +24,37 @@ If errors occur, fix them before proceeding.
 npm run lint
 ```
 
-Fix any errors. Warnings are acceptable but should be minimized over time.
+**If errors or warnings occur:**
 
-## Step 3: Run Tests (Optional but Recommended)
+1. Fix all lint errors (required)
+2. Fix all lint warnings (required for new/modified code)
+3. Re-run lint to verify fixes
+4. Only proceed when lint passes with 0 errors and 0 new warnings
 
-For targeted changes, run related tests:
+Common fixes:
 
-```bash
-npm test tests/api/<related-test>.test.ts
-```
+- `@typescript-eslint/no-explicit-any` → Replace `any` with proper types
+- `react-hooks/exhaustive-deps` → Add missing dependencies or wrap in useMemo
+- Unused variables → Remove or prefix with underscore
 
-For broader changes, run all API tests:
+## Step 3: Run Tests
+
+// turbo
 
 ```bash
 npm test tests/api/
+```
+
+**If tests fail:**
+
+1. Fix failing tests
+2. Re-run tests to verify fixes
+3. Only proceed when all tests pass
+
+For targeted changes, you may run specific tests:
+
+```bash
+npm test tests/api/<related-test>.test.ts
 ```
 
 ## Step 4: Stage and Commit
@@ -72,12 +91,11 @@ git add -A && git commit -m "<type>: <description>"
 git push
 ```
 
-## Quick Commit (Skip Tests)
+## Pre-Commit Checklist
 
-For small, safe changes:
+Before committing, ensure:
 
-// turbo
-
-```bash
-npx tsc --noEmit && npm run lint && git add -A && git commit -m "<message>" && git push
-```
+- [ ] `npx tsc --noEmit` passes with 0 errors
+- [ ] `npm run lint` passes with 0 errors and 0 new warnings
+- [ ] `npm test tests/api/` passes with all tests green
+- [ ] Commit message follows conventional format

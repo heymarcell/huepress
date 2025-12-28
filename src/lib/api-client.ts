@@ -273,7 +273,7 @@ export const apiClient = {
       
       const token = await window.Clerk?.session?.getToken();
       const query = status && status !== 'all' ? `?status=${status}` : '';
-      return fetchApi<{ requests: any[]; total: number }>(`/api/admin/requests${query}`, {
+      return fetchApi<{ requests: unknown[]; total: number }>(`/api/admin/requests${query}`, {
         token
       });
     },

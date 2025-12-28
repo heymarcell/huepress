@@ -519,11 +519,17 @@ describe("Admin API", () => {
     });
 
     it("POST /assets/bulk-status should update multiple asset statuses", async () => {
+        const mockExecutionCtx = {
+            waitUntil: vi.fn(),
+            passThroughOnException: vi.fn(),
+            props: {},
+        } as ExecutionContext;
+
         const res = await app.request("http://localhost/assets/bulk-status", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ids: ["id1", "id2"], status: "published" })
-        }, mockEnv);
+        }, mockEnv, mockExecutionCtx);
         
         expect(res.status).toBe(200);
         const data = await res.json() as { updatedCount: number };
