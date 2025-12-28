@@ -11,7 +11,7 @@ export default function TermsOfService() {
             
             <div className="mb-10 text-center">
               <h1 className="font-serif text-3xl md:text-4xl text-ink mb-4">Terms of Service</h1>
-              <p className="text-gray-500 font-medium">Last Updated: December 23, 2025</p>
+              <p className="text-gray-500 font-medium">Last Updated: December 28, 2025</p>
             </div>
 
             <div className="space-y-6 text-gray-600 leading-relaxed">
@@ -115,8 +115,16 @@ export default function TermsOfService() {
                 </ol>
 
                 <h3 className="font-bold text-ink mb-2">6.3 Ownership</h3>
-                <p>
+                <p className="mb-4">
                   All intellectual property rights in the Services and the digital content, including designs, text, graphics, and logos, are owned by <strong>lamaland.us LLC</strong> or our licensors.
+                </p>
+
+                <h3 className="font-bold text-ink mb-2">6.4 Content Protection Technology</h3>
+                <p className="mb-4">
+                  All digital content downloaded from the Services incorporates proprietary tracking technology that enables identification of the originating account. By downloading content, you acknowledge and consent to the use of such technology.
+                </p>
+                <p>
+                  Unauthorized distribution, reproduction, or publication of our content constitutes a material breach of these Terms and may result in immediate termination of your account, as well as civil liability under applicable copyright laws, including statutory damages under 17 U.S.C. § 504.
                 </p>
               </section>
 

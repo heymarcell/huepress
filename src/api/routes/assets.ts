@@ -158,20 +158,21 @@ app.get("/download/:id", async (c) => {
   const sessionClaims = auth.sessionClaims as { publicMetadata?: { role?: string } } | undefined;
   if (sessionClaims?.publicMetadata?.role === 'admin') {
      isAdmin = true;
-  } else {
-     // Fallback check if needed, or rely on metadata
   }
 
-  if (!isAdmin) {
-    // Verify subscription status from database for non-admins
-    const user = await c.env.DB.prepare(
-      "SELECT subscription_status FROM users WHERE clerk_id = ?"
-    ).bind(auth.userId).first<{ subscription_status: string }>();
+  // Fetch user record for subscription check and watermarking
+  const user = await c.env.DB.prepare(
+    "SELECT id, subscription_status FROM users WHERE clerk_id = ?"
+  ).bind(auth.userId).first<{ id: string; subscription_status: string }>();
 
+  if (!isAdmin) {
     if (!user || user.subscription_status !== 'active') {
       return c.json({ error: "Active subscription required" }, 403);
     }
   }
+
+  // Use internal UUID for watermarking (more secure than exposing Clerk ID)
+  const internalUserId = user?.id || auth.userId;
 
   try {
     const asset = await c.env.DB.prepare("SELECT * FROM assets WHERE id = ?")
@@ -198,10 +199,10 @@ app.get("/download/:id", async (c) => {
       .bind(id)
       .run();
 
-    // Apply invisible watermark with user ID for leak tracking
+    // Apply invisible watermark with internal user UUID for leak tracking
     const watermarkedPdf = await watermarkPdf(
       await file.arrayBuffer(),
-      auth.userId
+      internalUserId
     );
 
     return new Response(new Uint8Array(watermarkedPdf), {

@@ -11,7 +11,7 @@ export default function PrivacyPolicy() {
             
             <div className="mb-10 text-center">
               <h1 className="font-serif text-3xl md:text-4xl text-ink mb-4">Privacy Policy</h1>
-              <p className="text-gray-500 font-medium">Last Updated: December 23, 2025</p>
+              <p className="text-gray-500 font-medium">Last Updated: December 28, 2025</p>
             </div>
 
             <div className="space-y-6 text-gray-600 leading-relaxed">
@@ -133,7 +133,12 @@ export default function PrivacyPolicy() {
 
               <section>
                 <h2 className="font-serif text-xl text-ink mb-3">10. Security</h2>
-                <p>We implement reasonable technical and organizational measures (such as encryption and access controls) to protect your data. However, no internet transmission is 100% secure, and we cannot guarantee absolute security.</p>
+                <p className="mb-4">We implement reasonable technical and organizational measures (such as encryption and access controls) to protect your data. However, no internet transmission is 100% secure, and we cannot guarantee absolute security.</p>
+                
+                <h3 className="font-bold text-ink mb-2">10.1 Content Protection</h3>
+                <p>
+                  To protect our intellectual property rights, downloaded content may incorporate tracking technology that enables identification of the originating account. This technology is used solely for the purpose of enforcing our content licensing terms and detecting unauthorized distribution.
+                </p>
               </section>
 
               <section>
