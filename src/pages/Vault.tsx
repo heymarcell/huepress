@@ -331,6 +331,7 @@ export default function VaultPage() {
                       isNew={asset.status === 'published' && new Date(asset.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)} // Logic for isNew? Asset missing isNew prop in interface unless I add it or compute it
                       slug={asset.slug}
                       assetId={asset.asset_id}
+                      priority={index < 4}
                     />
                     {/* Inject Banner after 4th item (approx row 1 on desktop, row 2 on mobile) */}
                     {showFreeSampleBanner && index === 3 && (

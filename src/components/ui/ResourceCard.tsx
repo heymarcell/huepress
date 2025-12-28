@@ -13,6 +13,7 @@ export interface ResourceCardProps {
   isNew?: boolean;
   isFree?: boolean;
   isSubscriber?: boolean; // Hide "Members-only" badge for subscribers
+  priority?: boolean;
 }
 
 export function ResourceCard({
@@ -26,6 +27,7 @@ export function ResourceCard({
   isNew = false,
   isFree = false,
   isSubscriber = false,
+  priority = false,
 }: ResourceCardProps) {
   const [imageError, setImageError] = useState(false);
   
@@ -50,8 +52,9 @@ export function ResourceCard({
                 alt={title}
                 width="300"
                 height="300"
-                loading="lazy"
+                loading={priority ? "eager" : "lazy"}
                 decoding="async"
+                fetchPriority={priority ? "high" : "auto"}
                 className="max-w-[95%] max-h-[95%] object-contain select-none"
                 style={{ clipPath: 'inset(0 0 8% 0)', transform: 'translateY(4%)' }}
                 onError={() => setImageError(true)}

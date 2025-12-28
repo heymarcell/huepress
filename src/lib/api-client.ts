@@ -375,5 +375,11 @@ export const apiClient = {
         token
       });
     }
+  },
+  reviews: {
+    list: async (assetId: string) => {
+      // Matches the endpoint used in ReviewList.tsx
+      return fetchApi<{ reviews: { id: string; rating: number; comment?: string; created_at: string; user_email?: string }[]; averageRating: number | null; totalReviews: number }>(`/api/reviews/${assetId}`); 
+    }
   }
 };

@@ -41,8 +41,6 @@ const trustBadges = [
   { icon: Sparkles, label: "No Watermark" },
 ];
 
-const API_URL = import.meta.env.VITE_API_URL || "/api";
-
 // Reviews section component
 function ReviewsSection({ assetId, stats }: { assetId: string, stats: { avg: number | null, count: number } }) {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -310,6 +308,7 @@ export default function ResourceDetailPage() {
   const { isSubscriber, isSignedIn } = useSubscription();
 
   const [reviewStats, setReviewStats] = useState<{ avg: number | null; count: number }>({ avg: null, count: 0 });
+  const [schemaReviews, setSchemaReviews] = useState<Array<{ id: string; rating: number; comment?: string; user_email?: string }>>([]);
   const [isLiked, setIsLiked] = useState(false);
 
   useEffect(() => {
@@ -376,12 +375,14 @@ export default function ResourceDetailPage() {
             );
         }
 
-        // Review Stats (Single Source of Truth)
+        // Review Stats & List (Single Source of Truth)
         if (data.id) {
             secondaryPromises.push(
-                fetch(`${API_URL}/api/reviews/${data.id}`)
-                  .then(res => res.json() as Promise<{ averageRating: number; totalReviews: number }>)
-                  .then(stats => setReviewStats({ avg: stats.averageRating, count: stats.totalReviews }))
+                apiClient.reviews.list(data.id)
+                  .then(stats => {
+                    setReviewStats({ avg: stats.averageRating, count: stats.totalReviews });
+                    setSchemaReviews(stats.reviews.slice(0, 5)); // Keep top 5 for schema
+                  })
                   .catch(() => {})
             );
         }
@@ -463,7 +464,20 @@ export default function ResourceDetailPage() {
                 "@type": "AggregateRating",
                 ratingValue: reviewStats.avg,
                 reviewCount: reviewStats.count
-              }
+              },
+              review: schemaReviews.map(review => ({
+                "@type": "Review",
+                "reviewRating": {
+                  "@type": "Rating",
+                  "ratingValue": review.rating,
+                  "bestRating": "5"
+                },
+                "author": {
+                  "@type": "Person",
+                  "name": review.user_email ? review.user_email.split('@')[0] : "Anonymous" 
+                },
+                ...(review.comment && { "reviewBody": review.comment })
+              }))
             }),
             offers: {
               "@type": "Offer",
