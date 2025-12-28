@@ -11,7 +11,7 @@ This workflow ensures all code quality checks pass before committing. **Fix all 
 // turbo
 
 ```bash
-npx tsc --noEmit
+pnpm exec tsc --noEmit
 ```
 
 **If errors occur:** Fix all TypeScript errors before proceeding. Do not skip this step.
@@ -21,7 +21,7 @@ npx tsc --noEmit
 // turbo
 
 ```bash
-npm run lint
+pnpm run lint
 ```
 
 **If errors or warnings occur:**
@@ -42,7 +42,7 @@ Common fixes:
 // turbo
 
 ```bash
-npm test tests/api/
+pnpm test tests/api/
 ```
 
 **If tests fail:**
@@ -54,7 +54,7 @@ npm test tests/api/
 For targeted changes, you may run specific tests:
 
 ```bash
-npm test tests/api/<related-test>.test.ts
+pnpm test tests/api/<related-test>.test.ts
 ```
 
 ## Step 4: Stage and Commit
@@ -95,7 +95,7 @@ git push
 
 Before committing, ensure:
 
-- [ ] `npx tsc --noEmit` passes with 0 errors
-- [ ] `npm run lint` passes with 0 errors and 0 new warnings
-- [ ] `npm test tests/api/` passes with all tests green
+- [ ] `pnpm exec tsc --noEmit` passes with 0 errors
+- [ ] `pnpm run lint` passes with 0 errors and 0 new warnings
+- [ ] `pnpm test tests/api/` passes with all tests green
 - [ ] Commit message follows conventional format

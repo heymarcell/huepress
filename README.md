@@ -1,273 +1,441 @@
-# HuePress
+<p align="center">
+  <img src="public/logo.svg" alt="HuePress Logo" width="180" />
+</p>
 
-huepress.co is a SaaS platform providing therapy-grade, high-quality printable coloring pages. It features a modern React frontend, a serverless API on Cloudflare Workers, and a dedicated container service for generating PDFs and OG images.
+<h1 align="center">HuePress</h1>
 
-## Table of Contents
+<p align="center">
+  <strong>Therapy-Grade Printable Coloring Pages</strong>
+</p>
 
-- [What this repo contains](#what-this-repo-contains)
-- [Quickstart](#quickstart)
-- [Configuration](#configuration)
-- [Architecture overview](#architecture-overview)
-- [API / Interfaces](#api--interfaces)
-- [Data model](#data-model)
-- [Observability](#observability)
-- [Deployment](#deployment)
-- [Security notes](#security-notes)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
-- [Appendix: Repo map](#appendix-repo-map)
+<p align="center">
+  A modern SaaS platform delivering high-quality, vector-based coloring pages with a React frontend, Cloudflare Workers API, and container-based PDF generation.
+</p>
 
-## What this repo contains
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#tech-stack">Tech Stack</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#api-reference">API</a> •
+  <a href="#deployment">Deployment</a>
+</p>
 
-This repository is a **monorepo** containing the full stack application:
+---
 
-- **Frontend**: Single Page Application (SPA) built with **React 19**, **Vite**, and **Tailwind CSS**. Deployed to **Cloudflare Pages**.
-- **Backend API**: Serverless API built with **Hono** running on **Cloudflare Workers**.
-- **Processing Service**: A **Cloudflare Container** (Node.js) handling resource-intensive tasks like PDF generation (Puppeteer/pdf-lib) and Image processing (Sharp).
-- **Database**: **Cloudflare D1** (SQLite) for structured data and **R2** for asset storage.
+## Features
 
-## Quickstart
+- 🎨 **Vector Coloring Pages** — Print-ready PDFs maintain crisp lines at any scale
+- 🔐 **Invisible Watermarking** — Track leaked content back to specific users
+- 💳 **Subscription System** — Stripe-powered monthly/annual billing
+- 🖼️ **Auto-Generated Assets** — Thumbnails, OG images, and PDFs created automatically
+- 📱 **Responsive Design** — Beautiful on desktop and mobile
+- 🔍 **SEO Optimized** — Dynamic meta tags, sitemaps, IndexNow integration
+- 📊 **Analytics Integration** — Meta Pixel, Pinterest, Google Analytics 4
+- 🌍 **GDPR Compliant** — Geo-based consent banners for EU users
+- 📝 **Built-in Blog** — Markdown-powered content management
+
+---
+
+## Tech Stack
+
+<table>
+<tr>
+<td><strong>Frontend</strong></td>
+<td>React 19, Vite, TailwindCSS, TanStack Query, React Router 7</td>
+</tr>
+<tr>
+<td><strong>Backend</strong></td>
+<td>Hono on Cloudflare Workers, D1 (SQLite), R2 Storage</td>
+</tr>
+<tr>
+<td><strong>Processing</strong></td>
+<td>Node.js Container with Sharp, PDFKit, svg-to-pdfkit</td>
+</tr>
+<tr>
+<td><strong>Auth</strong></td>
+<td>Clerk</td>
+</tr>
+<tr>
+<td><strong>Payments</strong></td>
+<td>Stripe</td>
+</tr>
+<tr>
+<td><strong>Validation</strong></td>
+<td>Zod</td>
+</tr>
+</table>
+
+---
+
+## Quick Start
 
 ### Prerequisites
 
-- **Node.js**: v20+
-- **npm**: v10+
-- **Wrangler**: `npm install -g wrangler` (for Cloudflare local dev)
-- **Docker**: (Optional) For building/testing the container locally
+| Tool     | Version | Installation                     |
+| -------- | ------- | -------------------------------- |
+| Node.js  | 20+     | [nodejs.org](https://nodejs.org) |
+| pnpm     | 10+     | `npm install -g pnpm`            |
+| Wrangler | Latest  | `pnpm add -g wrangler`           |
 
-### Setup steps
+### Setup
 
-1. **Clone and Install**
+```bash
+# 1. Clone the repository
+git clone <repo-url>
+cd huepress
 
-   ```bash
-   git clone <repo-url>
-   cd huepress
-   npm install
-   ```
+# 2. Install dependencies
+pnpm install
 
-2. **Environment Setup**
-   Copy the example environment file:
+# 3. Configure environment
+cp .env.example .env.local
+# Fill in VITE_CLERK_PUBLISHABLE_KEY, VITE_STRIPE_PUBLISHABLE_KEY, etc.
 
-   ```bash
-   cp .env.example .env.local
-   ```
+# 4. Initialize local database
+pnpm run db:migrate
 
-   Fill in the required keys in `.env.local` (Clerk, Stripe keys).
-
-3. **Database Migration (Local)**
-   Initialize the local D1 database:
-
-   ```bash
-   npm run db:migrate
-   ```
-
-4. **Run Locally**
-   Start both the frontend and the API worker locally:
-
-   ```bash
-   npm run dev
-   ```
-
-   - Frontend: `http://localhost:3000`
-   - API Proxy: `http://localhost:8787`
-
-5. **Run Tests**
-   ```bash
-   npm run test      # Watch mode
-   npm run test:run  # Single run with coverage
-   ```
+# 5. Start development servers
+pnpm run dev        # Frontend on http://localhost:3000
+pnpm run dev:api    # API on http://localhost:8787 (separate terminal)
+```
 
 ### Common Commands
 
-- `npm run build`: Build frontend and backend types.
-- `npm run lint`: Lint code with ESLint.
+| Command                  | Purpose                              |
+| ------------------------ | ------------------------------------ |
+| `pnpm run dev`           | Start Vite dev server                |
+| `pnpm run dev:api`       | Start Wrangler API locally           |
+| `pnpm run build`         | Build for production                 |
+| `pnpm run lint`          | Run ESLint                           |
+| `pnpm run test`          | Run tests (watch mode)               |
+| `pnpm run test:run`      | Run tests once                       |
+| `pnpm run deploy:pages`  | Deploy frontend to Cloudflare Pages  |
+| `pnpm run deploy:worker` | Deploy API + container to Cloudflare |
+
+---
+
+## Architecture
+
+```mermaid
+graph TD
+    subgraph "Client"
+        Browser[React SPA]
+    end
+
+    subgraph "Cloudflare Edge"
+        Pages[Cloudflare Pages]
+        Worker[Hono API]
+        D1[(D1 Database)]
+        R2Pub[(R2 Public)]
+        R2Priv[(R2 Private)]
+    end
+
+    subgraph "Container"
+        Processor[Processing Service]
+    end
+
+    subgraph "External"
+        Clerk[Clerk Auth]
+        Stripe[Stripe]
+    end
+
+    Browser --> Pages
+    Browser --> Worker
+    Worker --> D1
+    Worker --> R2Pub
+    Worker --> R2Priv
+    Worker --> Processor
+    Worker --> Clerk
+    Worker --> Stripe
+    Processor --> Worker
+```
+
+### Key Flows
+
+**Asset Creation:**
+
+1. Admin uploads SVG via form
+2. Worker stores SVG in R2, creates DB record
+3. Worker queues processing job
+4. Container generates thumbnail (WebP), OG image (PNG), PDF
+5. Container uploads generated files to R2
+
+**Asset Download:**
+
+1. User requests download (must be subscribed)
+2. Worker fetches PDF from R2 Private
+3. Worker applies invisible watermark with user ID
+4. Worker returns watermarked PDF
+
+**Background Processing:**
+
+```
+Cron (*/5 * * * *) → Check queue → Wake container → Process pending jobs
+```
+
+---
+
+## Project Structure
+
+```
+huepress/
+├── container/              # Processing container
+│   ├── lib/
+│   │   ├── generators.js   # PDF, thumbnail, OG generation
+│   │   ├── queue.js        # Job queue processing
+│   │   └── utils.js        # SVG sanitization, helpers
+│   ├── Dockerfile
+│   └── server.js           # Express endpoints
+├── migrations/             # D1 SQL migrations (13 files)
+├── src/
+│   ├── api/                # Backend API
+│   │   ├── routes/         # Route handlers
+│   │   └── index.ts        # Hono app entry
+│   ├── components/         # React components
+│   │   ├── ui/             # Reusable UI components
+│   │   ├── layout/         # Layout components
+│   │   └── features/       # Feature components
+│   ├── lib/                # Shared utilities
+│   │   ├── api-client.ts   # Frontend API client
+│   │   └── pdf-watermark.ts
+│   ├── pages/              # Page components
+│   ├── App.tsx             # Routing
+│   └── main.tsx            # Entry point
+├── tests/                  # Test suites
+├── wrangler.toml           # Cloudflare config
+└── package.json
+```
+
+---
+
+## API Reference
+
+### Public Endpoints
+
+| Method | Endpoint                | Description                  |
+| ------ | ----------------------- | ---------------------------- |
+| `GET`  | `/api/assets`           | List published assets        |
+| `GET`  | `/api/assets/:id`       | Get single asset             |
+| `GET`  | `/api/download/:id`     | Download PDF (auth required) |
+| `GET`  | `/api/tags`             | List all tags                |
+| `GET`  | `/api/posts`            | List blog posts              |
+| `GET`  | `/api/posts/:slug`      | Get blog post                |
+| `GET`  | `/api/reviews/:assetId` | Get asset reviews            |
+| `POST` | `/api/reviews`          | Submit review                |
+| `POST` | `/api/requests/submit`  | Submit design request        |
+
+### User Endpoints (Auth Required)
+
+| Method | Endpoint                   | Description          |
+| ------ | -------------------------- | -------------------- |
+| `GET`  | `/api/user/likes`          | Get liked assets     |
+| `POST` | `/api/user/likes/:assetId` | Toggle like          |
+| `GET`  | `/api/user/history`        | Get download history |
+| `POST` | `/api/user/activity`       | Record activity      |
+
+### Billing Endpoints
+
+| Method | Endpoint        | Description            |
+| ------ | --------------- | ---------------------- |
+| `POST` | `/api/checkout` | Create Stripe checkout |
+| `POST` | `/api/portal`   | Create customer portal |
+
+### Admin Endpoints
+
+| Method                | Endpoint                            | Description         |
+| --------------------- | ----------------------------------- | ------------------- |
+| `GET`                 | `/api/admin/assets`                 | List all assets     |
+| `POST`                | `/api/admin/assets`                 | Create/update asset |
+| `DELETE`              | `/api/admin/assets/:id`             | Delete asset        |
+| `POST`                | `/api/admin/assets/bulk-regenerate` | Regenerate assets   |
+| `GET`                 | `/api/admin/stats`                  | Dashboard stats     |
+| `GET/POST/PUT/DELETE` | `/api/admin/posts/*`                | Blog management     |
+
+---
+
+## Database Schema
+
+### Core Tables
+
+| Table              | Purpose                                           |
+| ------------------ | ------------------------------------------------- |
+| `assets`           | Coloring pages with metadata, R2 keys, SEO fields |
+| `users`            | Synced from Clerk, subscription status            |
+| `downloads`        | Download/print history                            |
+| `likes`            | User favorites                                    |
+| `reviews`          | User reviews with ratings                         |
+| `posts`            | Blog content                                      |
+| `design_requests`  | Custom design requests                            |
+| `processing_queue` | Background job status                             |
+
+```mermaid
+erDiagram
+    USERS ||--o{ DOWNLOADS : has
+    USERS ||--o{ LIKES : has
+    ASSETS ||--o{ DOWNLOADS : tracked
+    ASSETS ||--o{ LIKES : receives
+    ASSETS ||--o{ PROCESSING_QUEUE : queued
+```
+
+---
 
 ## Configuration
 
 ### Environment Variables
 
-Managed via `wrangler.toml` (vars) and Secrets.
+#### Frontend (.env.local)
 
-| Variable            | Description             | Default/Example           |
-| ------------------- | ----------------------- | ------------------------- |
-| `ENVIRONMENT`       | Deployment environment  | `production`              |
-| `API_URL`           | Public API Base URL     | `https://api.huepress.co` |
-| `CLERK_SECRET_KEY`  | Clerk Auth Secret       | _Secret_                  |
-| `STRIPE_SECRET_KEY` | Stripe API Key          | _Secret_                  |
-| `GA4_API_SECRET`    | Google Analytics Secret | _Secret_                  |
-
-### Config Files
-
-- `wrangler.toml`: Cloudflare Workers & Pages config, D1 bindings, and Container defs.
-- `vite.config.ts`: Frontend build config, proxy rules for `/api`.
-- `container/Dockerfile`: Definition for the processing service.
-
-## Architecture overview
-
-### Component Diagram
-
-```mermaid
-graph TD
-    Client[Web Client (React)] -->|/api/*| Worker[Cloudflare Worker (Hono)]
-    Client -->|Static Assets| Pages[Cloudflare Pages]
-
-    Worker -->|Auth| Clerk[Clerk Auth]
-    Worker -->|Data| D1[(D1 Database)]
-    Worker -->|Files| R2[(R2 Storage)]
-
-    Worker -->|HTTP/RPC| Container[Processing Container (Node.js)]
-
-    Container -->|Gen Image| Sharp[Sharp Lib]
-    Container -->|Gen PDF| Puppeteer[Puppeteer/PDFKit]
+```env
+VITE_CLERK_PUBLISHABLE_KEY=pk_...
+VITE_STRIPE_PUBLISHABLE_KEY=pk_...
+VITE_APP_URL=http://localhost:3000
+VITE_API_URL=http://localhost:8787
 ```
 
-### Key Flows
+#### Backend (Wrangler Secrets)
 
-1.  **User Login**: Frontend uses Clerk SDK -> Validates via `clerkMiddleware` on Worker.
-2.  **Asset Generation**:
-    - Admin uploads SVG to API (`POST /api/assets`).
-    - Worker stores SVG in R2.
-    - Worker triggers Container (`POST /generate-all`) to create Thumbnail, OG Image, and PDF.
-    - Container uploads results back to R2 directly.
-    - Worker records metadata in D1.
+```bash
+wrangler secret put CLERK_SECRET_KEY
+wrangler secret put STRIPE_SECRET_KEY
+wrangler secret put STRIPE_WEBHOOK_SECRET
+wrangler secret put CONTAINER_AUTH_SECRET
+wrangler secret put INTERNAL_API_TOKEN
+```
 
-## API / Interfaces
+#### Production (wrangler.toml)
 
-### HTTP API
+```toml
+[vars]
+ENVIRONMENT = "production"
+API_URL = "https://api.huepress.co"
+SITE_URL = "https://huepress.co"
+ASSETS_CDN_URL = "https://assets.huepress.co"
+```
 
-Base URL: `https://api.huepress.co` (Prod) or `/api` (Local Proxy).
-Auth: `Authorization: Bearer <clerk_token>` (handled by Clerk SDK).
-
-| Endpoint            | Method | Purpose                    | Auth Required |
-| ------------------- | ------ | -------------------------- | ------------- |
-| `/api/assets`       | GET    | List all coloring pages    | No            |
-| `/api/download/:id` | POST   | Record download & get link | Yes           |
-| `/api/requests`     | POST   | Submit design request      | Yes           |
-| `/api/reviews`      | POST   | Submit a review            | Yes           |
-
-### Processing Service (Internal)
-
-The container exposes an internal HTTP API on port 4000, not accessible publicly.
-
-- `POST /pdf`: Generates PDF from SVG.
-- `POST /og-image`: Generates social share image.
-- `POST /generate-all`: Orchestrates full asset suite generation.
-
-## Data model
-
-The project uses **Cloudflare D1** (SQLite).
-
-### Schema Overview (`migrations/001_init.sql`)
-
-- **`assets`**: Stores metadata for coloring pages (title, R2 keys, status).
-- **`users`**: Synced from Clerk; stores subscription status (Stripe).
-- **`downloads`**: Tracks user download history.
-
-### Migrations
-
-Migrations are stored in `migrations/`.
-
-- **Run Locally**: `npm run db:migrate`
-- **Run in Prod**: `npm run db:migrate:prod`
-
-## Observability
-
-- **Logs**: Cloudflare Workers logs are streamed to the dashboard. `[observability] enabled = true` in `wrangler.toml`.
-- **Containers**: specific container logs are visible in the Cloudflare Container dashboard.
+---
 
 ## Deployment
 
-The project is deployed to the Cloudflare ecosystem.
+### Frontend (Cloudflare Pages)
 
-1. **Frontend**:
+```bash
+pnpm run build
+pnpm run deploy:pages
+```
 
-   ```bash
-   npm run deploy:pages
-   ```
+### Backend (Cloudflare Workers + Container)
 
-   Deploys `dist/` to Cloudflare Pages.
+```bash
+pnpm run deploy:worker
+```
 
-2. **Backend**:
+To force container image rebuild:
 
-   ```bash
-   npm run deploy:worker
-   ```
+```bash
+pnpm run deploy:worker -- --force
+```
 
-   Deploys the Hono worker.
+### Database Migrations
 
-3. **Container**:
-   Managed via `wrangler deploy` (implicitly updates container if defined in `wrangler.toml`).
-   To force an update of the container image only:
-   ```bash
-   npm run deploy:worker -- --force
-   ```
+```bash
+# Local
+pnpm run db:migrate
 
-## Security notes
+# Production
+pnpm run db:migrate:prod
+```
 
-- **Authentication**: All protected routes require a Clerk session token.
-- **Storage**:
-  - `ASSETS_PRIVATE` (R2): Not public. Only accessible via signed URLs or Worker proxy.
-  - `ASSETS_PUBLIC` (R2): Publicly readable for watermarked previews.
-- **Secrets**: Do **not** commit keys. Use `wrangler secret put <KEY>` for production.
+---
+
+## Development
+
+### Testing
+
+```bash
+# Watch mode
+pnpm run test
+
+# Single run with coverage
+pnpm run test:run
+```
+
+### Linting
+
+```bash
+pnpm run lint
+```
+
+### Workflows
+
+The project includes automation workflows in `.agent/workflows/`:
+
+| Workflow   | Purpose                                |
+| ---------- | -------------------------------------- |
+| `/analyze` | Deep codebase analysis, README updates |
+| `/audit`   | Security and quality audit             |
+| `/commit`  | Lint, test, and commit changes         |
+| `/deploy`  | Full production deployment             |
+| `/fix`     | Iteratively fix lint/test errors       |
+
+---
 
 ## Troubleshooting
 
-- **`wrangler` command not found**: Run `npm install` or use `npx wrangler`.
-- **Local Database errors**: Ensure you ran `npm run db:migrate`.
-- **Api Network Errors**: Verify `npm run dev` is running and `vite.config.ts` proxy is pointing to port 8787.
-- **Container failures**: Check `container/server.js` logs. Updates to the container code are deployed via `npm run deploy:worker`.
+### Common Issues
+
+**Wrangler not found**
+
+```bash
+pnpm add -g wrangler
+# or use pnpm exec wrangler
+```
+
+**Local database errors**
+
+```bash
+pnpm run db:migrate
+```
+
+**API connection issues**
+
+- Ensure `pnpm run dev:api` is running
+- Check `vite.config.ts` proxy points to port 8787
+
+**Container not processing**
+
+- Check Cloudflare dashboard for container logs
+- Verify `CONTAINER_AUTH_SECRET` and `INTERNAL_API_TOKEN` are set
+
+---
 
 ## Contributing
 
-1.  Create a feature branch.
-2.  Ensure linting passes: `npm run lint`.
-3.  Add database migrations if schema changes.
-4.  Open a PR.
+1. Create a feature branch from `main`
+2. Make changes
+3. Run lint and tests: `pnpm run lint && pnpm run test:run`
+4. Add migrations if schema changes
+5. Open a PR with clear description
+
+---
+
+## Documentation
+
+| Document                                               | Purpose                  |
+| ------------------------------------------------------ | ------------------------ |
+| [CODEBASE_ANALYSIS.md](docs/CODEBASE_ANALYSIS.md)      | Deep technical analysis  |
+| [TRACKING.md](docs/TRACKING.md)                        | Analytics implementation |
+| [design-system.md](docs/design-system-for-huepress.md) | UI/UX guidelines         |
+| [business-plan.md](docs/business-plan-huepress.md)     | Business strategy        |
+
+---
 
 ## License
 
-No license file found.
+Proprietary. All rights reserved.
 
-## Appendix: Repo map
+---
 
-```
-.
-├── container/              # Processing service (Docker)
-│   ├── Dockerfile          # Node.js 20 environment
-│   └── server.js           # Express app for PDF/Image gen
-├── migrations/             # SQL migrations for D1
-├── public/                 # Static assets
-├── src/
-│   ├── api/                # Backend Application
-│   │   ├── index.ts        # Entry point (Hono)
-│   │   └── routes/         # API Route handlers
-│   ├── components/         # React UI components
-│   ├── lib/                # Shared utilities
-│   │   └── processing-container.ts # Container client
-│   ├── pages/              # React Views (Pages)
-│   ├── App.tsx             # Main React Layout
-│   └── main.tsx            # Frontend Entry point
-├── package.json            # Deps and Scripts
-├── vite.config.ts          # Vite Configuration
-└── wrangler.toml           # Cloudflare Configuration
-```
-
-## Appendix: Evidence index
-
-- **Tech Stack**: `package.json` (React, Vite, Hono, Tailwind).
-- **API Routes**: `src/api/index.ts` -> `routes/*.ts`.
-- **Container Logic**: `container/server.js` (Express app), `src/lib/processing-container.ts` (Client).
-- **Database**: `migrations/001_init.sql`, `wrangler.toml` (`[[d1_databases]]`).
-- **Scripts**: `package.json` (`scripts` section).
-
-## Coverage & confidence
-
-- **Verified**:
-  - Frontend/Backend split and tech stack.
-  - API routing structure and key endpoints.
-  - Database schema from migrations.
-  - Container purpose (PDF/Image gen) and interface.
-- **Inferred**:
-  - "Production" deployment details (assumed standard Cloudflare flow based on `npm run deploy` scripts).
-  - Exact internal workflow of `ProcessingContainer` orchestration (inferred from `processing-container.ts`).
+<p align="center">
+  <sub>Built with ❤️ by the HuePress team</sub>
+</p>

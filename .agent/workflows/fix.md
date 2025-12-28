@@ -11,7 +11,7 @@ Iteratively fix all lint errors, warnings, and test failures until everything pa
 // turbo
 
 ```bash
-npx tsc --noEmit
+pnpm exec tsc --noEmit
 ```
 
 If errors, fix them and re-run until clean.
@@ -21,7 +21,7 @@ If errors, fix them and re-run until clean.
 // turbo
 
 ```bash
-npm run lint
+pnpm run lint
 ```
 
 If errors or warnings, fix them. Common fixes:
@@ -37,7 +37,7 @@ Re-run until 0 errors AND 0 warnings.
 // turbo
 
 ```bash
-npm test tests/api/ -- --run
+pnpm test tests/api/ -- --run
 ```
 
 Use `--run` flag to run once (not watch mode). If tests fail, fix and re-run.
@@ -47,7 +47,7 @@ Use `--run` flag to run once (not watch mode). If tests fail, fix and re-run.
 // turbo
 
 ```bash
-npx tsc --noEmit && npm run lint && npm test tests/api/ -- --run
+pnpm exec tsc --noEmit && pnpm run lint && pnpm test tests/api/ -- --run
 ```
 
 ## Key Rules

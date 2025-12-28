@@ -9,7 +9,7 @@ description: how to deploy HuePress to production
 Before deploying, ensure you have:
 
 1. Cloudflare account with Pages and Workers enabled
-2. Wrangler CLI authenticated (`npx wrangler login`)
+2. Wrangler CLI authenticated (`pnpm exec wrangler login`)
 3. Environment secrets configured
 
 ## Step 1: Set Production Secrets
@@ -18,19 +18,19 @@ Before deploying, ensure you have:
 
 ```bash
 # Required secrets for the API worker
-npx wrangler secret put CLERK_SECRET_KEY
-npx wrangler secret put STRIPE_SECRET_KEY
-npx wrangler secret put STRIPE_WEBHOOK_SECRET
+pnpm exec wrangler secret put CLERK_SECRET_KEY
+pnpm exec wrangler secret put STRIPE_SECRET_KEY
+pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET
 ```
 
 ## Step 2: Create R2 Buckets (if not exists)
 
 ```bash
 # Private bucket for subscriber PDFs
-npx wrangler r2 bucket create huepress-assets-private
+pnpm exec wrangler r2 bucket create huepress-assets-private
 
 # Public bucket for watermarked previews
-npx wrangler r2 bucket create huepress-assets-public
+pnpm exec wrangler r2 bucket create huepress-assets-public
 ```
 
 ## Step 3: Run Database Migration
@@ -38,7 +38,7 @@ npx wrangler r2 bucket create huepress-assets-public
 // turbo
 
 ```bash
-npm run db:migrate:prod
+pnpm run db:migrate:prod
 ```
 
 ## Step 4: Build the Frontend
@@ -46,7 +46,7 @@ npm run db:migrate:prod
 // turbo
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 ## Step 5: Deploy Pages (Frontend)
@@ -54,7 +54,7 @@ npm run build
 // turbo
 
 ```bash
-npm run deploy:pages
+pnpm run deploy:pages
 ```
 
 ## Step 6: Deploy Worker (API)
@@ -62,7 +62,7 @@ npm run deploy:pages
 // turbo
 
 ```bash
-npm run deploy:worker
+pnpm run deploy:worker
 ```
 
 **Note**: This command also deploys and updates the Processing Container defined in `wrangler.toml`.
@@ -89,8 +89,8 @@ If issues occur:
 
 ```bash
 # Rollback Pages to previous deployment
-npx wrangler pages rollback huepress
+pnpm exec wrangler pages rollback huepress
 
 # Rollback Worker
-npx wrangler rollback
+pnpm exec wrangler rollback
 ```
