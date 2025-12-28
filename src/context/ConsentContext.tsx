@@ -54,56 +54,66 @@ export const ConsentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         console.error('Failed to parse consent', e);
       }
     } else {
-      // No stored consent - Show banner
-      // No stored consent
-      // Fetch region to determine if we should show banner (with cache buster)
-      const API_URL = import.meta.env.VITE_API_URL || "https://api.huepress.co";
-      fetch(`${API_URL}/api/geo?t=${Date.now()}`)
-        .then(res => res.json() as Promise<{ country?: string }>)
-        .then((data) => {
-          const country = data.country || 'US';
-          const EEA_COUNTRIES = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'GB', 'IS', 'LI', 'NO', 'CH'];
-          
-          if (EEA_COUNTRIES.includes(country)) {
-            // EEA User: Show Banner
-            setBannerOpen(true);
-            setConsent(prev => ({ ...prev, region: 'EEA' }));
-          } else {
-            // US/Other: Do NOT show banner (Opt-out model)
-            // Implicitly accept defaults (but we wait for explicit action to be 100% safe, 
-            // OR we can just allow tracking by default for US. 
-            // Given "don't show this", we will NOT show banner.
-            // We should arguably set defaults to true in memory?
-            // For safety, we keep them "pre-checked" but logic blocks tags until "save".
-            // However, US sites usually fire immediately. 
-            // Let's AUTO-GRANT for US to meet business need, but allow opt-out via footer.
-            const autoGrant: ConsentState = {
-                necessary: true,
-                analytics: true,
-                marketing: true,
-                region: 'US'
-            };
-            if (!isGpcEnabled) {
-                setConsent(autoGrant);
-                updateGoogleConsent(autoGrant);
-                // We don't save to localStorage to allow re-checking, or we can save.
-                // Better to save so we don't re-check API every reload.
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(autoGrant));
-            } else {
-                 // GPC is on, grant analytics but deny marketing
-                 const gpcGrant = { ...autoGrant, marketing: false };
-                 setConsent(gpcGrant);
-                 updateGoogleConsent(gpcGrant);
-                 localStorage.setItem(STORAGE_KEY, JSON.stringify(gpcGrant));
+      // No stored consent - defer geo check to avoid blocking render
+      // Use requestIdleCallback for best performance, with setTimeout fallback
+      const runGeoCheck = () => {
+        const API_URL = import.meta.env.VITE_API_URL || "https://api.huepress.co";
+        performance.mark('geo-fetch-start');
+        
+        fetch(`${API_URL}/api/geo?t=${Date.now()}`)
+          .then(res => res.json() as Promise<{ country?: string }>)
+          .then((data) => {
+            performance.mark('geo-fetch-end');
+            performance.measure('geo-fetch', 'geo-fetch-start', 'geo-fetch-end');
+            const geoTime = performance.getEntriesByName('geo-fetch')[0]?.duration;
+            if (geoTime && geoTime > 1000) {
+              console.warn(`[Perf] Geo API took ${geoTime.toFixed(0)}ms`);
             }
-          }
-        })
-        .catch(() => {
-           // Fallback: Show banner to be safe
-           setBannerOpen(true);
-        });
+            
+            const country = data.country || 'US';
+            const EEA_COUNTRIES = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'GB', 'IS', 'LI', 'NO', 'CH'];
+            
+            if (EEA_COUNTRIES.includes(country)) {
+              // EEA User: Show Banner
+              setBannerOpen(true);
+              setConsent(prev => ({ ...prev, region: 'EEA' }));
+            } else {
+              // US/Other: Auto-grant consent (opt-out model)
+              const autoGrant: ConsentState = {
+                  necessary: true,
+                  analytics: true,
+                  marketing: true,
+                  region: 'US'
+              };
+              if (!isGpcEnabled) {
+                  setConsent(autoGrant);
+                  updateGoogleConsent(autoGrant);
+                  localStorage.setItem(STORAGE_KEY, JSON.stringify(autoGrant));
+              } else {
+                   // GPC is on, grant analytics but deny marketing
+                   const gpcGrant = { ...autoGrant, marketing: false };
+                   setConsent(gpcGrant);
+                   updateGoogleConsent(gpcGrant);
+                   localStorage.setItem(STORAGE_KEY, JSON.stringify(gpcGrant));
+              }
+            }
+          })
+          .catch(() => {
+             // Fallback: Show banner to be safe
+             setBannerOpen(true);
+          });
+      };
 
-      // If GPC is active, we must UNCHECK marketing by default logic (handled above for US, here for fallback/EEA)
+      // Defer geo check - don't block initial paint
+      if ('requestIdleCallback' in window) {
+        (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number })
+          .requestIdleCallback(runGeoCheck, { timeout: 2000 });
+      } else {
+        // Fallback for Safari
+        setTimeout(runGeoCheck, 100);
+      }
+
+      // If GPC is active, we must UNCHECK marketing by default logic
       if (isGpcEnabled) {
         setConsent(prev => ({ ...prev, marketing: false }));
       }

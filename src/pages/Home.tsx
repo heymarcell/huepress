@@ -86,7 +86,14 @@ export default function HomePage() {
 
     const fetchFeatured = async () => {
       try {
+        performance.mark('assets-fetch-start');
         const data = await apiClient.assets.list({ limit: 8 });
+        performance.mark('assets-fetch-end');
+        performance.measure('assets-fetch', 'assets-fetch-start', 'assets-fetch-end');
+        const apiTime = performance.getEntriesByName('assets-fetch')[0]?.duration;
+        if (apiTime && apiTime > 1000) {
+          console.warn(`[Perf] Assets API took ${apiTime.toFixed(0)}ms`);
+        }
         if (!cancelled) setFeaturedItems(data.assets || []);
       } catch (err) {
         console.error("Failed to load featured assets", err);
