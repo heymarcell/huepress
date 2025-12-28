@@ -192,7 +192,7 @@ export default function BlogPost() {
               </p>
               <Link
                 to="/vault"
-                className="inline-flex items-center px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary-hover transition-colors"
+                className="inline-flex items-center px-6 py-3 bg-primary text-white rounded-md font-medium hover:bg-primary-hover transition-colors shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.97]"
               >
                 Browse The Vault
               </Link>
