@@ -332,16 +332,24 @@ export const apiClient = {
     }
   },
   user: {
-    getLikes: async () => {
+    getLikes: async (params?: { limit?: number; offset?: number }) => {
       const token = await window.Clerk?.session?.getToken();
-      return fetchApi<{ likes: Asset[]; total: number }>("/api/user/likes", {
+      const searchParams = new URLSearchParams();
+      if (params?.limit) searchParams.set("limit", params.limit.toString());
+      if (params?.offset) searchParams.set("offset", params.offset.toString());
+      const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+      return fetchApi<{ likes: Asset[]; total: number; limit: number; offset: number }>(`/api/user/likes${query}`, {
         token
       });
     },
 
-    getHistory: async () => {
+    getHistory: async (params?: { limit?: number; offset?: number }) => {
       const token = await window.Clerk?.session?.getToken();
-      return fetchApi<{ history: (Asset & { downloaded_at: string, type: string })[]; total: number }>("/api/user/history", {
+      const searchParams = new URLSearchParams();
+      if (params?.limit) searchParams.set("limit", params.limit.toString());
+      if (params?.offset) searchParams.set("offset", params.offset.toString());
+      const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+      return fetchApi<{ history: (Asset & { downloaded_at: string, type: string })[]; total: number; limit: number; offset: number }>(`/api/user/history${query}`, {
         token
       });
     },
