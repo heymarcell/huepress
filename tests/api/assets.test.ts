@@ -213,6 +213,11 @@ describe("Assets API", () => {
             getAuth: vi.fn(() => ({ userId: "user_123" }))
         }));
 
+        // Mock pdf-lib watermarkPdf to avoid needing a real PDF
+        vi.mock("../../src/lib/pdf-watermark", () => ({
+            watermarkPdf: vi.fn().mockResolvedValue(new Uint8Array([0x25, 0x50, 0x44, 0x46])) // %PDF
+        }));
+
         const mockAsset = { id: "1", title: "Test", r2_key_private: "key.pdf", slug: "test", asset_id: "HP-001" };
         
         // First call: subscription check, Second call: asset lookup
@@ -220,7 +225,11 @@ describe("Assets API", () => {
             .mockResolvedValueOnce({ subscription_status: "active" }) // User subscription
             .mockResolvedValueOnce(mockAsset);
         
-        mockR2Get.mockResolvedValue({ body: "file content" });
+        // Mock R2 response with arrayBuffer method (used by watermarking)
+        mockR2Get.mockResolvedValue({ 
+            body: "file content",
+            arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8))
+        });
 
         const res = await app.request("http://localhost/download/1", {
             headers: { "Authorization": "Bearer token" }
@@ -229,6 +238,7 @@ describe("Assets API", () => {
         expect(res.status).toBe(200);
         expect(mockR2Get).toHaveBeenCalledWith("key.pdf");
         expect(mockRun).toHaveBeenCalled(); // Update download count
+        expect(res.headers.get("Cache-Control")).toBe("private, no-store"); // CRITICAL: No caching for user-specific PDFs
     });
 
     it("GET /download/:id should return 403 without active subscription", async () => {

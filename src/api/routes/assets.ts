@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getAuth } from "@hono/clerk-auth";
 import { Bindings } from "../types";
+import { watermarkPdf } from "../../lib/pdf-watermark";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -197,10 +198,17 @@ app.get("/download/:id", async (c) => {
       .bind(id)
       .run();
 
-    return new Response(file.body, {
+    // Apply invisible watermark with user ID for leak tracking
+    const watermarkedPdf = await watermarkPdf(
+      await file.arrayBuffer(),
+      auth.userId
+    );
+
+    return new Response(new Uint8Array(watermarkedPdf), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="huepress-${asset.slug}-${asset.asset_id}.pdf"`,
+        "Content-Disposition": `attachment; filename="huepress-secure-${Date.now()}.pdf"`,
+        "Cache-Control": "private, no-store", // CRITICAL: Do not cache user-specific versions
       },
     });
   } catch (error) {
