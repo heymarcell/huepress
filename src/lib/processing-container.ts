@@ -13,6 +13,14 @@ export class ProcessingContainer extends Container {
   
   // Shutdown container after 10 minutes of inactivity
   sleepAfter = "10m";
+  
+  // Handle Cloudflare's internal hibernation alarms
+  // Without this, alarms throw exceptions because there's no handler
+  async alarm(): Promise<void> {
+    // Cloudflare Container uses alarms internally for hibernation management
+    // This handler prevents "exception" errors in logs
+    console.log("[ProcessingContainer] Alarm triggered (hibernation check)");
+  }
 }
 
 /**
