@@ -152,8 +152,14 @@ app.get("/cdn/*", async (c) => {
 const worker = {
   fetch: app.fetch,
   async scheduled(_event: unknown, env: Bindings, _ctx: unknown) {
-    console.log("[Cron] Checking for pending jobs...");
+    console.log("[Cron] Running scheduled tasks...");
     try {
+       // [PERF] Warm D1 to prevent cold start delays (can be 25+ seconds)
+       const warmupStart = Date.now();
+       await env.DB.prepare("SELECT 1").first();
+       console.log(`[Cron] D1 warmup completed in ${Date.now() - warmupStart}ms`);
+       
+       // Check for pending processing jobs
        const pending = await env.DB.prepare("SELECT 1 FROM processing_queue WHERE status = 'pending' LIMIT 1").first();
        
        if (pending) {
