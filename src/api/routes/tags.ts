@@ -3,10 +3,19 @@ import { Bindings, Tag } from "../types";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// GET /tags - Get all tags, optionally filtered by type
+// GET /tags - Get all tags, optionally filtered by type (with edge caching)
 app.get("/", async (c) => {
-  // Tags rarely change - cache aggressively to avoid DB round-trips
-  c.header("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+  // Check edge cache first (caches.default is Cloudflare Workers API)
+  const cache = (caches as unknown as { default: Cache }).default;
+  const cacheKey = new Request(c.req.url, { method: "GET" });
+  
+  const cachedResponse = await cache.match(cacheKey);
+  if (cachedResponse) {
+    const response = new Response(cachedResponse.body, cachedResponse);
+    response.headers.set("X-Cache", "HIT");
+    return response;
+  }
+
   const type = c.req.query("type");
 
   try {
@@ -49,7 +58,7 @@ app.get("/", async (c) => {
               try {
                 const tagsArray = JSON.parse(row.tags);
                 if (Array.isArray(tagsArray)) {
-                  tagsArray.forEach(t => {
+                  tagsArray.forEach((t: unknown) => {
                      // Normalize string
                      if (typeof t === 'string' && t.length > 0) usedTagsSet.add(t.trim());
                   });
@@ -89,10 +98,22 @@ app.get("/", async (c) => {
        }
     }
 
-    return c.json({
+    const responseData = {
       tags: result.results || [],
       grouped,
-    });
+    };
+    
+    const response = c.json(responseData);
+    // Cache for 5 minutes - tags rarely change
+    response.headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+    response.headers.set("X-Cache", "MISS");
+    
+    // Store in edge cache
+    c.executionCtx.waitUntil(
+      cache.put(cacheKey, response.clone())
+    );
+    
+    return response;
   } catch (error) {
     console.error("Error fetching tags:", error);
     return c.json({ error: "Failed to fetch tags" }, 500);
