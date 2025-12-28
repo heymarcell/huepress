@@ -3,16 +3,19 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
 import { apiClient } from "@/lib/api-client";
 import { ResourceCard, ResourceCardSkeleton, SearchBar, Button, Heading, Combobox } from "@/components/ui";
-import { ArrowUpDown, Filter, Search, X } from "lucide-react";
+import { ArrowUpDown, Filter, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import SEO from "@/components/SEO";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 
 import { FreeSampleBanner } from "@/components/features/FreeSampleBanner";
+
+const PAGE_SIZE = 24;
 
 export default function VaultPage() {
   const { isSubscriber } = useSubscription();
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   
   // Filter States - Initialize from URL query params
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "");
@@ -23,6 +26,12 @@ export default function VaultPage() {
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const debouncedSearch = useDebounce(searchQuery, 500);
+  
+  // Pagination state - Initialize from URL
+  const [page, setPage] = useState(() => {
+    const p = parseInt(searchParams.get("page") || "1");
+    return Math.max(1, p) - 1; // Convert to 0-indexed
+  });
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -36,6 +45,11 @@ export default function VaultPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(0);
+  }, [selectedCategory, selectedSkill, selectedTags, debouncedSearch]);
+
   // Sync filters to URL
   React.useEffect(() => {
     const params = new URLSearchParams();
@@ -44,9 +58,10 @@ export default function VaultPage() {
     if (selectedTags.length > 0) params.set("tag", selectedTags.join(","));
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (sortBy && sortBy !== "newest") params.set("sort", sortBy);
+    if (page > 0) params.set("page", (page + 1).toString());
     
     setSearchParams(params, { replace: true });
-  }, [selectedCategory, selectedSkill, selectedTags, debouncedSearch, sortBy, setSearchParams]);
+  }, [selectedCategory, selectedSkill, selectedTags, debouncedSearch, sortBy, page, setSearchParams]);
 
   // Query: Tags
   const { data: tagsData } = useQuery({
@@ -57,18 +72,39 @@ export default function VaultPage() {
   
   const tags = tagsData?.grouped || {};
 
-  // Query: Assets
+  // Query: Assets with pagination
   const { data: assetsData, isLoading } = useQuery({
-    queryKey: ['assets', { selectedCategory, selectedSkill, selectedTags, debouncedSearch }],
+    queryKey: ['assets', { selectedCategory, selectedSkill, selectedTags, debouncedSearch, page }],
     queryFn: () => apiClient.assets.list({
       category: selectedCategory || undefined,
       skill: selectedSkill || undefined,
       tag: selectedTags.length > 0 ? selectedTags.join(",") : undefined,
       search: debouncedSearch || undefined,
-      limit: 100 
+      limit: PAGE_SIZE,
+      offset: page * PAGE_SIZE
     }),
     placeholderData: keepPreviousData,
   });
+
+  const totalAssets = assetsData?.total || 0;
+  const totalPages = Math.ceil(totalAssets / PAGE_SIZE);
+
+  // Prefetch next page
+  React.useEffect(() => {
+    if (page + 1 < totalPages) {
+      queryClient.prefetchQuery({
+        queryKey: ['assets', { selectedCategory, selectedSkill, selectedTags, debouncedSearch, page: page + 1 }],
+        queryFn: () => apiClient.assets.list({
+          category: selectedCategory || undefined,
+          skill: selectedSkill || undefined,
+          tag: selectedTags.length > 0 ? selectedTags.join(",") : undefined,
+          search: debouncedSearch || undefined,
+          limit: PAGE_SIZE,
+          offset: (page + 1) * PAGE_SIZE
+        }),
+      });
+    }
+  }, [page, totalPages, selectedCategory, selectedSkill, selectedTags, debouncedSearch, queryClient]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -83,7 +119,7 @@ export default function VaultPage() {
     });
   }, [assetsData?.assets, sortBy]);
 
-  const showFreeSampleBanner = !isSubscriber;
+  const showFreeSampleBanner = !isSubscriber && page === 0;
 
   // assets.category column stores "Animals".
   // So value should be t.name!
@@ -91,6 +127,47 @@ export default function VaultPage() {
   const categoriesUI = (tags.category || []).map(t => ({ label: t.name, value: t.name }));
   const skillsUI = (tags.skill || []).map(t => ({ label: t.name, value: t.name }));
   const themesUI = (tags.theme || []).map(t => ({ label: t.name, value: t.name }));
+
+  // Pagination Controls
+  const PaginationControls = () => {
+    if (totalPages <= 1) return null;
+    
+    const start = page * PAGE_SIZE + 1;
+    const end = Math.min((page + 1) * PAGE_SIZE, totalAssets);
+    
+    return (
+      <div className="flex items-center justify-between py-6 border-t border-gray-200 mt-8">
+        <span className="text-sm text-gray-500">
+          Showing {start}–{end} of {totalAssets} designs
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setPage(p => Math.max(0, p - 1));
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            disabled={page === 0}
+            className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <span className="text-sm font-medium text-gray-700 px-3">
+            Page {page + 1} of {totalPages}
+          </span>
+          <button
+            onClick={() => {
+              setPage(p => Math.min(totalPages - 1, p + 1));
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            disabled={page >= totalPages - 1}
+            className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -104,7 +181,7 @@ export default function VaultPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <Heading as="h1" variant="h1" className="mb-2">The Vault</Heading>
-          <p className="text-gray-500">500+ fridge-worthy designs, ready to print</p>
+          <p className="text-gray-500">{totalAssets > 0 ? `${totalAssets} fridge-worthy designs, ready to print` : '500+ fridge-worthy designs, ready to print'}</p>
         </div>
 
         {/* Search Bar - Centered with max width */}
@@ -237,32 +314,35 @@ export default function VaultPage() {
             ))}
           </div>
         ) : filteredAssets.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-8">
-            {/* Resource Cards with Banner Injection */}
-            {filteredAssets.map((asset, index) => {
-              // TODO: Determine if free sample from asset property
-              const isFreeSample = false; 
-              return (
-              <React.Fragment key={asset.id}>
-                 <ResourceCard
-                    id={asset.id}
-                    title={asset.title}
-                    imageUrl={asset.image_url}
-                    tags={asset.tags}
-                    isLocked={!isSubscriber && !isFreeSample}
-                    isNew={asset.status === 'published' && new Date(asset.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)} // Logic for isNew? Asset missing isNew prop in interface unless I add it or compute it
-                    slug={asset.slug}
-                    assetId={asset.asset_id}
-                  />
-                  {/* Inject Banner after 4th item (approx row 1 on desktop, row 2 on mobile) */}
-                  {showFreeSampleBanner && index === 3 && (
-                    <div className="col-span-full py-4 lg:py-8">
-                       <FreeSampleBanner className="rounded-[32px] border-none ring-1 ring-secondary/10 bg-secondary/5 shadow-sm py-10 overflow-hidden" />
-                    </div>
-                  )}
-              </React.Fragment>
-            )})}
-          </div>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-8">
+              {/* Resource Cards with Banner Injection */}
+              {filteredAssets.map((asset, index) => {
+                // TODO: Determine if free sample from asset property
+                const isFreeSample = false; 
+                return (
+                <React.Fragment key={asset.id}>
+                   <ResourceCard
+                      id={asset.id}
+                      title={asset.title}
+                      imageUrl={asset.image_url}
+                      tags={asset.tags}
+                      isLocked={!isSubscriber && !isFreeSample}
+                      isNew={asset.status === 'published' && new Date(asset.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)} // Logic for isNew? Asset missing isNew prop in interface unless I add it or compute it
+                      slug={asset.slug}
+                      assetId={asset.asset_id}
+                    />
+                    {/* Inject Banner after 4th item (approx row 1 on desktop, row 2 on mobile) */}
+                    {showFreeSampleBanner && index === 3 && (
+                      <div className="col-span-full py-4 lg:py-8">
+                         <FreeSampleBanner className="rounded-[32px] border-none ring-1 ring-secondary/10 bg-secondary/5 shadow-sm py-10 overflow-hidden" />
+                      </div>
+                    )}
+                </React.Fragment>
+              )})}
+            </div>
+            <PaginationControls />
+          </>
         ) : (
           <div className="text-center py-16">
             <img src="/404-robot.svg" alt="No designs found" className="w-48 h-48 mx-auto mb-6" />

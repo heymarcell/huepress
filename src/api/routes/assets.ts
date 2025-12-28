@@ -9,20 +9,20 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.get("/assets", async (c) => {
   const category = c.req.query("category")?.trim();
   const skill = c.req.query("skill")?.trim();
-  const limit = parseInt(c.req.query("limit") || "50");
+  const limit = parseInt(c.req.query("limit") || "24");
   const offset = parseInt(c.req.query("offset") || "0");
 
-  // Select only fields needed for list view/cards to reduce payload size
-  let query = "SELECT id, title, category, skill, asset_id, slug, r2_key_public, tags, created_at, description FROM assets WHERE status = 'published'";
+  // Build WHERE clause conditions
+  let whereClause = "WHERE status = 'published'";
   const params: string[] = [];
 
   if (category) {
-    query += " AND category = ?";
+    whereClause += " AND category = ?";
     params.push(category);
   }
 
   if (skill) {
-    query += " AND skill = ?";
+    whereClause += " AND skill = ?";
     params.push(skill);
   }
 
@@ -31,9 +31,8 @@ app.get("/assets", async (c) => {
     const tags = tagParam.split(",").map(t => t.trim()).filter(Boolean);
     if (tags.length > 0) {
       // Filter by ANY of the tags (OR logic)
-      // json_each.value IN (?, ?, ...)
       const placeholders = tags.map(() => "?").join(",");
-      query += ` AND EXISTS (SELECT 1 FROM json_each(tags) WHERE value IN (${placeholders}))`;
+      whereClause += ` AND EXISTS (SELECT 1 FROM json_each(tags) WHERE value IN (${placeholders}))`;
       params.push(...tags);
     }
   }
@@ -41,18 +40,27 @@ app.get("/assets", async (c) => {
   const search = c.req.query("search");
   if (search) {
     const term = `%${search}%`;
-    query += " AND (title LIKE ? OR description LIKE ? OR asset_id LIKE ? OR EXISTS (SELECT 1 FROM json_each(tags) WHERE value LIKE ?))";
+    whereClause += " AND (title LIKE ? OR description LIKE ? OR asset_id LIKE ? OR EXISTS (SELECT 1 FROM json_each(tags) WHERE value LIKE ?))";
     params.push(term, term, term, term);
   }
 
-  query += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
-  params.push(limit.toString(), offset.toString());
-
   try {
-    const { results } = await c.env.DB.prepare(query).bind(...params).all();
+    // Run both queries in parallel: data + count
+    const [dataResult, countResult] = await Promise.all([
+      c.env.DB.prepare(
+        `SELECT id, title, category, skill, asset_id, slug, r2_key_public, tags, created_at, description 
+         FROM assets ${whereClause} 
+         ORDER BY created_at DESC 
+         LIMIT ? OFFSET ?`
+      ).bind(...params, limit.toString(), offset.toString()).all(),
+      
+      c.env.DB.prepare(
+        `SELECT COUNT(*) as total FROM assets ${whereClause}`
+      ).bind(...params).first<{ total: number }>()
+    ]);
     
     const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
-    const assets = results?.map((asset: Record<string, unknown>) => {
+    const assets = dataResult.results?.map((asset: Record<string, unknown>) => {
       const r2Key = asset.r2_key_public as string;
       let imageUrl: string | null = null;
       
@@ -70,7 +78,13 @@ app.get("/assets", async (c) => {
 
     // Cache list results - short TTL as content changes frequently
     c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
-    return c.json({ assets, count: assets?.length || 0 });
+    return c.json({ 
+      assets, 
+      total: countResult?.total || 0,
+      limit,
+      offset,
+      count: assets?.length || 0 
+    });
   } catch (error) {
     console.error("Database error:", error);
     return c.json({ error: "Failed to fetch assets" }, 500);
