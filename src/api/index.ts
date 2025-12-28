@@ -154,29 +154,36 @@ const worker = {
   async scheduled(_event: unknown, env: Bindings, _ctx: unknown) {
     console.log("[Cron] Running scheduled tasks...");
     try {
-       // [PERF] Warm D1 to prevent cold start delays (can be 25+ seconds)
-       // touching actual tables forces the storage engine to wake up fully
-       const warmupStart = Date.now();
-       await env.DB.batch([
+       const start = Date.now();
+       
+       // [PERF] Combine Warmup + Job Check into a SINGLE batch to save round trips
+       // 1. Warm assets table
+       // 2. Warm tags table
+       // 3. Check for pending jobs
+       const results = await env.DB.batch([
          env.DB.prepare("SELECT id FROM assets LIMIT 1"),
-         env.DB.prepare("SELECT id FROM tags LIMIT 1")
+         env.DB.prepare("SELECT id FROM tags LIMIT 1"),
+         env.DB.prepare("SELECT 1 as pending FROM processing_queue WHERE status = 'pending' LIMIT 1")
        ]);
-       console.log(`[Cron] D1 warmup (assets+tags) completed in ${Date.now() - warmupStart}ms`);
        
-       // Check for pending processing jobs
-       const pending = await env.DB.prepare("SELECT 1 FROM processing_queue WHERE status = 'pending' LIMIT 1").first();
+       console.log(`[Cron] D1 operations completed in ${Date.now() - start}ms`);
        
-       if (pending) {
+       // Check result of the 3rd query (queue check)
+       const pendingJob = results[2]?.results?.[0];
+       
+       if (pendingJob) {
           console.log("[Cron] Pending jobs found. Waking container...");
           const container = (await import("@cloudflare/containers")).getContainer(env.PROCESSING, "main");
-          const res = await container.fetch("http://container/wakeup", {
+          // Fire and forget - don't await response to keep cron fast
+          // The container will wake up and process the queue
+          container.fetch("http://container/wakeup", {
              headers: { 
                "X-Internal-Secret": env.CONTAINER_AUTH_SECRET || "",
                "X-Set-Internal-Token": env.INTERNAL_API_TOKEN || "",
                "X-Set-Auth-Secret": env.CONTAINER_AUTH_SECRET || ""
              }
           });
-          console.log(`[Cron] Wakeup sent. Status: ${res.status}`);
+          console.log("[Cron] Wakeup signal sent.");
        } else {
           console.log("[Cron] No pending jobs.");
        }
