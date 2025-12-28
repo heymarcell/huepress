@@ -2,8 +2,8 @@ import React, { useState, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
 import { apiClient } from "@/lib/api-client";
-import { ResourceCard, ResourceCardSkeleton, SearchBar, Button, Heading, Combobox } from "@/components/ui";
-import { ArrowUpDown, Filter, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ResourceCard, ResourceCardSkeleton, SearchBar, Button, Heading, Combobox, Pagination } from "@/components/ui";
+import { ArrowUpDown, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
@@ -128,46 +128,7 @@ export default function VaultPage() {
   const skillsUI = (tags.skill || []).map(t => ({ label: t.name, value: t.name }));
   const themesUI = (tags.theme || []).map(t => ({ label: t.name, value: t.name }));
 
-  // Pagination Controls
-  const PaginationControls = () => {
-    if (totalPages <= 1) return null;
-    
-    const start = page * PAGE_SIZE + 1;
-    const end = Math.min((page + 1) * PAGE_SIZE, totalAssets);
-    
-    return (
-      <div className="flex items-center justify-between py-6 border-t border-gray-200 mt-8">
-        <span className="text-sm text-gray-500">
-          Showing {start}–{end} of {totalAssets} designs
-        </span>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              setPage(p => Math.max(0, p - 1));
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            disabled={page === 0}
-            className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <span className="text-sm font-medium text-gray-700 px-3">
-            Page {page + 1} of {totalPages}
-          </span>
-          <button
-            onClick={() => {
-              setPage(p => Math.min(totalPages - 1, p + 1));
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            disabled={page >= totalPages - 1}
-            className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-    );
-  };
+
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -342,7 +303,16 @@ export default function VaultPage() {
                 </React.Fragment>
               )})}
             </div>
-            <PaginationControls />
+            <Pagination 
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={(p) => {
+                setPage(p);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              totalItems={totalAssets}
+              pageSize={PAGE_SIZE}
+            />
           </>
         ) : (
           <div className="text-center py-16">

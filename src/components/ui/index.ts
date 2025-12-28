@@ -13,3 +13,5 @@ export * from "./Badge";
 export * from "./Section";
 export * from "./Input";
 export * from "./Combobox";
+export * from "./Pagination";
+

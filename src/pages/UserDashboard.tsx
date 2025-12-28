@@ -3,9 +3,8 @@ import { Link, Navigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { ResourceCard } from "@/components/ui/ResourceCard";
-import { Loader2, Heart, History, User, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { ResourceCard, Button, Pagination } from "@/components/ui";
+import { Loader2, Heart, History, User } from "lucide-react";
 import SEO from "@/components/SEO";
 
 type Tab = "likes" | "history";
@@ -70,57 +69,7 @@ export default function UserDashboard() {
     return <Navigate to="/sign-in" replace />;
   }
 
-  // Pagination Controls Component
-  const PaginationControls = ({ 
-    currentPage, 
-    totalPages, 
-    total,
-    onPrev, 
-    onNext,
-    tab
-  }: { 
-    currentPage: number; 
-    totalPages: number; 
-    total: number;
-    onPrev: () => void; 
-    onNext: () => void;
-    tab: Tab;
-  }) => {
-    if (totalPages <= 1) return null;
-    
-    const start = currentPage * PAGE_SIZE + 1;
-    const end = Math.min((currentPage + 1) * PAGE_SIZE, total);
-    
-    return (
-      <div className="flex items-center justify-between pt-6 border-t border-neutral-100">
-        <span className="text-sm text-neutral-500">
-          Showing {start}–{end} of {total}
-        </span>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onPrev}
-            disabled={currentPage === 0}
-            className="p-2 rounded-lg border border-neutral-200 text-neutral-600 hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <span className="text-sm font-medium text-neutral-700 px-2">
-            {currentPage + 1} / {totalPages}
-          </span>
-          <button
-            onClick={() => {
-              onNext();
-              prefetchNextPage(tab, currentPage + 1);
-            }}
-            disabled={currentPage >= totalPages - 1}
-            className="p-2 rounded-lg border border-neutral-200 text-neutral-600 hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    );
-  };
+
 
   return (
     <div className="min-h-screen bg-neutral-50 pb-20 pt-24 px-4 sm:px-6">
@@ -220,13 +169,15 @@ export default function UserDashboard() {
                         />
                       ))}
                     </div>
-                    <PaginationControls
+                    <Pagination
                       currentPage={likesPage}
                       totalPages={likesTotalPages}
-                      total={likesTotal}
-                      onPrev={() => setLikesPage(p => Math.max(0, p - 1))}
-                      onNext={() => setLikesPage(p => Math.min(likesTotalPages - 1, p + 1))}
-                      tab="likes"
+                      totalItems={likesTotal}
+                      pageSize={PAGE_SIZE}
+                      onPageChange={(p) => {
+                        setLikesPage(p);
+                        if (p > likesPage) prefetchNextPage("likes", p);
+                      }}
                     />
                   </div>
                 )}
@@ -278,13 +229,15 @@ export default function UserDashboard() {
                         </Link>
                       ))}
                     </div>
-                    <PaginationControls
+                    <Pagination
                       currentPage={historyPage}
                       totalPages={historyTotalPages}
-                      total={historyTotal}
-                      onPrev={() => setHistoryPage(p => Math.max(0, p - 1))}
-                      onNext={() => setHistoryPage(p => Math.min(historyTotalPages - 1, p + 1))}
-                      tab="history"
+                      totalItems={historyTotal}
+                      pageSize={PAGE_SIZE}
+                      onPageChange={(p) => {
+                        setHistoryPage(p);
+                        if (p > historyPage) prefetchNextPage("history", p);
+                      }}
                     />
                   </div>
                 )}
