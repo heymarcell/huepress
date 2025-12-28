@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import SEO from "@/components/SEO";
+import { BookOpen } from "lucide-react";
 
 interface BlogPost {
   id: string;
@@ -9,6 +10,44 @@ interface BlogPost {
   excerpt: string | null;
   cover_image: string | null;
   published_at: string | null;
+}
+
+// Stylish placeholder for missing/failed cover images
+function CoverPlaceholder({ title }: { title: string }) {
+  return (
+    <div className="w-full h-48 bg-gradient-to-br from-primary/10 via-accent to-secondary/10 flex flex-col items-center justify-center">
+      <BookOpen className="w-10 h-10 text-primary/40 mb-2" strokeWidth={1.5} />
+      <span className="text-xs text-gray-400 font-medium px-4 text-center line-clamp-1">
+        {title}
+      </span>
+    </div>
+  );
+}
+
+// Blog card image with error handling
+function BlogCardImage({ src, alt, slug }: { src: string | null; alt: string; slug: string }) {
+  const [imageError, setImageError] = useState(false);
+
+  if (!src || imageError) {
+    return (
+      <Link to={`/blog/${slug}`}>
+        <CoverPlaceholder title={alt} />
+      </Link>
+    );
+  }
+
+  return (
+    <Link to={`/blog/${slug}`}>
+      <img
+        src={src}
+        alt={alt}
+        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+        loading="lazy"
+        decoding="async"
+        onError={() => setImageError(true)}
+      />
+    </Link>
+  );
 }
 
 export default function BlogIndex() {
@@ -101,21 +140,8 @@ export default function BlogIndex() {
                   key={post.id}
                   className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group"
                 >
-                  {/* Cover Image */}
-                  {post.cover_image ? (
-                    <Link to={`/blog/${post.slug}`}>
-                      <img
-                        src={post.cover_image}
-                        alt={post.title}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </Link>
-                  ) : (
-                    <Link
-                      to={`/blog/${post.slug}`}
-                      className="block w-full h-48 bg-gradient-to-br from-primary/10 to-secondary/10"
-                    />
-                  )}
+                  {/* Cover Image with Fallback */}
+                  <BlogCardImage src={post.cover_image} alt={post.title} slug={post.slug} />
 
                   {/* Content */}
                   <div className="p-6">
@@ -152,3 +178,4 @@ export default function BlogIndex() {
     </>
   );
 }
+

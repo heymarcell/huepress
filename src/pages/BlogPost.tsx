@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import SEO from "@/components/SEO";
-import { ArrowLeft, Calendar } from "lucide-react";
+import { ArrowLeft, Calendar, BookOpen } from "lucide-react";
 
 interface BlogPost {
   id: string;
@@ -15,6 +15,38 @@ interface BlogPost {
   published_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// Stylish placeholder for missing/failed hero images
+function HeroPlaceholder({ title }: { title: string }) {
+  return (
+    <div className="w-full h-full bg-gradient-to-br from-primary/10 via-accent to-secondary/10 flex flex-col items-center justify-center">
+      <BookOpen className="w-16 h-16 text-primary/40 mb-4" strokeWidth={1.5} />
+      <h1 className="font-serif text-3xl md:text-4xl text-gray-400 font-medium px-4 text-center max-w-2xl opacity-50">
+        {title}
+      </h1>
+    </div>
+  );
+}
+
+function HeroImage({ src, alt }: { src: string | null; alt: string }) {
+  const [imageError, setImageError] = useState(false);
+
+  if (!src || imageError) {
+    return <HeroPlaceholder title={alt} />;
+  }
+
+  return (
+    <>
+      <img
+        src={src}
+        alt={alt}
+        className="w-full h-full object-cover"
+        onError={() => setImageError(true)}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+    </>
+  );
 }
 
 export default function BlogPost() {
@@ -101,12 +133,7 @@ export default function BlogPost() {
         {/* Hero / Cover Image */}
         {post.cover_image && (
           <div className="w-full h-64 md:h-96 relative">
-            <img
-              src={post.cover_image}
-              alt={post.title}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            <HeroImage src={post.cover_image} alt={post.title} />
           </div>
         )}
 
