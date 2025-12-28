@@ -23,6 +23,7 @@ export type Bindings = {
   INTERNAL_API_TOKEN: string; // Shared secret for internal container uploads
   API_URL?: string; // Optional API base URL for container calls
   CONTAINER_AUTH_SECRET?: string; // [F-001] Shared secret for container authentication
+  ADMIN_EMAILS?: string; // [F-002] Comma-separated list of admin emails for server-side verification
 };
 
 export interface Asset {

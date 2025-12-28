@@ -15,10 +15,25 @@ import userRoute from "./routes/user";
 import blogRoute from "./routes/blog";
 // import requestsRoute from "./routes/requests";
 
+// [F-003] Zod validation for request submissions
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
+
 const app = new Hono<{ Bindings: Bindings }>();
 
-// Middleware
-app.use("*", cors());
+// [F-004] Middleware - Restrict CORS to known origins
+app.use("*", async (c, next) => {
+  const allowedOrigins = [
+    c.env.SITE_URL || "https://huepress.co",
+    "http://localhost:3000",
+    "http://localhost:5173"
+  ].filter(Boolean);
+  
+  return cors({
+    origin: allowedOrigins,
+    credentials: true
+  })(c, next);
+});
 app.use("*", clerkMiddleware());
 
 // Root route
@@ -56,17 +71,18 @@ app.route("/api", blogRoute);          // /api/posts, /api/admin/posts
 
 import { getAuth } from "@hono/clerk-auth";
 
-// INLINE REQUESTS HANDLER
-app.post("/api/requests/submit", async (c) => {
+// [F-003] Request submission schema with proper validation
+const requestSubmitSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200, "Title too long"),
+  description: z.string().min(1, "Description is required").max(2000, "Description too long"),
+  email: z.string().email("Invalid email format").max(254, "Email too long")
+});
+
+// INLINE REQUESTS HANDLER with Zod validation
+app.post("/api/requests/submit", zValidator("json", requestSubmitSchema), async (c) => {
   try {
     const auth = getAuth(c);
-    const body = await c.req.json();
-    const { title, description, email } = body;
-    
-    // Simple validation
-    if (!title || !description || !email) {
-      return c.json({ error: "Missing required fields" }, 400);
-    }
+    const { title, description, email } = c.req.valid("json");
     
     const id = crypto.randomUUID();
     const userId = auth?.userId || null;

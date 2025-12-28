@@ -21,7 +21,7 @@ app.post("/clerk", async (c) => {
 
   // If missing headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    return c.json({ error: "Error occured -- no svix headers" }, 400);
+    return c.json({ error: "Error occurred: no svix headers" }, 400);
   }
 
   // Get body
@@ -74,7 +74,7 @@ app.post("/clerk", async (c) => {
     }) as ClerkWebhookEvent;
   } catch (err) {
     console.error("Error verifying webhook:", err);
-    return c.json({ error: "Error occured" }, 400);
+    return c.json({ error: "Error occurred: invalid signature" }, 400);
   }
 
   try {

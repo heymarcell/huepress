@@ -55,12 +55,22 @@ async function verifyAdmin(c: Context<{ Bindings: Bindings }>): Promise<boolean>
   // Try 1: Check Clerk publicMetadata.role from session claims
   // This works if custom claims are configured in Clerk Dashboard
   const sessionClaims = auth.sessionClaims as { publicMetadata?: { role?: string } } | undefined;
-  if (sessionClaims?.publicMetadata?.role === 'admin') {
+  const isAdminFromClaims = sessionClaims?.publicMetadata?.role === 'admin';
+
+  // [F-002] Check if allowlist is configured for defense-in-depth
+  const adminEmailsEnv = c.env.ADMIN_EMAILS?.trim();
+  const adminEmails = adminEmailsEnv ? adminEmailsEnv.split(',').map(e => e.trim().toLowerCase()) : [];
+  const hasAllowlist = adminEmails.length > 0;
+
+  // If admin from claims AND no allowlist configured, allow immediately (backwards compatible)
+  if (isAdminFromClaims && !hasAllowlist) {
     return true;
   }
 
-  // Try 2: Fallback to Clerk Backend API (if session claims don't include publicMetadata)
-  // This is slower but always works
+  // Try 2: Fallback to Clerk Backend API (required if allowlist is configured or claims don't confirm admin)
+  let isAdminRole = isAdminFromClaims;
+  let userEmail: string | null = null;
+  
   try {
     const clerkSecretKey = c.env.CLERK_SECRET_KEY;
     if (!clerkSecretKey) {
@@ -80,12 +90,42 @@ async function verifyAdmin(c: Context<{ Bindings: Bindings }>): Promise<boolean>
       return false;
     }
     
-    const userData = await response.json() as { public_metadata?: { role?: string } };
-    return userData?.public_metadata?.role === 'admin';
+    const userData = await response.json() as { 
+      public_metadata?: { role?: string };
+      email_addresses?: Array<{ email_address: string; verification?: { status: string } }>;
+      primary_email_address_id?: string;
+    };
+    
+    // Check role from API if not already confirmed
+    if (!isAdminRole && userData?.public_metadata?.role === 'admin') {
+      isAdminRole = true;
+    }
+    
+    // Extract primary verified email for allowlist check
+    const primaryEmail = userData.email_addresses?.find(
+      e => e.verification?.status === 'verified'
+    );
+    userEmail = primaryEmail?.email_address || null;
+    
   } catch (e) {
     console.error("Admin verification failed:", e);
     return false;
   }
+  
+  // [F-002] Defense-in-depth: If allowlist is configured, require email to be on it
+  if (hasAllowlist && isAdminRole) {
+    if (!userEmail) {
+      console.warn(`[Security] Admin user has no verified email for allowlist check`);
+      return false;
+    }
+    const isOnAllowlist = adminEmails.includes(userEmail.toLowerCase());
+    if (!isOnAllowlist) {
+      console.warn(`[Security] User ${userEmail} has admin role but is not on ADMIN_EMAILS allowlist`);
+      return false;
+    }
+  }
+  
+  return isAdminRole;
 }
 
 import { zValidator } from "@hono/zod-validator";

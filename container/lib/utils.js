@@ -46,6 +46,13 @@ function validateAuthSecret(req, res, next) {
   
   const currentSecret = process.env.CONTAINER_AUTH_SECRET;
   if (!currentSecret) {
+    // Fail closed in production - require auth secret to be configured
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[Security] CONTAINER_AUTH_SECRET not configured in production');
+      return res.status(500).json({ error: 'Server misconfiguration: Auth secret not set' });
+    }
+    // Allow bypass in development only
+    console.warn('[Security] CONTAINER_AUTH_SECRET not set - allowing unauthenticated access (dev mode)');
     return next();
   }
   

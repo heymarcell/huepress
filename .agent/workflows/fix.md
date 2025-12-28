@@ -4,9 +4,9 @@ description: iteratively fix all lint and test errors until everything passes
 
 # Fix Workflow
 
-This workflow iteratively fixes all lint errors, lint warnings, and test failures until everything passes.
+Iteratively fix all lint errors, warnings, and test failures until everything passes.
 
-## Step 1: Run TypeScript Check
+## Step 1: TypeScript Check
 
 // turbo
 
@@ -14,9 +14,9 @@ This workflow iteratively fixes all lint errors, lint warnings, and test failure
 npx tsc --noEmit
 ```
 
-**If errors occur:** Fix all TypeScript errors before proceeding.
+If errors, fix them and re-run until clean.
 
-## Step 2: Run Linter
+## Step 2: Lint Check
 
 // turbo
 
@@ -24,47 +24,36 @@ npx tsc --noEmit
 npm run lint
 ```
 
-**If errors or warnings occur:**
+If errors or warnings, fix them. Common fixes:
 
-1. Identify the files and issues
-2. Fix each error/warning
-3. Re-run `npm run lint` to verify
-4. Repeat until 0 errors and 0 warnings
+- `@typescript-eslint/no-explicit-any` → Use proper types like `unknown`, `string`, or interfaces
+- `react-hooks/exhaustive-deps` → Add deps or wrap in useMemo
+- Unused vars → Remove or prefix with `_`
 
-**Do NOT skip warnings.** All warnings must be fixed.
+Re-run until 0 errors AND 0 warnings.
 
-## Step 3: Run Tests
+## Step 3: Tests
 
 // turbo
 
 ```bash
-npm test tests/api/
+npm test tests/api/ -- --run
 ```
 
-**If tests fail:**
-
-1. Identify failing tests and error messages
-2. Fix the root cause (could be in source code or test code)
-3. Re-run failing test to verify: `npm test tests/api/<file>.test.ts`
-4. Repeat until all tests pass
+Use `--run` flag to run once (not watch mode). If tests fail, fix and re-run.
 
 ## Step 4: Final Verification
 
 // turbo
 
 ```bash
-npx tsc --noEmit && npm run lint && npm test tests/api/
+npx tsc --noEmit && npm run lint && npm test tests/api/ -- --run
 ```
 
-All checks must pass before considering the fix complete.
+## Key Rules
 
-## Iteration Loop
-
-If any step fails after a fix:
-
-1. Go back to the failing step
-2. Apply another fix
-3. Re-run checks
-4. Continue until all pass
-
-**Do not give up.** Keep iterating until everything passes.
+1. **Run tests with `--run` flag** to avoid watch mode hanging
+2. **Fix warnings too** - not just errors
+3. **Kill stale processes** if tests seem stuck: `pkill -f vitest`
+4. **One file at a time** - fix methodically, don't spray fixes everywhere
+5. **Re-run after each fix** - verify incrementally
