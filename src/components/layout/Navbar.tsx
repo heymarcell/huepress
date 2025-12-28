@@ -90,7 +90,6 @@ export function Navbar() {
     // Only show Request a Design if subscribed
     ...(isSubscriber ? [
       { to: "/request-design", label: "Request a Design", isPrimary: true },
-      { to: "/dashboard", label: "My Dashboard" }
     ] : []),
   ];
 

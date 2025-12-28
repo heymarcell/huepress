@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useUser } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, SignInButton, SignUpButton, useUser } from "@clerk/clerk-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { AlertModal } from "@/components/ui/AlertModal";
@@ -20,6 +20,9 @@ export function useSubscription() {
 }
 
 
+
+// ... imports
+import { UserMenu } from "@/components/layout/UserMenu";
 
 export function AuthButtons() {
    const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
@@ -44,7 +47,7 @@ export function AuthButtons() {
         </SignUpButton>
       </SignedOut>
       <SignedIn>
-        <UserButton afterSignOutUrl="/" />
+        <UserMenu />
       </SignedIn>
 
       <AlertModal 
