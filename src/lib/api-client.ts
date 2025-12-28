@@ -265,6 +265,27 @@ export const apiClient = {
       }
       return data;
     },
+    getProcessingStatus: async (id: string, token: string) => {
+      return fetchApi<{
+        hasActiveJob: boolean;
+        job: {
+          id: string;
+          status: string;
+          jobType: string;
+          errorMessage: string | null;
+          createdAt: string;
+          startedAt: string | null;
+          completedAt: string | null;
+        } | null;
+        files: {
+          thumbnail: boolean;
+          pdf: boolean;
+          og: boolean;
+        };
+      }>(`/api/admin/assets/${id}/processing-status`, {
+        token
+      });
+    },
     listRequests: async (status?: string) => {
       // TODO: Pass token from auth context properly. For now using hardcoded header in component or assuming public?
       // Wait, the component was passing X-Admin-Email.

@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui";
 import { AlertModal } from "@/components/ui/AlertModal";
-import { Upload, Save, ArrowLeft, Eye, EyeOff, Sparkles, Code, ChevronDown, ChevronUp } from "lucide-react";
+import { Upload, Save, ArrowLeft, Eye, EyeOff, Sparkles, Code, ChevronDown, ChevronUp, Loader2, AlertCircle, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
@@ -157,6 +157,25 @@ export default function AdminAssetForm() {
   const [hasExistingFiles, setHasExistingFiles] = useState(false);
   const [isProcessingSvg, setIsProcessingSvg] = useState(false);
 
+  // Processing status polling
+  const [processingStatus, setProcessingStatus] = useState<{
+    hasActiveJob: boolean;
+    job: {
+      id: string;
+      status: string;
+      jobType: string;
+      errorMessage: string | null;
+      createdAt: string;
+      startedAt: string | null;
+      completedAt: string | null;
+    } | null;
+    files: {
+      thumbnail: boolean;
+      pdf: boolean;
+      og: boolean;
+    };
+  } | null>(null);
+
   
   // Store original SVG for potential regeneration
   const [originalSvgFile, setOriginalSvgFile] = useState<File | null>(null);
@@ -169,6 +188,55 @@ export default function AdminAssetForm() {
       if (thumbnailPreviewUrl && thumbnailPreviewUrl.startsWith("blob:")) URL.revokeObjectURL(thumbnailPreviewUrl);
     };
   }, [pdfPreviewUrl, thumbnailPreviewUrl]);
+
+  // Poll processing status when editing
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  useEffect(() => {
+    if (!isEditing || !id) return;
+
+    const fetchStatus = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+
+        const status = await apiClient.admin.getProcessingStatus(id, token);
+        setProcessingStatus(status);
+
+        // If files just became ready, refresh the preview URLs
+        if (status.files.thumbnail && !thumbnailPreviewUrl?.includes('assets.huepress.co')) {
+          setThumbnailPreviewUrl(`https://assets.huepress.co/thumbnails/${id}.webp?t=${Date.now()}`);
+        }
+        if (status.files.og && !ogPreviewUrl?.includes('assets.huepress.co')) {
+          setOgPreviewUrl(`https://assets.huepress.co/og-images/${id}.png?t=${Date.now()}`);
+        }
+        if (status.files.pdf && !pdfPreviewUrl?.includes('/api/download')) {
+          setPdfPreviewUrl(apiClient.assets.getDownloadUrl(id));
+        }
+
+        // Stop polling if no active job
+        if (!status.hasActiveJob && pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+      } catch (err) {
+        console.error('Failed to fetch processing status:', err);
+      }
+    };
+
+    // Initial fetch
+    fetchStatus();
+
+    // Poll every 3 seconds while there might be an active job
+    pollingIntervalRef.current = setInterval(fetchStatus, 3000);
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [isEditing, id, getToken, thumbnailPreviewUrl, ogPreviewUrl, pdfPreviewUrl]);
 
   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
     isOpen: false,
@@ -737,8 +805,68 @@ export default function AdminAssetForm() {
           <div className="bg-white/80 backdrop-blur-md rounded-xl shadow-sm border border-white/60 p-6 space-y-4">
             <h3 className="font-bold text-ink">Media</h3>
             
+            {/* Processing Status Banner */}
+            {processingStatus?.hasActiveJob && (
+              <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-800">
+                    {processingStatus.job?.status === 'processing' ? 'Generating assets...' : 'Queued for processing...'}
+                  </p>
+                  <p className="text-xs text-blue-600">
+                    {processingStatus.job?.status === 'processing' 
+                      ? 'Creating thumbnail, PDF, and OpenGraph image'
+                      : 'Your asset will be processed shortly'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Failed Job Banner */}
+            {processingStatus?.job?.status === 'failed' && (
+              <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-800">Processing failed</p>
+                  <p className="text-xs text-red-600">
+                    {processingStatus.job.errorMessage || 'Try clicking "Full Regenerate" to retry'}
+                  </p>
+                </div>
+              </div>
+            )}
+            
             {/* Thumbnail Preview */}
-            {thumbnailPreviewUrl && (
+            {thumbnailPreviewUrl && processingStatus?.files?.thumbnail ? (
+              <div 
+                className="relative group w-full aspect-square bg-gray-50 rounded-lg border border-gray-100 overflow-hidden cursor-zoom-in"
+                onClick={() => setIsZoomOpen(true)}
+              >
+                <img 
+                  src={thumbnailPreviewUrl} 
+                  alt="Thumbnail Preview" 
+                  className="w-full h-full object-contain"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                  <span className="opacity-0 group-hover:opacity-100 bg-white/90 text-xs px-2 py-1 rounded-full shadow-sm text-ink font-medium">Click to Zoom</span>
+                </div>
+              </div>
+            ) : isEditing && !processingStatus?.files?.thumbnail ? (
+              <div className="w-full aspect-square bg-gray-50 rounded-lg border border-dashed border-gray-300 flex flex-col items-center justify-center gap-2">
+                {processingStatus?.hasActiveJob ? (
+                  <>
+                    <Clock className="w-8 h-8 text-gray-400 animate-pulse" />
+                    <span className="text-sm text-gray-500 font-medium">Generating thumbnail...</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                      <Eye className="w-4 h-4 text-gray-400" />
+                    </div>
+                    <span className="text-sm text-gray-500">Thumbnail not ready</span>
+                  </>
+                )}
+              </div>
+            ) : thumbnailPreviewUrl && (
               <div 
                 className="relative group w-full aspect-square bg-gray-50 rounded-lg border border-gray-100 overflow-hidden cursor-zoom-in"
                 onClick={() => setIsZoomOpen(true)}
@@ -755,7 +883,31 @@ export default function AdminAssetForm() {
             )}
 
             {/* PDF Preview Link */}
-            {pdfPreviewUrl && (
+            {pdfPreviewUrl && processingStatus?.files?.pdf ? (
+              <a 
+                href={pdfPreviewUrl} 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-2 bg-teal-50 text-teal-700 rounded-lg text-sm font-medium hover:bg-teal-100 transition-colors border border-teal-100"
+              >
+                <Eye className="w-4 h-4" />
+                Preview PDF
+              </a>
+            ) : isEditing && !processingStatus?.files?.pdf ? (
+              <div className="flex items-center justify-center gap-2 w-full py-2 bg-gray-50 text-gray-400 rounded-lg text-sm font-medium border border-dashed border-gray-300">
+                {processingStatus?.hasActiveJob ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating PDF...
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="w-4 h-4" />
+                    PDF not ready
+                  </>
+                )}
+              </div>
+            ) : pdfPreviewUrl && (
               <a 
                 href={pdfPreviewUrl} 
                 target="_blank" 
@@ -768,7 +920,29 @@ export default function AdminAssetForm() {
             )}
 
             {/* OG Image Preview */}
-            {ogPreviewUrl && (
+            {ogPreviewUrl && processingStatus?.files?.og ? (
+              <div className="relative group w-full aspect-[1.91/1] bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
+                <img 
+                  src={ogPreviewUrl} 
+                  alt="OG Preview" 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1 text-center">
+                   <span className="text-[10px] text-white font-medium">OpenGraph Preview</span>
+                </div>
+              </div>
+            ) : isEditing && !processingStatus?.files?.og ? (
+              <div className="w-full aspect-[1.91/1] bg-gray-50 rounded-lg border border-dashed border-gray-300 flex flex-col items-center justify-center gap-2">
+                {processingStatus?.hasActiveJob ? (
+                  <>
+                    <Clock className="w-6 h-6 text-gray-400 animate-pulse" />
+                    <span className="text-xs text-gray-500">Generating OpenGraph...</span>
+                  </>
+                ) : (
+                  <span className="text-xs text-gray-500">OpenGraph not ready</span>
+                )}
+              </div>
+            ) : ogPreviewUrl && (
               <div className="relative group w-full aspect-[1.91/1] bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
                 <img 
                   src={ogPreviewUrl} 

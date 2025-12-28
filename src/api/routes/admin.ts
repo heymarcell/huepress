@@ -960,6 +960,76 @@ app.post("/assets/bulk-regenerate", async (c) => {
   }
 });
 
+// ADMIN: Get Asset Processing Status
+// Returns the current processing status of an asset (pending, processing, completed, failed)
+app.get("/assets/:id/processing-status", async (c) => {
+  const isAdminUser = await verifyAdmin(c);
+  if (!isAdminUser) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const { id } = c.req.param();
+
+  try {
+    // Get the latest job for this asset
+    const job = await c.env.DB.prepare(`
+      SELECT id, status, job_type, error_message, created_at, started_at, completed_at
+      FROM processing_queue 
+      WHERE asset_id = ? 
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `).bind(id).first<{ 
+      id: string; 
+      status: string; 
+      job_type: string;
+      error_message: string | null;
+      created_at: string;
+      started_at: string | null;
+      completed_at: string | null;
+    }>();
+
+    // Also check if the asset has valid files (to know if processing ever completed)
+    const asset = await c.env.DB.prepare(`
+      SELECT r2_key_public, r2_key_private, r2_key_og
+      FROM assets WHERE id = ?
+    `).bind(id).first<{ 
+      r2_key_public: string | null; 
+      r2_key_private: string | null; 
+      r2_key_og: string | null;
+    }>();
+
+    if (!asset) {
+      return c.json({ error: "Asset not found" }, 404);
+    }
+
+    // Determine ready states
+    const hasThumbnail = asset.r2_key_public && !asset.r2_key_public.startsWith("__");
+    const hasPdf = asset.r2_key_private && !asset.r2_key_private.startsWith("__");
+    const hasOg = asset.r2_key_og && !asset.r2_key_og.startsWith("__");
+
+    return c.json({
+      hasActiveJob: !!job && (job.status === 'pending' || job.status === 'processing'),
+      job: job ? {
+        id: job.id,
+        status: job.status,
+        jobType: job.job_type,
+        errorMessage: job.error_message,
+        createdAt: job.created_at,
+        startedAt: job.started_at,
+        completedAt: job.completed_at
+      } : null,
+      files: {
+        thumbnail: hasThumbnail,
+        pdf: hasPdf,
+        og: hasOg
+      }
+    });
+  } catch (error) {
+    console.error("Processing status error:", error);
+    return c.json({ error: "Failed to fetch processing status" }, 500);
+  }
+});
+
 // ADMIN: Regenerate OG Image
 app.post("/assets/:id/regenerate-og", async (c) => {
   const isAdminUser = await verifyAdmin(c);
