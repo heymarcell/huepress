@@ -39,7 +39,8 @@ export default function RequestDesign() {
 
     try {
       const token = await getToken();
-      const response = await fetch("/api/requests", {
+      const API_URL = import.meta.env.VITE_API_URL || "https://api.huepress.co";
+      const response = await fetch(`${API_URL}/api/requests`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

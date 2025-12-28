@@ -38,7 +38,7 @@ export function SEO({
       {/* Standard Metadata */}
       <title>{fullTitle}</title>
       <meta name="theme-color" content="#FFFAF9" />
-      <meta name="keywords" content={keywords || "coloring pages, therapy coloring, bold coloring pages, toddler coloring, autism friendly coloring"} />
+      <meta name="keywords" content={keywords || "Bold coloring pages, Simple coloring pages for autism, Fine motor skills coloring, Occupational therapy coloring pages, Distraction-free coloring, thick line coloring pages, sensory friendly coloring pages, printable autism resources"} />
       <link rel="canonical" href={canonical || url} />
 
       {/* Open Graph / Facebook */}

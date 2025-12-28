@@ -58,7 +58,8 @@ export default function BlogIndex() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const response = await fetch("/api/posts?limit=20");
+        const API_URL = import.meta.env.VITE_API_URL || "https://api.huepress.co";
+        const response = await fetch(`${API_URL}/api/posts?limit=20`);
         
         if (response.ok) {
           const data = await response.json() as { posts: BlogPost[] };

@@ -34,6 +34,20 @@ app.use("*", async (c, next) => {
     credentials: true
   })(c, next);
 });
+
+// GeoIP Endpoint - Defined BEFORE Clerk middleware to avoid handshake errors on public/consent requests
+app.get("/api/geo", (c) => {
+  // Cloudflare Workers exposes country in cf object
+  c.header("Cache-Control", "no-store"); // Prevent browser caching of auth errors
+  try {
+    const country = c.req.raw.cf?.country || "US"; // Default to US if unknown
+    return c.json({ country });
+  } catch (e) {
+    console.error("GeoIP Error:", e);
+    return c.json({ country: "US" }); // Fallback
+  }
+});
+
 app.use("*", clerkMiddleware());
 
 // Root route
@@ -50,12 +64,6 @@ app.get("/api/health", (c) => {
   return c.json({ status: "ok", env: c.env.ENVIRONMENT });
 });
 
-// GeoIP Endpoint
-app.get("/api/geo", (c) => {
-  // Cloudflare Workers exposes country in cf object
-  const country = c.req.raw.cf?.country || "US"; // Default to US if unknown
-  return c.json({ country });
-});
 
 // Mount Routes
 app.route("/api", assetsRoute);      // /api/assets, /api/download

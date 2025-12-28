@@ -41,7 +41,8 @@ export default function BlogList() {
         const token = await getToken();
         if (!token) return;
         
-        const response = await fetch("/api/admin/posts", {
+        const API_URL = import.meta.env.VITE_API_URL || "https://api.huepress.co";
+        const response = await fetch(`${API_URL}/api/admin/posts`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -84,7 +85,8 @@ export default function BlogList() {
     ));
     
     try {
-      await fetch(`/api/admin/posts/${id}`, {
+      const API_URL = import.meta.env.VITE_API_URL || "https://api.huepress.co";
+      await fetch(`${API_URL}/api/admin/posts/${id}`, {
         method: "PUT",
         headers: { 
           Authorization: `Bearer ${token}`,
@@ -112,7 +114,8 @@ export default function BlogList() {
     
     setIsDeleting(true);
     try {
-      await fetch(`/api/admin/posts/${deleteModal.postId}`, {
+      const API_URL = import.meta.env.VITE_API_URL || "https://api.huepress.co";
+      await fetch(`${API_URL}/api/admin/posts/${deleteModal.postId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });

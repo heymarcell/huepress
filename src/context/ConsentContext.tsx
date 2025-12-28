@@ -56,8 +56,9 @@ export const ConsentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } else {
       // No stored consent - Show banner
       // No stored consent
-      // Fetch region to determine if we should show banner
-      fetch('/api/geo')
+      // Fetch region to determine if we should show banner (with cache buster)
+      const API_URL = import.meta.env.VITE_API_URL || "https://api.huepress.co";
+      fetch(`${API_URL}/api/geo?t=${Date.now()}`)
         .then(res => res.json() as Promise<{ country?: string }>)
         .then((data) => {
           const country = data.country || 'US';
