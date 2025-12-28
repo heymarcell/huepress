@@ -72,4 +72,4 @@ globs = ["**/*.svg"]
 fallthrough = false
 
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["* * * * *"]

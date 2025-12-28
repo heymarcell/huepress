@@ -155,9 +155,13 @@ const worker = {
     console.log("[Cron] Running scheduled tasks...");
     try {
        // [PERF] Warm D1 to prevent cold start delays (can be 25+ seconds)
+       // touching actual tables forces the storage engine to wake up fully
        const warmupStart = Date.now();
-       await env.DB.prepare("SELECT 1").first();
-       console.log(`[Cron] D1 warmup completed in ${Date.now() - warmupStart}ms`);
+       await env.DB.batch([
+         env.DB.prepare("SELECT id FROM assets LIMIT 1"),
+         env.DB.prepare("SELECT id FROM tags LIMIT 1")
+       ]);
+       console.log(`[Cron] D1 warmup (assets+tags) completed in ${Date.now() - warmupStart}ms`);
        
        // Check for pending processing jobs
        const pending = await env.DB.prepare("SELECT 1 FROM processing_queue WHERE status = 'pending' LIMIT 1").first();
