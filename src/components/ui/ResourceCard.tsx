@@ -46,10 +46,14 @@ export function ResourceCard({
           <div className="relative aspect-square bg-white overflow-hidden flex items-center justify-center">
             {!showPlaceholder ? (
               <img 
-                src={imageUrl} 
-                alt={title} 
+                src={imageUrl?.replace('.png', '.webp')} 
+                alt={title}
+                width="300"
+                height="300"
+                loading="lazy"
+                decoding="async"
                 className="max-w-[95%] max-h-[95%] object-contain select-none"
-                style={{ clipPath: 'inset(0 0 8% 0)', transform: 'translateY(4%)' }} /* Clip bottom + shift down for visual centering */
+                style={{ clipPath: 'inset(0 0 8% 0)', transform: 'translateY(4%)' }}
                 onError={() => setImageError(true)}
                 onContextMenu={(e) => e.preventDefault()}
                 onDragStart={(e) => e.preventDefault()}

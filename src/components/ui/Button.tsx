@@ -63,9 +63,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     // Fixed heights for consistent sizing across all button variants
-    // sm: 40px, md: 48px, lg: 56px
+    // sm: 44px (min touch target), md: 48px, lg: 56px
     const sizes = {
-      sm: "h-10 px-4 text-sm",
+      sm: "h-11 min-h-[44px] px-4 text-sm",
       md: "h-12 px-6 text-button",
       lg: "h-14 px-8 text-lg",
     };

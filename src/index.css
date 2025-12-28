@@ -1,3 +1,68 @@
+/* Self-hosted fonts for performance - eliminates Google Fonts latency */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/plus-jakarta-sans-v12-latin-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/plus-jakarta-sans-v12-latin-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/plus-jakarta-sans-v12-latin-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/plus-jakarta-sans-v12-latin-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lora";
+  src: url("/fonts/lora-v37-latin-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lora";
+  src: url("/fonts/lora-v37-latin-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lora";
+  src: url("/fonts/lora-v37-latin-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lora";
+  src: url("/fonts/lora-v37-latin-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

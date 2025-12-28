@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ConsentState, initAnalytics, updateGoogleConsent } from '../lib/privacy/analytics';
+import { loadGTMWhenIdle } from '../lib/privacy/gtm';
 
 interface ConsentContextType {
   consent: ConsentState;
@@ -107,6 +108,13 @@ export const ConsentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     }
   }, []);
+
+  // Load GTM only after consent is granted (moved from index.html for better LCP)
+  useEffect(() => {
+    if (consent.analytics || consent.marketing) {
+      loadGTMWhenIdle('GTM-K9KM3953');
+    }
+  }, [consent.analytics, consent.marketing]);
 
   const saveConsent = (newState: ConsentState) => {
     setConsent(newState);

@@ -6,7 +6,8 @@ export function RequireOnboarding({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   if (!isLoaded) {
-    return null; // Don't redirect while loading
+    // Render public UI while Clerk initializes - prevents blank screen LCP issue
+    return <>{children}</>;
   }
 
   // If user is not signed in, they are free to browse public pages

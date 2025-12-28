@@ -82,15 +82,20 @@ export default function HomePage() {
   const { isSubscriber } = useSubscription();
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchFeatured = async () => {
       try {
         const data = await apiClient.assets.list({ limit: 8 });
-        setFeaturedItems(data.assets || []);
+        if (!cancelled) setFeaturedItems(data.assets || []);
       } catch (err) {
         console.error("Failed to load featured assets", err);
       }
     };
-    fetchFeatured();
+
+    // Defer fetch to prioritize above-the-fold render
+    const timer = setTimeout(fetchFeatured, 1200);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, []);
 
   return (
@@ -213,11 +218,14 @@ export default function HomePage() {
             <div className="relative">
                 <div className="relative rounded-2xl shadow-xl overflow-hidden border border-gray-100 rotate-1 hover:rotate-0 transition-transform duration-500">
                   <img 
-                    src="/hero_lifestyle.png" 
+                    src="/hero_lifestyle.webp" 
                     alt="Child coloring a HuePress page with markers"
+                    width="662"
+                    height="662"
                     className="w-full h-full object-cover"
                     loading="eager"
                     fetchPriority="high"
+                    decoding="async"
                   />
                   {/* Subtle overlay to blend if needed */}
                   <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-2xl"></div>
@@ -245,7 +253,7 @@ export default function HomePage() {
                "The only coloring pages my son actually finishes." <span className="font-bold text-ink">Sarah, Mom of 2</span>
             </p>
             <div className="hidden md:block w-px h-8 bg-gray-200"></div>
-            <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">Trusted by Teachers & OTs</p>
+            <p className="text-sm font-medium text-gray-600 uppercase tracking-wider">Trusted by Teachers & OTs</p>
         </div>
       </section>
 
@@ -369,9 +377,15 @@ export default function HomePage() {
              {/* Bad Side */}
              <div className="bg-white p-6 rounded-2xl border border-gray-200 relative overflow-hidden group flex flex-col">
                 <div className="absolute top-4 right-4 bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-md z-10">THEIR FREEBIES</div>
-                <div className="h-48 bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
-                   {/* Simulated pixelation */}
-                   <div className="w-full h-full bg-[url('/thumbnails/thumb_whale_1766355003894.png')] bg-cover blur-[2px] opacity-60 scale-110 grayscale"></div>
+                <div className="h-48 bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden relative">
+                   {/* Use lazy img instead of CSS background for better performance */}
+                   <img
+                     src="/thumbnails/thumb_whale_1766355003894.png"
+                     alt=""
+                     loading="lazy"
+                     decoding="async"
+                     className="absolute inset-0 w-full h-full object-cover blur-[2px] opacity-60 scale-110 grayscale"
+                   />
                 </div>
                 <div className="mt-auto">
                    <h3 className="font-bold text-gray-400 mb-2">Pixelated & Blurry</h3>
