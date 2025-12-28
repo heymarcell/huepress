@@ -186,14 +186,15 @@ app.post("/activity", zValidator("json", activitySchema), async (c) => {
   if (!user) return c.json({ error: "User not found" }, 404);
 
   const id = crypto.randomUUID();
-  await c.env.DB.prepare(
-    "INSERT INTO downloads (id, user_id, asset_id, type) VALUES (?, ?, ?, ?)"
-  ).bind(id, user.id, assetId, type).run();
-
-  // Increment asset download count
-  await c.env.DB.prepare(
-    "UPDATE assets SET download_count = download_count + 1 WHERE id = ?"
-  ).bind(assetId).run();
+  
+  // [PERF] Defer non-critical writes to prevent D1 lock contention
+  // Response sent immediately, tracking happens in background
+  c.executionCtx.waitUntil(
+    c.env.DB.batch([
+      c.env.DB.prepare("INSERT INTO downloads (id, user_id, asset_id, type) VALUES (?, ?, ?, ?)").bind(id, user.id, assetId, type),
+      c.env.DB.prepare("UPDATE assets SET download_count = download_count + 1 WHERE id = ?").bind(assetId)
+    ]).catch((err: Error) => console.error("[Deferred Write] Activity tracking failed:", err))
+  );
 
   return c.json({ success: true, id });
 });
