@@ -111,7 +111,7 @@ app.post("/likes/:assetId", async (c) => {
     return c.json({ liked: false });
   } else {
     // Like
-    const id = crypto.randomUUID();
+    const id = globalThis.crypto.randomUUID();
     await c.env.DB.prepare(
       "INSERT INTO likes (id, user_id, asset_id) VALUES (?, ?, ?)"
     ).bind(id, user.id, assetId).run();
@@ -182,21 +182,26 @@ app.post("/activity", zValidator("json", activitySchema), async (c) => {
 
   const { assetId, type } = c.req.valid("json");
 
-  const user = await getDbUser(c, auth.userId);
-  if (!user) return c.json({ error: "User not found" }, 404);
+  try {
+    const user = await getDbUser(c, auth.userId);
+    if (!user) return c.json({ error: "User not found" }, 404);
 
-  const id = crypto.randomUUID();
-  
-  // [PERF] Defer non-critical writes to prevent D1 lock contention
-  // Response sent immediately, tracking happens in background
-  c.executionCtx.waitUntil(
-    c.env.DB.batch([
-      c.env.DB.prepare("INSERT INTO downloads (id, user_id, asset_id, type) VALUES (?, ?, ?, ?)").bind(id, user.id, assetId, type),
-      c.env.DB.prepare("UPDATE assets SET download_count = download_count + 1 WHERE id = ?").bind(assetId)
-    ]).catch((err: Error) => console.error("[Deferred Write] Activity tracking failed:", err))
-  );
+    const id = globalThis.crypto.randomUUID();
+    
+    // [PERF] Defer non-critical writes to prevent D1 lock contention
+    // Response sent immediately, tracking happens in background
+    c.executionCtx.waitUntil(
+      c.env.DB.batch([
+        c.env.DB.prepare("INSERT INTO downloads (id, user_id, asset_id, type) VALUES (?, ?, ?, ?)").bind(id, user.id, assetId, type),
+        c.env.DB.prepare("UPDATE assets SET download_count = download_count + 1 WHERE id = ?").bind(assetId)
+      ]).catch((err: Error) => console.error("[Deferred Write] Activity tracking failed:", err))
+    );
 
-  return c.json({ success: true, id });
+    return c.json({ success: true, id });
+  } catch (error) {
+    console.error("Activity error:", error);
+    return c.json({ error: "Internal Error" }, 500);
+  }
 });
 
 export default app;

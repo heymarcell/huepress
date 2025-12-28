@@ -8,15 +8,24 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Get all published assets (with edge caching)
 app.get("/assets", async (c) => {
   // Check edge cache first (caches.default is Cloudflare Workers API)
-  const cache = (caches as unknown as { default: Cache }).default;
+  // Check edge cache first (caches.default is Cloudflare Workers API)
+  let cache: Cache | undefined;
+  try {
+     if (typeof caches !== 'undefined') {
+        cache = (caches as unknown as { default: Cache }).default;
+     }
+  } catch (_e) { /* ignore */ }
+
   const cacheKey = new Request(c.req.url, { method: "GET" });
   
-  const cachedResponse = await cache.match(cacheKey);
-  if (cachedResponse) {
-    // Clone and add cache hit header for debugging
-    const response = new Response(cachedResponse.body, cachedResponse);
-    response.headers.set("X-Cache", "HIT");
-    return response;
+  if (cache) {
+    const cachedResponse = await cache.match(cacheKey);
+    if (cachedResponse) {
+      // Clone and add cache hit header for debugging
+      const response = new Response(cachedResponse.body, cachedResponse);
+      response.headers.set("X-Cache", "HIT");
+      return response;
+    }
   }
 
   const category = c.req.query("category")?.trim();
@@ -102,9 +111,11 @@ app.get("/assets", async (c) => {
     response.headers.set("X-Cache", "MISS");
     
     // Store in edge cache (clone since response body can only be read once)
-    c.executionCtx.waitUntil(
-      cache.put(cacheKey, response.clone())
-    );
+    if (cache) {
+      c.executionCtx.waitUntil(
+        cache.put(cacheKey, response.clone())
+      );
+    }
     
     return response;
   } catch (error) {
@@ -118,14 +129,23 @@ app.get("/assets/:id", async (c) => {
   const id = c.req.param("id");
   
   // Check edge cache first (caches.default is Cloudflare Workers API)
-  const cache = (caches as unknown as { default: Cache }).default;
+  // Check edge cache first (caches.default is Cloudflare Workers API)
+  let cache: Cache | undefined;
+  try {
+     if (typeof caches !== 'undefined') {
+        cache = (caches as unknown as { default: Cache }).default;
+     }
+  } catch (_e) { /* ignore */ }
+
   const cacheKey = new Request(c.req.url, { method: "GET" });
   
-  const cachedResponse = await cache.match(cacheKey);
-  if (cachedResponse) {
-    const response = new Response(cachedResponse.body, cachedResponse);
-    response.headers.set("X-Cache", "HIT");
-    return response;
+  if (cache) {
+    const cachedResponse = await cache.match(cacheKey);
+    if (cachedResponse) {
+      const response = new Response(cachedResponse.body, cachedResponse);
+      response.headers.set("X-Cache", "HIT");
+      return response;
+    }
   }
 
   try {
@@ -187,9 +207,11 @@ app.get("/assets/:id", async (c) => {
     response.headers.set("X-Cache", "MISS");
     
     // Store in edge cache
-    c.executionCtx.waitUntil(
-      cache.put(cacheKey, response.clone())
-    );
+    if (cache) {
+      c.executionCtx.waitUntil(
+        cache.put(cacheKey, response.clone())
+      );
+    }
     
     return response;
   } catch (error) {
@@ -253,7 +275,7 @@ app.get("/download/:id", async (c) => {
     c.executionCtx.waitUntil(
       c.env.DB.batch([
         c.env.DB.prepare("UPDATE assets SET download_count = download_count + 1 WHERE id = ?").bind(id),
-        c.env.DB.prepare("INSERT INTO downloads (id, user_id, asset_id, downloaded_at) VALUES (?, ?, ?, datetime('now'))").bind(crypto.randomUUID(), internalUserId, id)
+        c.env.DB.prepare("INSERT INTO downloads (id, user_id, asset_id, downloaded_at) VALUES (?, ?, ?, datetime('now'))").bind(globalThis.crypto.randomUUID(), internalUserId, id)
       ]).catch((err: Error) => console.error("[Deferred Write] Download tracking failed:", err))
     );
 

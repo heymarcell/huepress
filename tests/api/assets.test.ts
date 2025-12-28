@@ -31,6 +31,11 @@ describe("Assets API", () => {
             },
             ASSETS_CDN_URL: "https://assets.huepress.co"
         };
+        
+        // Stub global crypto for tests
+        vi.stubGlobal('crypto', {
+            randomUUID: () => "test-uuid-1234"
+        });
     });
 
     it("GET /assets should return assets list", async () => {
@@ -234,9 +239,14 @@ describe("Assets API", () => {
             arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8))
         });
 
+        const mockExecutionCtx = {
+            waitUntil: vi.fn(),
+            passThroughOnException: vi.fn(),
+        };
+
         const res = await app.request("http://localhost/download/1", {
             headers: { "Authorization": "Bearer token" }
-        }, mockEnv);
+        }, mockEnv, mockExecutionCtx);
 
         expect(res.status).toBe(200);
         expect(mockR2Get).toHaveBeenCalledWith("key.pdf");

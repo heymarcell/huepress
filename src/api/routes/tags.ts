@@ -6,14 +6,23 @@ const app = new Hono<{ Bindings: Bindings }>();
 // GET /tags - Get all tags, optionally filtered by type (with edge caching)
 app.get("/", async (c) => {
   // Check edge cache first (caches.default is Cloudflare Workers API)
-  const cache = (caches as unknown as { default: Cache }).default;
+  // Check edge cache first (caches.default is Cloudflare Workers API)
+  let cache: Cache | undefined;
+  try {
+     if (typeof caches !== 'undefined') {
+        cache = (caches as unknown as { default: Cache }).default;
+     }
+  } catch (_e) { /* ignore in tests/local */ }
+
   const cacheKey = new Request(c.req.url, { method: "GET" });
   
-  const cachedResponse = await cache.match(cacheKey);
-  if (cachedResponse) {
-    const response = new Response(cachedResponse.body, cachedResponse);
-    response.headers.set("X-Cache", "HIT");
-    return response;
+  if (cache) {
+    const cachedResponse = await cache.match(cacheKey);
+    if (cachedResponse) {
+      const response = new Response(cachedResponse.body, cachedResponse);
+      response.headers.set("X-Cache", "HIT");
+      return response;
+    }
   }
 
   const type = c.req.query("type");
@@ -109,9 +118,11 @@ app.get("/", async (c) => {
     response.headers.set("X-Cache", "MISS");
     
     // Store in edge cache
-    c.executionCtx.waitUntil(
-      cache.put(cacheKey, response.clone())
-    );
+    if (cache) {
+      c.executionCtx.waitUntil(
+        cache.put(cacheKey, response.clone())
+      );
+    }
     
     return response;
   } catch (error) {
