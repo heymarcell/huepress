@@ -31,22 +31,19 @@ export function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 p-1 pl-3 pr-2 rounded-2xl border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="flex items-center gap-3 p-1 pl-4 pr-2 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 h-10 sm:h-auto"
       >
-        <div className="hidden sm:block text-right mr-1">
-          <p className="text-xs font-semibold text-neutral-900 leading-none">
+        <div className="hidden sm:block text-right">
+          <p className="text-sm font-bold text-ink leading-none">
             {user.firstName || user.username}
-          </p>
-          <p className="text-[10px] text-neutral-500 leading-none mt-1 truncate max-w-[100px]">
-            {user.primaryEmailAddress?.emailAddress}
           </p>
         </div>
         <img
           src={user.imageUrl}
           alt={user.fullName || "User avatar"}
-          className="w-8 h-8 rounded-full border border-white shadow-sm object-cover"
+          className="w-8 h-8 rounded-full border border-gray-100 object-cover"
         />
-        <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Menu */}
