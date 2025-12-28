@@ -6,6 +6,7 @@ import { Upload, Save, ArrowLeft, Eye, EyeOff, Sparkles, Code, ChevronDown, Chev
 import { Link } from "react-router-dom";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Tag } from "@/api/types";
 
@@ -38,6 +39,7 @@ export default function AdminAssetForm() {
   const navigate = useNavigate();
   const { user } = useUser();
   const { getToken } = useAuth();
+  const queryClient = useQueryClient();
   const isEditing = Boolean(id);
 
   const [availableTags, setAvailableTags] = useState<Record<string, Tag[]>>({});
@@ -500,6 +502,9 @@ export default function AdminAssetForm() {
       const result = await apiClient.admin.createAsset(form, token);
 
       console.log("Asset created:", result);
+
+      // Invalidate cache so assets list shows updated data
+      queryClient.invalidateQueries({ queryKey: ['admin', 'assets'] });
 
       navigate("/admin/assets");
     } catch (error) {
