@@ -1,17 +1,19 @@
 -- SEO Enhancements Migration
 -- Migration: 003_seo_enhancements.sql
 
--- Add new fields to assets table (without UNIQUE constraint on ALTER)
-ALTER TABLE assets ADD COLUMN asset_id TEXT;
-ALTER TABLE assets ADD COLUMN slug TEXT;
-ALTER TABLE assets ADD COLUMN extended_description TEXT;
-ALTER TABLE assets ADD COLUMN fun_facts TEXT; -- JSON array
-ALTER TABLE assets ADD COLUMN suggested_activities TEXT; -- JSON array
-ALTER TABLE assets ADD COLUMN coloring_tips TEXT;
-ALTER TABLE assets ADD COLUMN therapeutic_benefits TEXT;
-ALTER TABLE assets ADD COLUMN meta_keywords TEXT; -- Comma-separated for SEO
+-- Add new fields to assets table
+-- These are commented out because they seem to already exist in production
+-- causing "duplicate column name" errors.
+-- ALTER TABLE assets ADD COLUMN asset_id TEXT;
+-- ALTER TABLE assets ADD COLUMN slug TEXT;
+-- ALTER TABLE assets ADD COLUMN extended_description TEXT;
+-- ALTER TABLE assets ADD COLUMN fun_facts TEXT;
+-- ALTER TABLE assets ADD COLUMN suggested_activities TEXT;
+-- ALTER TABLE assets ADD COLUMN coloring_tips TEXT;
+-- ALTER TABLE assets ADD COLUMN therapeutic_benefits TEXT;
+-- ALTER TABLE assets ADD COLUMN meta_keywords TEXT;
 
--- Create indexes for the new columns (ensures uniqueness checking at query time)
+-- Create indexes (IF NOT EXISTS makes this safe)
 CREATE INDEX IF NOT EXISTS idx_assets_asset_id ON assets(asset_id);
 CREATE INDEX IF NOT EXISTS idx_assets_slug ON assets(slug);
 

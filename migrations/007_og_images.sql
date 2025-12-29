@@ -1,2 +1,2 @@
 -- Add OG image column for dynamic Open Graph images
-ALTER TABLE assets ADD COLUMN r2_key_og TEXT;
+-- ALTER TABLE assets ADD COLUMN r2_key_og TEXT;

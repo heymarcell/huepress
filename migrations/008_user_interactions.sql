@@ -15,4 +15,4 @@ CREATE INDEX IF NOT EXISTS idx_likes_asset ON likes(asset_id);
 
 -- Add type column to downloads if it doesn't exist (D1/SQLite forgiving add column)
 -- distinct from 'download' vs 'print'
-ALTER TABLE downloads ADD COLUMN type TEXT DEFAULT 'download';
+-- ALTER TABLE downloads ADD COLUMN type TEXT DEFAULT 'download';
