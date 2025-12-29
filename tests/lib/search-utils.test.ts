@@ -19,11 +19,19 @@ describe("search-utils", () => {
     });
 
     it("should expand synonyms", () => {
-        // "puppy" -> ("puppy"* OR "dog"* OR "canine"*)
+        // "puppy" -> ("puppy"* OR "dog"* OR "canine"* ...)
         const result = expandQuery("puppy");
         expect(result).toContain('"puppy"*');
         expect(result).toContain('"dog"*');
         expect(result).toContain('OR');
+
+        // New synonyms check
+        const mandalas = expandQuery("mandala");
+        expect(mandalas).toContain('"pattern"*');
+        expect(mandalas).toContain('"meditative"*');
+
+        const tram = expandQuery("tram");
+        expect(tram).toContain('"streetcar"*');
     });
 
     it("should expand multiple terms with AND logic", () => {
