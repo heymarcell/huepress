@@ -208,7 +208,7 @@ export default function AdminDashboard() {
                   <img 
                     src={getThumbnailUrl(asset.id)} 
                     alt="" 
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover object-top"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
                     }}

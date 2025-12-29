@@ -430,7 +430,7 @@ export default function AdminAssets() {
                     <img 
                       src={getThumbnailUrl(asset.id)} 
                       alt="" 
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-cover object-top"
                       loading="lazy"
                       onError={(e) => {
                         // Simply hide the broken image, gray background shows through
