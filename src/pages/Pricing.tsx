@@ -142,8 +142,8 @@ export default function PricingPage() {
                 variant={plan.popular ? "primary" : "default"}
                 className={`relative flex flex-col overflow-visible ${
                   plan.popular 
-                    ? "p-10 md:scale-110 z-10" 
-                    : "p-8 opacity-90 hover:opacity-100 transition-opacity"
+                    ? "p-6 md:p-10 md:scale-110 z-10" 
+                    : "p-6 md:p-8 opacity-90 hover:opacity-100 transition-opacity"
                 }`}
               >
                 {plan.popular && (
@@ -228,26 +228,26 @@ export default function PricingPage() {
            {/* Comparison Table */}
            <div className="max-w-2xl mx-auto mt-12 mb-8">
              <Heading as="h3" className="text-center mb-6">Why switch to Annual?</Heading>
-             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-               <div className="grid grid-cols-3 text-sm border-b border-gray-200 bg-gray-50">
-                 <div className="p-4 font-medium text-gray-500">Feature</div>
-                 <div className="p-4 font-bold text-primary text-center bg-primary/5">Annual</div>
-                 <div className="p-4 text-center font-bold text-ink">Monthly</div>
+             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm text-xs sm:text-sm">
+               <div className="grid grid-cols-3 border-b border-gray-200 bg-gray-50">
+                 <div className="p-2 sm:p-4 font-medium text-gray-500">Feature</div>
+                 <div className="p-2 sm:p-4 font-bold text-primary text-center bg-primary/5">Annual</div>
+                 <div className="p-2 sm:p-4 text-center font-bold text-ink">Monthly</div>
                </div>
-               <div className="grid grid-cols-3 text-sm border-b border-gray-100">
-                 <div className="p-4 font-medium text-ink">Price per Month</div>
-                 <div className="p-4 text-center font-bold text-primary bg-primary/5">$3.75</div>
-                 <div className="p-4 text-center text-gray-500">$5.00</div>
+               <div className="grid grid-cols-3 border-b border-gray-100">
+                 <div className="p-2 sm:p-4 font-medium text-ink">Per Month</div>
+                 <div className="p-2 sm:p-4 text-center font-bold text-primary bg-primary/5">$3.75</div>
+                 <div className="p-2 sm:p-4 text-center text-gray-500">$5.00</div>
                </div>
-               <div className="grid grid-cols-3 text-sm border-b border-gray-100">
-                 <div className="p-4 font-medium text-ink">Total Yearly Cost</div>
-                 <div className="p-4 text-center font-bold text-primary bg-primary/5">$45.00</div>
-                 <div className="p-4 text-center text-gray-500">$60.00</div>
+               <div className="grid grid-cols-3 border-b border-gray-100">
+                 <div className="p-2 sm:p-4 font-medium text-ink">Yearly Cost</div>
+                 <div className="p-2 sm:p-4 text-center font-bold text-primary bg-primary/5">$45</div>
+                 <div className="p-2 sm:p-4 text-center text-gray-500">$60</div>
                </div>
-               <div className="grid grid-cols-3 text-sm">
-                 <div className="p-4 font-medium text-ink">Seasonal Packs</div>
-                 <div className="p-4 text-center font-bold text-primary bg-primary/5">Instant Access</div>
-                 <div className="p-4 text-center text-gray-500">Wait for drop</div>
+               <div className="grid grid-cols-3">
+                 <div className="p-2 sm:p-4 font-medium text-ink">Seasonal Packs</div>
+                 <div className="p-2 sm:p-4 text-center font-bold text-primary bg-primary/5">Instant</div>
+                 <div className="p-2 sm:p-4 text-center text-gray-500">Wait</div>
                </div>
              </div>
              <p className="text-center text-xs text-gray-400 mt-4">Both plans include unlimited downloads and cancel-anytime access.</p>

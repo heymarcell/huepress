@@ -15,10 +15,11 @@ export function Heading({
 }: HeadingProps) {
   
   const variants: Record<string, string> = {
-    display: "font-serif text-display font-semibold tracking-tight",
-    h1: "font-serif text-h1 font-semibold tracking-tight",
-    h2: "font-serif text-h2 font-semibold",
-    h3: "font-serif text-h3 font-semibold",
+    // Mobile-first responsive typography
+    display: "font-serif text-[1.75rem] sm:text-[2rem] md:text-display font-semibold tracking-tight leading-tight",
+    h1: "font-serif text-[1.5rem] sm:text-[1.75rem] md:text-h1 font-semibold tracking-tight leading-tight",
+    h2: "font-serif text-[1.25rem] sm:text-h2 font-semibold",
+    h3: "font-serif text-[1.125rem] sm:text-h3 font-semibold",
     h4: "font-serif text-body font-bold",
   };
 

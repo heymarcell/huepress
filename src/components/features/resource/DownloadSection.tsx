@@ -117,18 +117,33 @@ export function DownloadSection({ assetId, formattedAssetId, title }: DownloadSe
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       
-      const iframe = document.createElement("iframe");
-      iframe.style.display = "none";
-      iframe.src = url;
-      document.body.appendChild(iframe);
+      // Detect touch devices (tablets, phones) - iframe printing doesn't work on them
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       
-      iframe.onload = () => {
-        iframe.contentWindow?.print();
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-          window.URL.revokeObjectURL(url);
-        }, 60000);
-      };
+      if (isTouchDevice) {
+        // On touch devices, open PDF in new tab for native print
+        window.open(url, '_blank');
+        setAlertState({
+          isOpen: true,
+          title: "PDF Opened",
+          message: "Use your browser's print option to print the PDF.",
+          variant: "info"
+        });
+      } else {
+        // Desktop: use iframe print approach
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        
+        iframe.onload = () => {
+          iframe.contentWindow?.print();
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            window.URL.revokeObjectURL(url);
+          }, 60000);
+        };
+      }
       
       analytics.fileDownload(assetId, title);
       
@@ -154,7 +169,7 @@ export function DownloadSection({ assetId, formattedAssetId, title }: DownloadSe
     return <div className="h-14 skeleton rounded-xl w-full bg-gray-100 animate-pulse" />;
   }
 
-  // Subscriber: Show download button
+  // Subscriber: Show download button (print hidden on mobile)
   if (isSubscriber) {
     return (
       <div className="flex gap-3">
@@ -168,10 +183,11 @@ export function DownloadSection({ assetId, formattedAssetId, title }: DownloadSe
           <Download className="w-5 h-5" />
           Download
         </Button>
+        {/* Hide print on mobile - doesn't work correctly (prints page not PDF) */}
         <Button 
           variant="outline" 
           size="lg" 
-          className="flex-1" 
+          className="hidden sm:flex flex-1" 
           onClick={handlePrint}
           isLoading={isPrinting}
         >

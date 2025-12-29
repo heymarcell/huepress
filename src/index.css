@@ -175,3 +175,40 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .skeleton {
+    animation: none;
+    background: #f3f4f6;
+  }
+}
+
+/* Mobile touch feedback */
+@media (hover: none) and (pointer: coarse) {
+  .group:active,
+  button:active,
+  a:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}
+
+/* Safe area insets for notched devices */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

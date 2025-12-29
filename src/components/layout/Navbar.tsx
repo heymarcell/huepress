@@ -142,25 +142,33 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-gray-200 animate-fade-in">
-          <div className="px-4 py-4 space-y-3">
-            {navLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className="block py-2 text-gray-500 hover:text-ink font-medium transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
-            <div className="pt-4 border-t border-gray-200">
-              <AuthButtons />
+        <>
+          {/* Backdrop */}
+          <div 
+            className="lg:hidden fixed inset-0 top-20 bg-black/20 backdrop-blur-sm z-40 animate-fade-in"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          {/* Menu Panel */}
+          <div className="lg:hidden fixed left-0 right-0 top-20 bg-white border-t border-gray-200 shadow-lg z-50 animate-fade-in max-h-[calc(100vh-5rem)] overflow-y-auto">
+            <div className="px-4 py-4 space-y-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className="block py-3 text-gray-600 hover:text-primary hover:bg-gray-50 font-medium transition-colors rounded-lg px-3 -mx-3"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <div className="pt-4 mt-4 border-t border-gray-200">
+                <AuthButtons />
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </nav>
   );

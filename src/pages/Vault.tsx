@@ -138,11 +138,11 @@ export default function VaultPage() {
         keywords="coloring pages, bold lines, therapy grade, printable pdf, autism friendly, adhd friendly"
       />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <Heading as="h1" variant="h1" className="mb-2">The Vault</Heading>
-          <p className="text-gray-500">{totalAssets > 0 ? `${totalAssets} fridge-worthy designs, ready to print` : '500+ fridge-worthy designs, ready to print'}</p>
+        <div className="text-center mb-6 sm:mb-8">
+          <Heading as="h1" variant="h1" className="mb-1 sm:mb-2">The Vault</Heading>
+          <p className="text-gray-500 text-sm sm:text-base">{totalAssets > 0 ? `${totalAssets} fridge-worthy designs, ready to print` : '500+ fridge-worthy designs, ready to print'}</p>
         </div>
 
         {/* Search Bar - Centered with max width */}
@@ -150,19 +150,19 @@ export default function VaultPage() {
           <SearchBar onSearch={handleSearch} placeholder="Search designs..." />
         </div>
         
-        {/* Filter Controls Row - Centered */}
-        <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
+        {/* Filter Controls Row - Horizontally scrollable on mobile */}
+        <div className="flex items-center gap-2 sm:gap-3 mb-6 overflow-x-auto pb-2 sm:pb-0 sm:flex-wrap sm:justify-center scrollbar-hide">
           {/* Filter Button */}
           <button
             onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-lg border transition-all whitespace-nowrap flex-shrink-0 ${
               showMobileFilters 
                 ? 'bg-primary text-white border-primary' 
                 : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
             }`}
           >
             <Filter className="w-4 h-4" />
-            <span>Filters</span>
+            <span className="text-sm sm:text-base">Filters</span>
             {(selectedCategory || selectedSkill || selectedTags.length > 0) && (
               <span className={`text-xs px-1.5 py-0.5 rounded-full ${showMobileFilters ? 'bg-white/20' : 'bg-primary text-white'}`}>
                 {([selectedCategory, selectedSkill].filter(Boolean).length + selectedTags.length)}
@@ -172,7 +172,7 @@ export default function VaultPage() {
           
           {/* Applied Filter Chips */}
           {selectedCategory && (
-            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm">
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 min-h-[36px] rounded-full bg-primary/10 text-primary text-xs sm:text-sm whitespace-nowrap flex-shrink-0">
               {selectedCategory}
               <button onClick={() => setSelectedCategory("")} className="hover:bg-primary/20 rounded-full p-0.5">
                 <X className="w-3 h-3" />
@@ -180,7 +180,7 @@ export default function VaultPage() {
             </span>
           )}
           {selectedTags.length > 0 && selectedTags.map(tag => (
-            <span key={tag} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm">
+            <span key={tag} className="inline-flex items-center gap-1 px-3 py-1.5 min-h-[36px] rounded-full bg-primary/10 text-primary text-xs sm:text-sm whitespace-nowrap flex-shrink-0">
               {tag}
               <button onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))} className="hover:bg-primary/20 rounded-full p-0.5">
                 <X className="w-3 h-3" />
@@ -188,7 +188,7 @@ export default function VaultPage() {
             </span>
           ))}
           {selectedSkill && (
-            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm">
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 min-h-[36px] rounded-full bg-primary/10 text-primary text-xs sm:text-sm whitespace-nowrap flex-shrink-0">
               {selectedSkill}
               <button onClick={() => setSelectedSkill("")} className="hover:bg-primary/20 rounded-full p-0.5">
                 <X className="w-3 h-3" />
@@ -269,14 +269,14 @@ export default function VaultPage() {
 
       {/* Grid with Injected Banner */}
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {[...Array(8)].map((_, i) => (
               <ResourceCardSkeleton key={i} />
             ))}
           </div>
         ) : filteredAssets.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 gap-y-6 sm:gap-y-8">
               {/* Resource Cards with Banner Injection */}
               {filteredAssets.map((asset, index) => {
                 // TODO: Determine if free sample from asset property

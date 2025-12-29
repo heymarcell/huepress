@@ -110,8 +110,8 @@ export default function HomePage() {
       <SEO />
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-accent via-white to-accent overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-28">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left: Content */}
             <div className="text-center lg:text-left">
               {isSubscriber ? (
@@ -242,24 +242,24 @@ export default function HomePage() {
       </section>
 
       {/* Social Proof Bar */}
-      <section className="bg-white border-b border-gray-100 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-center gap-8 text-center">
+      <section className="bg-white border-b border-gray-100 py-6 sm:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-8 text-center">
             <div className="flex items-center gap-2">
                <div className="flex">
                   {[1,2,3,4,5].map(i => (
-                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                    <Star key={i} className="w-4 sm:w-5 h-4 sm:h-5 text-yellow-400 fill-current" />
                   ))}
                </div>
                <div className="flex flex-col text-left leading-tight">
-                 <span className="font-bold text-ink">4.9/5 from 1,000+ families</span>
+                 <span className="font-bold text-ink text-sm sm:text-base">4.9/5 from 1,000+ families</span>
                  <span className="text-xs text-gray-500">Rated by parents & OTs</span>
                </div>
             </div>
-            <p className="text-gray-500 text-sm">
+            <p className="hidden sm:block text-gray-500 text-sm max-w-md">
                "The lines are thick enough for my patients to actually succeed." <span className="font-bold text-ink">Emily, Pediatric OT</span>
             </p>
             <div className="hidden md:block w-px h-8 bg-gray-200"></div>
-            <p className="text-sm font-medium text-gray-600 uppercase tracking-wider">Trusted by Teachers & OTs</p>
+            <p className="hidden md:block text-sm font-medium text-gray-600 uppercase tracking-wider">Trusted by Teachers & OTs</p>
         </div>
       </section>
 
