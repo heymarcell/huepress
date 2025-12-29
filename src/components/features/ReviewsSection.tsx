@@ -11,9 +11,10 @@ interface ReviewsSectionProps {
     avg: number | null; 
     count: number 
   };
+  onStatsChange?: (stats: { avg: number | null; count: number }) => void;
 }
 
-export function ReviewsSection({ assetId, stats }: ReviewsSectionProps) {
+export function ReviewsSection({ assetId, stats, onStatsChange }: ReviewsSectionProps) {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [userHasReviewed, setUserHasReviewed] = useState(false);
   const { isSubscriber } = useSubscription();
@@ -43,6 +44,7 @@ export function ReviewsSection({ assetId, stats }: ReviewsSectionProps) {
           refreshTrigger={refreshTrigger}
           currentUserEmail={currentUserEmail}
           onUserReviewFound={handleUserReviewFound}
+          onStatsChange={onStatsChange}
         />
         
         {/* Review Form (subscribers only, if not already reviewed) */}

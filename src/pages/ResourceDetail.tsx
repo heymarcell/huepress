@@ -423,7 +423,7 @@ export default function ResourceDetailPage() {
       <div className="py-8 bg-white border-t border-gray-100">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
-            <ReviewsSection assetId={assetId} stats={reviewStats} />
+            <ReviewsSection assetId={assetId} stats={reviewStats} onStatsChange={setReviewStats} />
           </div>
         </div>
       </div>

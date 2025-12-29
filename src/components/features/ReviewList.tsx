@@ -22,9 +22,10 @@ interface ReviewListProps {
   refreshTrigger?: number;
   currentUserEmail?: string;
   onUserReviewFound?: (hasReview: boolean) => void;
+  onStatsChange?: (stats: { avg: number | null; count: number }) => void;
 }
 
-export function ReviewList({ assetId, refreshTrigger, currentUserEmail, onUserReviewFound }: ReviewListProps) {
+export function ReviewList({ assetId, refreshTrigger, currentUserEmail, onUserReviewFound, onStatsChange }: ReviewListProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [totalReviews, setTotalReviews] = useState(0);
@@ -46,6 +47,11 @@ export function ReviewList({ assetId, refreshTrigger, currentUserEmail, onUserRe
           ) ?? false;
           onUserReviewFound(userHasReview);
         }
+        
+        // Notify parent of stats change
+        if (onStatsChange) {
+          onStatsChange({ avg: data.averageRating, count: data.totalReviews });
+        }
       } catch (error) {
         console.error("Failed to fetch reviews:", error);
       } finally {
@@ -54,7 +60,7 @@ export function ReviewList({ assetId, refreshTrigger, currentUserEmail, onUserRe
     };
 
     fetchReviews();
-  }, [assetId, refreshTrigger, currentUserEmail, onUserReviewFound]);
+  }, [assetId, refreshTrigger, currentUserEmail, onUserReviewFound, onStatsChange]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
