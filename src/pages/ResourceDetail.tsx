@@ -140,7 +140,7 @@ export default function ResourceDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-32 pb-16 flex justify-center">
+      <div className="min-h-screen bg-gray-50 pt-8 pb-16 flex justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           <p className="text-gray-500">Loading design...</p>
@@ -151,7 +151,7 @@ export default function ResourceDetailPage() {
 
   if (error || !asset) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-32 pb-16 text-center px-6">
+      <div className="min-h-screen bg-gray-50 pt-8 pb-16 text-center px-6">
         <div className="max-w-md mx-auto text-center">
           <img src="/404-robot.svg" alt="Robot not found" className="w-48 h-48 mx-auto mb-6" />
           <h1 className="font-serif text-3xl font-bold text-gray-900 mb-4">{error || "Design Not Found"}</h1>
@@ -261,9 +261,9 @@ export default function ResourceDetailPage() {
       )}
 
       {/* Hero Section */}
-      <div className="pt-24 lg:pt-32 pb-8">
+      <div className="pt-6 lg:pt-8 pb-8">
         <div className="container mx-auto px-6">
-          <div className="max-w-7xl mx-auto mb-6">
+          <div className="max-w-7xl mx-auto mb-4">
              {/* Breadcrumbs */}
              <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Link to="/" className="hover:text-primary transition-colors">Home</Link>
