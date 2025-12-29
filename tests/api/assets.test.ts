@@ -103,20 +103,23 @@ describe("Assets API", () => {
         expect(params).toEqual(expect.arrayContaining(["cute", "nature"]));
     });
 
-    it("GET /assets?search=dino should filter by search", async () => {
+    it("GET /assets?search=dino should filter by search with query expansion", async () => {
         mockAll.mockResolvedValue({ results: [] });
         await app.request("http://localhost/assets?search=dino", {}, mockEnv);
 
         expect(mockPrepare).toHaveBeenCalled();
-        // Check if query contains FTS MATCH clause [F-001]
         const queryArg = mockPrepare.mock.calls[0][0];
-        expect(queryArg).toContain("assets_fts MATCH ?");
         
-        // Regression Check: Verify valid FTS5 syntax (phrase prefix "term"*)
-        // Previously referenced parameter as `"term" *` which caused syntax error
+        // Check for FTS MATCH and BM25 ranking
+        expect(queryArg).toContain("assets_fts MATCH ?");
+        expect(queryArg).toContain("ORDER BY bm25(assets_fts, 10.0, 1.0, 5.0, 5.0)");
+
+        // Check for query expansion (dino -> "dino"* OR "dinosaur"* ...)
         const params = mockBind.mock.calls[0];
         const searchParam = params.find((p: unknown) => typeof p === 'string' && p.includes("dino"));
-        expect(searchParam).toBe('"dino"*');
+        expect(searchParam).toContain('"dino"*');
+        expect(searchParam).toContain('"dinosaur"*');
+        expect(searchParam).toContain('OR');
     });
 
     it("GET /assets should handle null tags", async () => {

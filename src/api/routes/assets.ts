@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { getAuth } from "@hono/clerk-auth";
 import { Bindings } from "../types";
 import { watermarkPdf } from "../../lib/pdf-watermark";
+import { expandQuery } from "../../lib/search-utils";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -60,21 +61,24 @@ app.get("/assets", async (c) => {
 
   const search = c.req.query("search");
   if (search) {
-    // [F-001] FTS5 Optimization
-    // Use the virtual table for fast full-text search
-    // We join back to the main assets table to get the full record
-    whereClause += ` 
-      AND id IN (
-        SELECT id FROM assets_fts 
-        WHERE assets_fts MATCH ? 
-        ORDER BY rank
-      )
-    `;
-    // FTS5 MATCH query syntax: "term*" for prefix matching
-    // We sanitize input to prevent syntax errors (remove special chars)
-    const sanitizedSearch = search.replace(/[^\w\s]/g, '').trim();
-    const searchParam = `"${sanitizedSearch}"*`; // Phrase match + prefix
-    params.push(searchParam);
+    // [F-001] FTS5 Optimization with Synonyms & Ranking
+    // Use expandQuery to handle synonyms, sanitization, and prefix matching
+    const searchQuery = expandQuery(search);
+    
+    if (searchQuery) {
+      // We join back to the main assets table to get the full record
+      // ORDER BY bm25(assets_fts, 10.0, 1.0, 5.0, 5.0)
+      // Weights map to table columns: title, description, tags, category
+      // Title (10) > Tags (5) = Category (5) > Description (1)
+      whereClause += ` 
+        AND id IN (
+          SELECT id FROM assets_fts 
+          WHERE assets_fts MATCH ? 
+          ORDER BY bm25(assets_fts, 10.0, 1.0, 5.0, 5.0)
+        )
+      `;
+      params.push(searchQuery);
+    }
   }
 
   try {
