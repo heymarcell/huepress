@@ -426,19 +426,17 @@ export default function AdminAssets() {
                   />
                 </td>
                 <td className="px-4 py-3">
-                  <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200">
+                  <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200 flex items-center justify-center">
                     <img 
                       src={getThumbnailUrl(asset.id)} 
                       alt="" 
                       className="w-full h-full object-contain"
+                      loading="lazy"
                       onError={(e) => {
+                        // Simply hide the broken image, gray background shows through
                         (e.target as HTMLImageElement).style.display = 'none';
-                        (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
                       }}
                     />
-                    <div className="hidden absolute inset-0 items-center justify-center text-gray-300">
-                      <ImageIcon className="w-5 h-5" />
-                    </div>
                   </div>
                 </td>
                 <td className="px-4 py-3">
