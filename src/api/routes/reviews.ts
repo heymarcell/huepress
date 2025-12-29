@@ -44,8 +44,8 @@ app.get("/:assetId", async (c) => {
     const avgRating = statsResult?.avg_rating || null;
     const totalReviews = statsResult?.total_count || 0;
     
-    // Cache reviews for short period
-    c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+    // No cache for reviews to ensure instant updates
+    c.header("Cache-Control", "no-cache, no-store, must-revalidate");
     
     return c.json({
       reviews: listResult.results || [],

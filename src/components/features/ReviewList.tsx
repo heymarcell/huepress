@@ -34,7 +34,11 @@ export function ReviewList({ assetId, refreshTrigger, currentUserEmail, onUserRe
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/reviews/${assetId}`);
+        const url = new URL(`${API_URL}/api/reviews/${assetId}`);
+        if (refreshTrigger && refreshTrigger > 0) {
+          url.searchParams.append("t", Date.now().toString());
+        }
+        const response = await fetch(url.toString());
         const data = await response.json() as ReviewsResponse;
         setReviews(data.reviews || []);
         setAverageRating(data.averageRating);
