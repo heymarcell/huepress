@@ -511,8 +511,8 @@ app.post("/assets", async (c) => {
           } else {
             jobId = crypto.randomUUID();
             await c.env.DB.prepare(`
-              INSERT INTO processing_queue (id, asset_id, job_type, status)
-              VALUES (?, ?, 'generate_all', 'pending')
+              INSERT INTO processing_queue (id, asset_id, job_type, status, max_attempts)
+              VALUES (?, ?, 'generate_all', 'pending', 5)
             `).bind(jobId, id).run();
             
             console.log(`[Queue] Job ${jobId} created for asset ${assetId}`);
@@ -868,8 +868,8 @@ app.post("/assets/bulk-regenerate", async (c) => {
       // Create Job
       const jobId = crypto.randomUUID();
       await c.env.DB.prepare(`
-        INSERT INTO processing_queue (id, asset_id, job_type, status)
-        VALUES (?, ?, 'generate_all', 'pending')
+        INSERT INTO processing_queue (id, asset_id, job_type, status, max_attempts)
+        VALUES (?, ?, 'generate_all', 'pending', 5)
       `).bind(jobId, id).run();
       
       console.log(`[Bulk Regenerate] Enqueued job ${jobId} for ${asset.asset_id}`);
