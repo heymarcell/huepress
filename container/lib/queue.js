@@ -135,7 +135,7 @@ async function processQueue() {
         // 2. OG
         if (ogUrl) {
             const ogBuffer = await generateOgBuffer(svgContent, asset.title);
-            await uploadFile(ogUrl, ogBuffer, 'image/png');
+            await uploadFile(ogUrl, ogBuffer, 'image/webp');
         }
         
         // 3. PDF
