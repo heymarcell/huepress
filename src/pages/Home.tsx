@@ -200,16 +200,16 @@ export default function HomePage() {
                   <div className="flex items-center justify-center lg:justify-start gap-4 text-sm text-gray-500">
                      <div className="flex -space-x-2">
                         <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                          <img src="/avatars/avatar_mom_1.png" alt="Happy Mom" className="w-full h-full object-cover" loading="lazy" />
+                          <img src="/avatars/avatar_mom_1.webp" alt="Happy Mom" className="w-full h-full object-cover" loading="lazy" />
                         </div>
                         <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                          <img src="/avatars/avatar_dad_1.png" alt="Happy Dad" className="w-full h-full object-cover" loading="lazy" />
+                          <img src="/avatars/avatar_dad_1.webp" alt="Happy Dad" className="w-full h-full object-cover" loading="lazy" />
                         </div>
                         <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                          <img src="/avatars/avatar_teacher_1.png" alt="Teacher" className="w-full h-full object-cover" loading="lazy" />
+                          <img src="/avatars/avatar_teacher_1.webp" alt="Teacher" className="w-full h-full object-cover" loading="lazy" />
                         </div>
                         <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                          <img src="/avatars/avatar_mom_2.png" alt="Happy Mom" className="w-full h-full object-cover" loading="lazy" />
+                          <img src="/avatars/avatar_mom_2.webp" alt="Happy Mom" className="w-full h-full object-cover" loading="lazy" />
                         </div>
                      </div>
                      <p>Join <strong className="text-ink">1,000+ families</strong> printing today.</p>
@@ -338,7 +338,7 @@ export default function HomePage() {
               {/* Testimonial 1 */}
               <Card className="p-6">
                  <div className="flex items-center gap-3 mb-4">
-                    <img src="/avatars/avatar_mom_1.png" alt="Jessica" className="w-12 h-12 rounded-full object-cover" loading="lazy" />
+                    <img src="/avatars/avatar_mom_1.webp" alt="Jessica" className="w-12 h-12 rounded-full object-cover" loading="lazy" />
                     <div>
                        <p className="font-bold text-ink text-sm">Jessica</p>
                        <p className="text-xs text-gray-500">Mom of 3</p>
@@ -350,7 +350,7 @@ export default function HomePage() {
               {/* Testimonial 2 */}
               <Card className="p-6">
                  <div className="flex items-center gap-3 mb-4">
-                    <img src="/avatars/avatar_teacher_1.png" alt="Michelle" className="w-12 h-12 rounded-full object-cover" loading="lazy" />
+                    <img src="/avatars/avatar_teacher_1.webp" alt="Michelle" className="w-12 h-12 rounded-full object-cover" loading="lazy" />
                     <div>
                        <p className="font-bold text-ink text-sm">Michelle R.</p>
                        <p className="text-xs text-gray-500">Pediatric OT</p>
@@ -362,7 +362,7 @@ export default function HomePage() {
               {/* Testimonial 3 */}
               <Card className="p-6">
                  <div className="flex items-center gap-3 mb-4">
-                    <img src="/avatars/avatar_dad_1.png" alt="David" className="w-12 h-12 rounded-full object-cover" loading="lazy" />
+                    <img src="/avatars/avatar_dad_1.webp" alt="David" className="w-12 h-12 rounded-full object-cover" loading="lazy" />
                     <div>
                        <p className="font-bold text-ink text-sm">David T.</p>
                        <p className="text-xs text-gray-500">3rd Grade Teacher</p>
@@ -386,7 +386,7 @@ export default function HomePage() {
                 <div className="h-48 bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden relative">
                    {/* Use lazy img instead of CSS background for better performance */}
                    <img
-                     src="/thumbnails/thumb_whale_1766355003894.png"
+                     src="/thumbnails/thumb_whale_1766355003894.webp"
                      alt=""
                      loading="lazy"
                      decoding="async"
@@ -411,7 +411,7 @@ export default function HomePage() {
                    <Sparkles className="w-3 h-3" /> HUEPRESS
                 </div>
                 <div className="h-48 bg-white rounded-lg mb-4 flex items-center justify-center overflow-hidden border border-gray-100">
-                   <img src="/thumbnails/thumb_whale_1766355003894.png" className="w-full h-full object-cover" loading="lazy" alt="HuePress quality comparison" />
+                   <img src="/thumbnails/thumb_whale_1766355003894.webp" className="w-full h-full object-cover" loading="lazy" alt="HuePress quality comparison" />
                 </div>
                 <div className="mt-auto">
                    <h3 className="font-bold text-ink mb-2">Vector-Sharp Lines</h3>

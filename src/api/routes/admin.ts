@@ -416,7 +416,7 @@ app.post("/assets", async (c) => {
     // Set keys optimistically if we have the file OR can generate it (Source available)
     if (hasThumbnailUpload || hasSourceUpload) {
       thumbnailKey = `thumbnails/${idPath}.webp`;
-      ogKey = `og-images/${idPath}.png`; // OG generated if thumbnail exists/generated
+      ogKey = `og-images/${idPath}.webp`; // OG generated if thumbnail exists/generated
     }
     if (hasPdfUpload || hasSourceUpload) {
       pdfKey = `pdfs/${idPath}.pdf`;
@@ -1023,7 +1023,7 @@ app.post("/assets/:id/regenerate-og", async (c) => {
     // Prepare target OG key
     let ogKey = asset.r2_key_og;
     if (!ogKey) {
-       ogKey = `og-images/${id}.png`;
+       ogKey = `og-images/${id}.webp`;
        // Update DB with new key
        await c.env.DB.prepare("UPDATE assets SET r2_key_og = ? WHERE id = ?").bind(ogKey, id).run();
     }

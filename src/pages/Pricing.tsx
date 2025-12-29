@@ -173,13 +173,13 @@ export default function PricingPage() {
                   {plan.popular && (
                     <div className="flex gap-2 justify-center mt-4">
                        <div className="w-12 h-16 bg-white/20 rounded-md overflow-hidden rotate-[-6deg] ring-1 ring-white/30">
-                          <img src="/thumbnails/thumb_capybara_1766354990805.png" className="w-full h-full object-cover opacity-80" />
+                          <img src="/thumbnails/thumb_capybara_1766354990805.webp" className="w-full h-full object-cover opacity-80" />
                        </div>
                        <div className="w-12 h-16 bg-white/20 rounded-md overflow-hidden ring-1 ring-white/30 z-10">
-                          <img src="/thumbnails/thumb_unicorn_1766355087780.png" className="w-full h-full object-cover opacity-80" />
+                          <img src="/thumbnails/thumb_unicorn_1766355087780.webp" className="w-full h-full object-cover opacity-80" />
                        </div>
                        <div className="w-12 h-16 bg-white/20 rounded-md overflow-hidden rotate-[6deg] ring-1 ring-white/30">
-                          <img src="/thumbnails/thumb_dinosaur_1766355016602.png" className="w-full h-full object-cover opacity-80" />
+                          <img src="/thumbnails/thumb_dinosaur_1766355016602.webp" className="w-full h-full object-cover opacity-80" />
                        </div>
                     </div>
                   )}

@@ -171,7 +171,7 @@ async function generateOgBuffer(svgContent, title) {
     create: { width, height, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
   })
   .composite(layers)
-  .png()
+  .webp({ quality: 85 })
   .toBuffer();
 }
 

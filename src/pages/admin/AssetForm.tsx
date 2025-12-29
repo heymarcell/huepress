@@ -214,7 +214,7 @@ export default function AdminAssetForm() {
           setThumbnailPreviewUrl(`https://assets.huepress.co/thumbnails/${id}.webp?t=${Date.now()}`);
         }
         if (status.files.og && !ogPreviewUrl?.includes('assets.huepress.co')) {
-          setOgPreviewUrl(`https://assets.huepress.co/og-images/${id}.png?t=${Date.now()}`);
+          setOgPreviewUrl(`https://assets.huepress.co/og-images/${id}.webp?t=${Date.now()}`);
         }
         if (status.files.pdf && !pdfPreviewUrl) {
           try {

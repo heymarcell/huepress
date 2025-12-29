@@ -123,7 +123,7 @@ app.post('/og-image', async (req, res) => {
           const buffer = await generate();
           const res = await fetchWithRetry(`${uploadUrl}?key=${encodeURIComponent(uploadKey)}`, {
             method: 'PUT',
-            headers: { 'Authorization': `Bearer ${uploadToken}`, 'X-Content-Type': 'image/png' },
+            headers: { 'Authorization': `Bearer ${uploadToken}`, 'X-Content-Type': 'image/webp' },
             body: buffer
           });
           if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
@@ -138,7 +138,7 @@ app.post('/og-image', async (req, res) => {
     res.json({
       success: true,
       imageBase64: buffer.toString('base64'),
-      mimeType: 'image/png'
+      mimeType: 'image/webp'
     });
   } catch (error) {
     console.error('[OG] Error:', error);
@@ -257,7 +257,7 @@ app.post('/generate-all', async (req, res) => {
             const buffer = await generateOgBuffer(safeSvg, title);
             const res = await fetchWithRetry(`${ogUploadUrl}?key=${encodeURIComponent(ogUploadKey)}`, {
               method: 'PUT',
-              headers: { 'Authorization': `Bearer ${uploadToken}`, 'X-Content-Type': 'image/png' },
+              headers: { 'Authorization': `Bearer ${uploadToken}`, 'X-Content-Type': 'image/webp' },
               body: buffer
             });
             if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
