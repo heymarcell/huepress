@@ -1018,7 +1018,14 @@ export default function AdminAssetForm() {
                   {/* PDF Preview */}
                   <div className="relative aspect-[3/4] bg-gray-50 rounded-lg border border-gray-100 overflow-hidden group">
                      {pdfPreviewUrl ? (
-                       <iframe src={pdfPreviewUrl} className="w-full h-full pointer-events-none opacity-80" aria-label="PDF Preview" />
+                       <div className="w-full h-full overflow-hidden">
+                         <iframe 
+                           src={`${pdfPreviewUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
+                           className="w-full h-full pointer-events-none border-0" 
+                           aria-label="PDF Preview"
+                           style={{ marginTop: '-40px', height: 'calc(100% + 40px)' }}
+                         />
+                       </div>
                      ) : (
                        <div className="w-full h-full flex items-center justify-center text-gray-300">
                          <span className="text-[10px]">PDF</span>
