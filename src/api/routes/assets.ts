@@ -285,10 +285,19 @@ app.get("/download/:id", async (c) => {
     // [PERF] Defer non-critical writes to prevent D1 lock contention
     // These writes happen AFTER the response is sent
     c.executionCtx.waitUntil(
-      c.env.DB.batch([
-        c.env.DB.prepare("UPDATE assets SET download_count = download_count + 1 WHERE id = ?").bind(id),
-        c.env.DB.prepare("INSERT INTO downloads (id, user_id, asset_id, downloaded_at) VALUES (?, ?, ?, datetime('now'))").bind(globalThis.crypto.randomUUID(), internalUserId, id)
-      ]).catch((err: Error) => console.error("[Deferred Write] Download tracking failed:", err))
+      (async () => {
+        try {
+          // Only track stats for non-admin users
+          if (!isAdmin) {
+            await c.env.DB.batch([
+              c.env.DB.prepare("UPDATE assets SET download_count = download_count + 1 WHERE id = ?").bind(id),
+              c.env.DB.prepare("INSERT INTO downloads (id, user_id, asset_id, downloaded_at) VALUES (?, ?, ?, datetime('now'))").bind(globalThis.crypto.randomUUID(), internalUserId, id)
+            ]);
+          }
+        } catch (err) {
+          console.error("[Deferred Write] Download tracking failed:", err);
+        }
+      })()
     );
 
     // Apply invisible watermark with internal user UUID for leak tracking

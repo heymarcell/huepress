@@ -101,14 +101,8 @@ export default function AdminAssetForm() {
           if (asset.r2_key_og) {
             setOgPreviewUrl(`https://assets.huepress.co/${asset.r2_key_og}`);
           }
-          if (asset.r2_key_private && !(asset.r2_key_private as string).startsWith("__draft__")) {
-            try {
-              const blob = await apiClient.assets.fetchDownloadBlob(asset.id as string, token);
-              setPdfPreviewUrl(URL.createObjectURL(blob));
-            } catch (e) {
-              console.error("Failed to load PDF preview", e);
-            }
-          }
+          // PDF preview fetching is handled by the polling effect (fetchStatus)
+          // to avoid double-fetching and race conditions.
 
           // Fetch Source SVG for Regeneration
           try {
