@@ -520,25 +520,30 @@ app.post("/assets", async (c) => {
           
           // 6. FIRE LIGHTWEIGHT KICK TO CONTAINER (no waiting, no retries)
           // Container will poll the queue and process jobs
-          c.executionCtx.waitUntil((async () => {
-            try {
-              const container = (await import("@cloudflare/containers")).getContainer(c.env.PROCESSING, "main");
-              console.log(`[Queue] Sending wakeup to container for job ${jobId}...`);
-              
-              const res = await container.fetch("http://container/wakeup", { 
-                method: "GET",
-                headers: { 
-                  "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET || "",
-                  "X-Set-Internal-Token": c.env.INTERNAL_API_TOKEN || "",
-                  "X-Set-Auth-Secret": c.env.CONTAINER_AUTH_SECRET || ""
-                }
-              });
-              
-              console.log(`[Queue] Wakeup sent. Status: ${res.status}`);
-            } catch (err) {
-              console.error(`[Queue] Failed to send wakeup signal:`, err);
-            }
-          })());
+          // [F-004] Validate container secrets before sending wakeup
+          if (!c.env.CONTAINER_AUTH_SECRET || !c.env.INTERNAL_API_TOKEN) {
+            console.error(`[Queue] Container auth secrets not configured, skipping wakeup`);
+          } else {
+            c.executionCtx.waitUntil((async () => {
+              try {
+                const container = (await import("@cloudflare/containers")).getContainer(c.env.PROCESSING, "main");
+                console.log(`[Queue] Sending wakeup to container for job ${jobId}...`);
+                
+                const res = await container.fetch("http://container/wakeup", { 
+                  method: "GET",
+                  headers: { 
+                    "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET!,
+                    "X-Set-Internal-Token": c.env.INTERNAL_API_TOKEN,
+                    "X-Set-Auth-Secret": c.env.CONTAINER_AUTH_SECRET!
+                  }
+                });
+                
+                console.log(`[Queue] Wakeup sent. Status: ${res.status}`);
+              } catch (err) {
+                console.error(`[Queue] Failed to send wakeup signal:`, err);
+              }
+            })());
+          }
         }
 
         // Notify IndexNow for published assets (fire-and-forget)
@@ -873,7 +878,8 @@ app.post("/assets/bulk-regenerate", async (c) => {
     }
 
     // Trigger Container Wakeup if jobs were created
-    if (jobsCreated > 0) {
+    // [F-004] Validate container secrets before sending wakeup
+    if (jobsCreated > 0 && c.env.CONTAINER_AUTH_SECRET && c.env.INTERNAL_API_TOKEN) {
       c.executionCtx.waitUntil((async () => {
         try {
           const container = getContainer(c.env.PROCESSING, "main");
@@ -882,15 +888,17 @@ app.post("/assets/bulk-regenerate", async (c) => {
           await fetchWithRetry(() => container.fetch("http://container/wakeup", { 
             method: "GET",
             headers: { 
-              "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET || "",
-              "X-Set-Internal-Token": c.env.INTERNAL_API_TOKEN || "",
-              "X-Set-Auth-Secret": c.env.CONTAINER_AUTH_SECRET || ""
+              "X-Internal-Secret": c.env.CONTAINER_AUTH_SECRET!,
+              "X-Set-Internal-Token": c.env.INTERNAL_API_TOKEN,
+              "X-Set-Auth-Secret": c.env.CONTAINER_AUTH_SECRET!
             }
           }));
         } catch (err) {
           console.error(`[Bulk Regenerate] Failed to wakeup container:`, err);
         }
       })());
+    } else if (jobsCreated > 0) {
+      console.error(`[Bulk Regenerate] Container auth secrets not configured, skipping wakeup`);
     }
 
     console.log(`[Bulk Regenerate] Queued ${queuedCount} assets for processing`);

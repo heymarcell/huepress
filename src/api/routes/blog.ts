@@ -1,8 +1,31 @@
 import { Hono } from "hono";
 import { Bindings } from "../types";
 import { verifyAdmin } from "../lib/verify-admin";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+// [F-002] Blog post schema with validation
+const createPostSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200, "Title too long"),
+  slug: z.string().max(200).optional(),
+  excerpt: z.string().max(500, "Excerpt too long").optional(),
+  content: z.string().max(100000, "Content too long").optional(),
+  cover_image: z.string().url("Invalid URL").max(500).optional().nullable(),
+  status: z.enum(["draft", "published"]).optional(),
+  published_at: z.string().optional().nullable()
+});
+
+const updatePostSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  slug: z.string().max(200).optional(),
+  excerpt: z.string().max(500, "Excerpt too long").optional().nullable(),
+  content: z.string().max(100000, "Content too long").optional(),
+  cover_image: z.string().url("Invalid URL").max(500).optional().nullable(),
+  status: z.enum(["draft", "published"]).optional(),
+  published_at: z.string().optional().nullable()
+});
 
 // Helper: Generate slug from title
 function slugify(text: string): string {
@@ -137,21 +160,16 @@ app.get("/admin/posts/:id", async (c) => {
 });
 
 // POST /admin/posts - Create new post
-app.post("/admin/posts", async (c) => {
+// [F-002] Now uses Zod validation for input
+app.post("/admin/posts", zValidator("json", createPostSchema), async (c) => {
   const isAdmin = await verifyAdmin(c);
   if (!isAdmin) {
     return c.json({ error: "Unauthorized" }, 401);
   }
   
   try {
-    const body = await c.req.json();
-    const { title, excerpt, content, cover_image, status, published_at } = body;
-    let { slug } = body;
-    
-    // Validate required fields
-    if (!title) {
-      return c.json({ error: "Title is required" }, 400);
-    }
+    const { title, excerpt, content, cover_image, status, published_at } = c.req.valid("json");
+    let { slug } = c.req.valid("json");
     
     // Auto-generate slug if not provided
     if (!slug) {
@@ -196,7 +214,8 @@ app.post("/admin/posts", async (c) => {
 });
 
 // PUT /admin/posts/:id - Update post
-app.put("/admin/posts/:id", async (c) => {
+// [F-002] Now uses Zod validation for input
+app.put("/admin/posts/:id", zValidator("json", updatePostSchema), async (c) => {
   const isAdmin = await verifyAdmin(c);
   if (!isAdmin) {
     return c.json({ error: "Unauthorized" }, 401);
@@ -204,8 +223,7 @@ app.put("/admin/posts/:id", async (c) => {
   
   try {
     const { id } = c.req.param();
-    const body = await c.req.json();
-    const { title, slug, excerpt, content, cover_image, status, published_at } = body;
+    const { title, slug, excerpt, content, cover_image, status, published_at } = c.req.valid("json");
     
     // Check post exists
     const existingPost = await c.env.DB.prepare(

@@ -1,8 +1,17 @@
 import { Hono } from "hono";
 import { getAuth } from "@hono/clerk-auth";
 import { Bindings, Review } from "../types";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+// [F-001] Review creation schema with validation
+const createReviewSchema = z.object({
+  asset_id: z.string().uuid("Invalid asset ID format"),
+  rating: z.number().int("Rating must be an integer").min(1, "Rating must be at least 1").max(5, "Rating cannot exceed 5"),
+  comment: z.string().max(2000, "Comment cannot exceed 2000 characters").optional()
+});
 
 // GET /reviews/:assetId - Get all reviews for an asset
 app.get("/:assetId", async (c) => {
@@ -52,7 +61,8 @@ app.get("/:assetId", async (c) => {
 });
 
 // POST /reviews - Create a new review (subscribers only)
-app.post("/", async (c) => {
+// [F-001] Now uses Zod validation for input
+app.post("/", zValidator("json", createReviewSchema), async (c) => {
   const auth = getAuth(c);
   
   if (!auth?.userId) {
@@ -74,21 +84,12 @@ app.post("/", async (c) => {
       return c.json({ error: "Only subscribers can leave reviews" }, 403);
     }
     
-    const body = await c.req.json<{ asset_id: string; rating: number; comment?: string }>();
-    
-    // Validate rating
-    if (!body.rating || body.rating < 1 || body.rating > 5) {
-      return c.json({ error: "Rating must be between 1 and 5" }, 400);
-    }
-    
-    if (!body.asset_id) {
-      return c.json({ error: "Asset ID is required" }, 400);
-    }
+    const { asset_id, rating, comment } = c.req.valid("json");
     
     // Check if user already reviewed this asset
     const existing = await c.env.DB.prepare(
       "SELECT id FROM reviews WHERE user_id = ? AND asset_id = ?"
-    ).bind(user.id, body.asset_id).first();
+    ).bind(user.id, asset_id).first();
     
     if (existing) {
       return c.json({ error: "You have already reviewed this asset" }, 409);
@@ -99,11 +100,11 @@ app.post("/", async (c) => {
     await c.env.DB.prepare(`
       INSERT INTO reviews (id, user_id, asset_id, rating, comment)
       VALUES (?, ?, ?, ?, ?)
-    `).bind(reviewId, user.id, body.asset_id, body.rating, body.comment || null).run();
+    `).bind(reviewId, user.id, asset_id, rating, comment || null).run();
     
     return c.json({ 
       success: true, 
-      review: { id: reviewId, rating: body.rating, comment: body.comment }
+      review: { id: reviewId, rating, comment }
     }, 201);
   } catch (error) {
     console.error("Error creating review:", error);

@@ -81,7 +81,8 @@ describe("Admin API", () => {
             },
             ASSETS_CDN_URL: "https://assets.test",
             PROCESSING: {}, // Mock Service Binding
-            INTERNAL_API_TOKEN: "test-token"
+            INTERNAL_API_TOKEN: "test-token",
+            CONTAINER_AUTH_SECRET: "test-container-secret"
         };
     });
 
