@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui";
 import { AlertModal } from "@/components/ui/AlertModal";
-import { Upload, Save, ArrowLeft, Eye, EyeOff, Sparkles, Code, ChevronDown, ChevronUp, Loader2, AlertCircle } from "lucide-react";
+import { Upload, Save, ArrowLeft, Eye, EyeOff, Sparkles, Code, ChevronDown, ChevronUp, Loader2, AlertCircle, Printer } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
@@ -157,6 +157,7 @@ export default function AdminAssetForm() {
 
   const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(null);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [isOgZoomOpen, setIsOgZoomOpen] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [ogPreviewUrl, setOgPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -554,11 +555,6 @@ export default function AdminAssetForm() {
             <h1 className="font-serif text-xl font-bold text-ink">
               {isEditing ? "Edit Asset" : "New Asset"}
             </h1>
-            {isEditing && (
-               <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                 {id}
-               </span>
-            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -571,8 +567,8 @@ export default function AdminAssetForm() {
             {isEditing && (
                <Button
                   type="button"
-                  variant="outline"
-                  className="hidden sm:flex"
+                  variant="ghost"
+                  className="hidden sm:flex text-primary border border-primary/20 hover:bg-primary/5"
                   onClick={async () => {
                     try {
                       const token = await getToken();
@@ -655,7 +651,7 @@ export default function AdminAssetForm() {
                     value={jsonInput}
                     onChange={(e) => setJsonInput(e.target.value)}
                     rows={6}
-                    className="flex-1 min-h-[120px] p-3 rounded-lg border border-line bg-surface-subtle text-ink placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-black resize-none text-sm transition-shadow bg-white"
+                    className="w-full min-h-[120px] p-3 rounded-lg border border-line bg-surface-subtle text-ink placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-black resize-none text-sm transition-shadow bg-white"
                     placeholder={`{\n  "title": "Friendly Capybara",\n  "description": "...",\n  "category": "Animals",\n  "skill": "Easy",\n  "tags": "cute, animal"\n}`}
                   />
                   {jsonError && (
@@ -682,7 +678,7 @@ export default function AdminAssetForm() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-8 space-y-6">
               <div className="flex items-center gap-2 mb-2">
                 <div className="h-6 w-1 bg-primary rounded-full"></div>
-                <h2 className="font-serif text-lg text-ink font-bold">Basic Information</h2>
+                <h2 className="font-serif text-xl text-ink font-bold tracking-tight">Basic Information</h2>
               </div>
               
               <div className="space-y-4">
@@ -730,7 +726,7 @@ export default function AdminAssetForm() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-8 space-y-6">
               <div className="flex items-center gap-2 mb-2">
                 <div className="h-6 w-1 bg-secondary rounded-full"></div>
-                <h2 className="font-serif text-lg text-ink font-bold">Organization</h2>
+                <h2 className="font-serif text-xl text-ink font-bold tracking-tight">Organization</h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -810,7 +806,7 @@ export default function AdminAssetForm() {
               <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-1 bg-accent rounded-full"></div>
-                  <h2 className="font-serif text-lg text-ink font-bold">Rich Content</h2>
+                  <h2 className="font-serif text-xl text-ink font-bold tracking-tight">Rich Content</h2>
                 </div>
                 
                 {/* Tabs */}
@@ -822,7 +818,7 @@ export default function AdminAssetForm() {
                       onClick={() => setActiveRichTab(tab.id)}
                       className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${
                         activeRichTab === tab.id
-                          ? "bg-white text-ink shadow-sm"
+                          ? "bg-white text-primary shadow-sm ring-1 ring-primary/10"
                           : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
                       }`}
                     >
@@ -882,7 +878,7 @@ export default function AdminAssetForm() {
           <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
             
             {/* Status Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-6 space-y-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-7 space-y-5">
               <h3 className="font-bold text-ink text-sm uppercase tracking-wider">Publishing Status</h3>
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -966,7 +962,7 @@ export default function AdminAssetForm() {
             </div>
 
             {/* Media Gallery Grid */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-5 space-y-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-6 space-y-5">
               <h3 className="font-bold text-ink text-sm uppercase tracking-wider">Media Gallery</h3>
                
                <div className="grid grid-cols-2 gap-3">
@@ -997,15 +993,26 @@ export default function AdminAssetForm() {
                   </div>
 
                   {/* OG Image */}
-                  <div className="relative aspect-video bg-gray-50 rounded-lg border border-gray-100 overflow-hidden group">
+                   <div className="relative aspect-video bg-gray-50 rounded-lg border border-gray-100 overflow-hidden group">
                      {ogPreviewUrl ? (
-                       <img src={ogPreviewUrl} alt="OG" className="w-full h-full object-cover" />
+                       <>
+                         <img src={ogPreviewUrl} alt="OG" className="w-full h-full object-cover" />
+                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <button 
+                              type="button"
+                              onClick={() => setIsOgZoomOpen(true)}
+                              className="p-2 bg-white rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all"
+                            >
+                               <Eye className="w-4 h-4 text-gray-700" />
+                            </button>
+                         </div>
+                       </>
                      ) : (
                        <div className="w-full h-full flex items-center justify-center text-gray-300">
                          <span className="text-[10px]">OG Image</span>
                        </div>
                      )}
-                     <span className="absolute top-2 left-2 text-[10px] font-bold bg-black/50 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">SEO</span>
+                     <span className="absolute top-2 left-2 text-[10px] font-bold bg-black/50 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">OG IMAGE</span>
                   </div>
 
                   {/* PDF Preview */}
@@ -1021,14 +1028,14 @@ export default function AdminAssetForm() {
                      {/* Overlay Actions */}
                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/5 transition-colors">
                         {pdfPreviewUrl ? (
-                           <a 
-                             href={pdfPreviewUrl} 
-                             download={`${formData.title || 'asset'}.pdf`}
+                           <button 
+                             type="button"
+                             onClick={() => window.open(pdfPreviewUrl, '_blank')}
                              className="opacity-0 group-hover:opacity-100 p-2 bg-white rounded-full shadow-md hover:scale-110 transition-all text-primary"
-                             title="Download PDF"
+                             title="Print Preview"
                            >
-                             <Upload className="w-4 h-4 rotate-180" /> 
-                           </a>
+                             <Printer className="w-4 h-4" /> 
+                           </button>
                         ) : null}
                      </div>
                      <span className="absolute top-2 left-2 text-[10px] font-bold bg-primary/90 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">PDF</span>
@@ -1062,6 +1069,26 @@ export default function AdminAssetForm() {
           <button 
             className="absolute top-6 right-6 text-white/50 hover:text-white text-4xl font-light transition-colors"
             onClick={() => setIsZoomOpen(false)}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* OG Image Zoom Modal */}
+      {isOgZoomOpen && ogPreviewUrl && (
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-8 cursor-zoom-out animate-in fade-in duration-200"
+          onClick={() => setIsOgZoomOpen(false)}
+        >
+          <img 
+            src={ogPreviewUrl} 
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-xl shadow-2xl"
+            alt="Zoomed OG Image"
+          />
+          <button 
+            className="absolute top-6 right-6 text-white/50 hover:text-white text-4xl font-light transition-colors"
+            onClick={() => setIsOgZoomOpen(false)}
           >
             ×
           </button>
