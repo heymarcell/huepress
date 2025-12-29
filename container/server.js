@@ -62,33 +62,39 @@ app.post('/thumbnail', async (req, res) => {
     if (!svgContent) return res.status(400).json({ error: 'Missing svgContent' });
     validateUploadUrl(uploadUrl);
 
-    // Logic
-    const generate = async () => {
+    // Logic wrapped in queue for concurrency control
+    const processTask = async () => {
       console.log(`[Thumbnail] Generating (width: ${width})...`);
-      // Helper sanitizes input
       return generateThumbnailBuffer(svgContent, assetId || '', width);
     };
 
     // Async Mode
     if (uploadUrl && uploadToken && uploadKey) {
-      res.status(202).json({ status: 'accepted', message: 'Thumbnail processing started' });
-      (async () => {
-        try {
-          const buffer = await generate();
-          const res = await fetchWithRetry(`${uploadUrl}?key=${encodeURIComponent(uploadKey)}`, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${uploadToken}`, 'X-Content-Type': 'image/webp' },
-            body: buffer
-          });
-          if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-          console.log(`[Thumbnail] Async upload success: ${uploadKey}`);
-        } catch (e) { console.error(`[Thumbnail] Async error:`, e); }
-      })();
+      // Add to queue instead of running immediately
+      const { thumbnailQueue } = queues;
+      
+      // Fire and forget (but constrained by queue)
+      thumbnailQueue.add(async () => {
+          try {
+            const buffer = await processTask();
+            const res = await fetchWithRetry(`${uploadUrl}?key=${encodeURIComponent(uploadKey)}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${uploadToken}`, 'X-Content-Type': 'image/webp' },
+                body: buffer
+            });
+            if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+            console.log(`[Thumbnail] Async upload success: ${uploadKey}`);
+          } catch(e) { console.error(`[Thumbnail] Async error:`, e); }
+      });
+
+      res.status(202).json({ status: 'accepted', message: 'Thumbnail queued' });
       return;
     }
 
-    // Sync Mode
-    const buffer = await generate();
+    // Sync Mode (still queued to protect resources)
+    const { thumbnailQueue } = queues;
+    const buffer = await thumbnailQueue.add(() => processTask());
+    
     res.json({
       success: true,
       imageBase64: buffer.toString('base64'),
@@ -105,22 +111,20 @@ app.post('/og-image', async (req, res) => {
   try {
     const { title, svgContent, uploadUrl, uploadToken, uploadKey } = req.body;
     
-    // We enforce SVG content now for consistency
     if (!svgContent && !req.body.thumbnailBase64) return res.status(400).json({ error: 'svgContent is required' });
-    
     validateUploadUrl(uploadUrl);
 
-    const generate = async () => {
+    const processTask = async () => {
         if (!svgContent) throw new Error('svgContent is required for high-quality OG generation');
         return generateOgBuffer(svgContent, title);
     };
 
     // Async Mode
     if (uploadUrl && uploadToken && uploadKey) {
-      res.status(202).json({ status: 'accepted', message: 'OG processing started' });
-      (async () => {
+      const { ogQueue } = queues;
+      ogQueue.add(async () => {
         try {
-          const buffer = await generate();
+          const buffer = await processTask();
           const res = await fetchWithRetry(`${uploadUrl}?key=${encodeURIComponent(uploadKey)}`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${uploadToken}`, 'X-Content-Type': 'image/webp' },
@@ -129,12 +133,16 @@ app.post('/og-image', async (req, res) => {
           if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
           console.log(`[OG] Async upload success: ${uploadKey}`);
         } catch (e) { console.error(`[OG] Async error:`, e); }
-      })();
+      });
+      
+      res.status(202).json({ status: 'accepted', message: 'OG queued' });
       return;
     }
 
     // Sync Mode
-    const buffer = await generate();
+    const { ogQueue } = queues;
+    const buffer = await ogQueue.add(() => processTask());
+    
     res.json({
       success: true,
       imageBase64: buffer.toString('base64'),
@@ -154,24 +162,21 @@ app.post('/pdf', async (req, res) => {
     if (!svgContent) return res.status(400).json({ error: 'Missing svgContent' });
     validateUploadUrl(uploadUrl);
 
-    const generate = async () => {
-      // Helper expects asset with asset_id, title, description
+    const processTask = async () => {
       const asset = {
           asset_id: metadata?.assetId || 'UNKNOWN',
           title: metadata?.title,
           description: metadata?.description
       };
-      // helper args: svg, asset, publicUrl
-      // we don't have publicUrl here easily, pass null (defaults to huepress.co)
       return generatePdfBuffer(svgContent, asset, null);
     };
 
     // Async Mode
     if (uploadUrl && uploadToken && uploadKey) {
-       res.status(202).json({ status: 'accepted', message: 'PDF processing started' });
-       (async () => {
+       const { pdfQueue } = queues;
+       pdfQueue.add(async () => {
          try {
-           const buffer = await generate();
+           const buffer = await processTask();
            const res = await fetchWithRetry(`${uploadUrl}?key=${encodeURIComponent(uploadKey)}`, {
              method: 'PUT',
              headers: { 
@@ -184,12 +189,16 @@ app.post('/pdf', async (req, res) => {
            if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
            console.log(`[PDF] Async upload success: ${uploadKey}`);
          } catch(e) { console.error(`[PDF] Async error:`, e); }
-       })();
+       });
+       
+       res.status(202).json({ status: 'accepted', message: 'PDF queued' });
        return;
     }
 
     // Sync Mode
-    const buffer = await generate();
+    const { pdfQueue } = queues;
+    const buffer = await pdfQueue.add(() => processTask());
+
     res.json({
       success: true,
       pdfBase64: buffer.toString('base64'),
@@ -233,9 +242,12 @@ app.post('/generate-all', async (req, res) => {
     // But helpers re-sanitize. It's fast enough.
     const safeSvg = sanitizeSvgContent(svgContent); // We do it here to catch errors early
 
-    const [thumbnailResult, ogResult] = await Promise.all([
-      thumbnailQueue.add(async () => {
-        if (!thumbnailUploadUrl) return null;
+    // Executing Sequentially to save memory
+    let thumbnailResult = null;
+    let ogResult = null;
+
+    if (thumbnailUploadUrl) {
+       thumbnailResult = await thumbnailQueue.add(async () => {
         try {
             const buffer = await generateThumbnailBuffer(safeSvg, assetId);
             const res = await fetchWithRetry(`${thumbnailUploadUrl}?key=${encodeURIComponent(thumbnailUploadKey)}`, {
@@ -250,9 +262,11 @@ app.post('/generate-all', async (req, res) => {
             console.error(`[GenerateAll] Thumbnail failed:`, e.message);
             return { success: false, error: e.message };
         }
-      }),
-      ogQueue.add(async () => {
-        if (!ogUploadUrl) return null;
+      });
+    }
+
+    if (ogUploadUrl) {
+       ogResult = await ogQueue.add(async () => {
         try {
             const buffer = await generateOgBuffer(safeSvg, title);
             const res = await fetchWithRetry(`${ogUploadUrl}?key=${encodeURIComponent(ogUploadKey)}`, {
@@ -267,8 +281,8 @@ app.post('/generate-all', async (req, res) => {
             console.error(`[GenerateAll] OG failed:`, e.message);
             return { success: false, error: e.message };
         }
-      })
-    ]);
+      });
+    }
 
     results.thumbnail = thumbnailResult;
     results.og = ogResult;
