@@ -83,6 +83,11 @@ app.get("/queue/pending", auth, async (c) => {
             SELECT id, asset_id, job_type, attempts, max_attempts, created_at
             FROM processing_queue
             WHERE status = 'pending'
+              AND (
+                attempts = 0 
+                OR completed_at IS NULL 
+                OR completed_at < datetime('now', '-5 minutes')
+              )
             ORDER BY created_at ASC
             LIMIT ?
         `).bind(limit).all();
