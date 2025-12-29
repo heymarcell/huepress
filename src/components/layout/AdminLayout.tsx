@@ -64,8 +64,12 @@ export function AdminLayout() {
             </Link>
             <span className="text-gray-200">|</span>
             <div className="flex items-center gap-2">
-               <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-lg font-serif">H</div>
-               <h1 className="font-serif font-bold text-ink text-lg">HuePress Admin</h1>
+               <img 
+                 src="/logo.svg" 
+                 alt="HuePress" 
+                 className="h-8"
+               />
+               <h1 className="font-serif font-bold text-ink text-lg">Admin</h1>
             </div>
           </div>
           <div className="flex items-center gap-4">
