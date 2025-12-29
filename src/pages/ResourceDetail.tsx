@@ -284,7 +284,6 @@ export default function ResourceDetailPage() {
             
             {/* Left Column: Product Image */}
             <div className="w-full lg:w-1/2">
-               <div className="sticky top-32">
                  <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 group">
                    {/* 1:1 container - clips bottom banner using clip-path */}
                    <div className="aspect-square w-full bg-white overflow-hidden flex items-center justify-center">
@@ -307,11 +306,10 @@ export default function ResourceDetailPage() {
                      )}
                    </div>
                  </div>
-               </div>
             </div>
 
             {/* Right Column: Key Details & CTA */}
-            <div className="w-full lg:w-1/2 lg:py-8">
+            <div className="w-full lg:w-1/2">
               <div className="flex flex-wrap items-center gap-3 mb-4">
                  <Link to={`/vault?category=${encodeURIComponent(asset.category)}`} className="px-3 py-1 bg-primary/5 text-primary text-xs font-bold uppercase tracking-wider rounded-full hover:bg-primary/10 transition-colors">
                    {asset.category}
