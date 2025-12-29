@@ -13,7 +13,7 @@ interface AdminAsset {
   category: string;
   skill: string;
   status: 'published' | 'draft';
-  downloads?: number;
+  download_count?: number;
   createdAt?: string;
 }
 
@@ -102,7 +102,7 @@ export default function AdminAssets() {
     total: assets.length,
     published: assets.filter(a => a.status === "published").length,
     draft: assets.filter(a => a.status === "draft").length,
-    downloads: assets.reduce((sum, a) => sum + (a.downloads || 0), 0),
+    downloads: assets.reduce((sum, a) => sum + (a.download_count || 0), 0),
   }), [assets]);
 
   // Filter by status
@@ -459,7 +459,7 @@ export default function AdminAssets() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-600 font-medium">
-                  {(asset.downloads || 0).toLocaleString()}
+                  {(asset.download_count || 0).toLocaleString()}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-1">
