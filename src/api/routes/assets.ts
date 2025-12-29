@@ -107,7 +107,7 @@ app.get("/assets", async (c) => {
     };
     
     const response = c.json(responseData);
-    response.headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+    response.headers.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
     response.headers.set("X-Cache", "MISS");
     
     // Store in edge cache (clone since response body can only be read once)
@@ -203,7 +203,7 @@ app.get("/assets/:id", async (c) => {
     };
     
     const response = c.json(responseData);
-    response.headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+    response.headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
     response.headers.set("X-Cache", "MISS");
     
     // Store in edge cache

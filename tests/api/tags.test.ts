@@ -41,6 +41,12 @@ describe("Tags API", () => {
         expect(data.grouped.skill).toHaveLength(1);
     });
 
+    it("GET / should include Cache-Control header", async () => {
+        mockAll.mockResolvedValue({ results: [] });
+        const res = await app.request("http://localhost/", {}, mockEnv);
+        expect(res.headers.get("Cache-Control")).toBe("public, max-age=86400, stale-while-revalidate=604800");
+    });
+
     it("GET / should aggregate dynamic themes from assets", async () => {
         const mockTags = [
             { id: 1, name: "Animals", type: "category", display_order: 1 }

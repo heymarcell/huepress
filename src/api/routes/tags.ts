@@ -113,8 +113,8 @@ app.get("/", async (c) => {
     };
     
     const response = c.json(responseData);
-    // Cache for 5 minutes - tags rarely change
-    response.headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+    // Cache for 1 day - tags rarely change
+    response.headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
     response.headers.set("X-Cache", "MISS");
     
     // Store in edge cache

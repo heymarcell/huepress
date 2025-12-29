@@ -53,7 +53,7 @@ describe("Assets API", () => {
     it("GET /assets should include Cache-Control header", async () => {
         mockAll.mockResolvedValue({ results: [] });
         const res = await app.request("http://localhost/assets", {}, mockEnv);
-        expect(res.headers.get("Cache-Control")).toBe("public, max-age=60, stale-while-revalidate=300");
+        expect(res.headers.get("Cache-Control")).toBe("public, max-age=3600, stale-while-revalidate=86400");
     });
 
     it("GET /assets?category=animals should filter by category", async () => {
@@ -150,7 +150,7 @@ describe("Assets API", () => {
 
         const res = await app.request("http://localhost/assets/1", {}, mockEnv);
         expect(res.status).toBe(200);
-        expect(res.headers.get("Cache-Control")).toBe("public, max-age=60, stale-while-revalidate=300");
+        expect(res.headers.get("Cache-Control")).toBe("public, max-age=86400, stale-while-revalidate=604800");
     });
 
     it("GET /assets/:id should lookup by HP- asset ID", async () => {
