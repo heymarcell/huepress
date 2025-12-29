@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw, Search, Layers, Download, ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
@@ -17,6 +17,35 @@ interface AdminAsset {
   createdAt?: string;
 }
 
+// Metrics Card Component
+function StatCard({ icon: Icon, label, value, color = "gray" }: { 
+  icon: React.ElementType; 
+  label: string; 
+  value: number | string;
+  color?: "gray" | "green" | "yellow" | "blue";
+}) {
+  const colorClasses = {
+    gray: "bg-gray-50 text-gray-600 border-gray-100",
+    green: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    yellow: "bg-amber-50 text-amber-600 border-amber-100",
+    blue: "bg-blue-50 text-blue-600 border-blue-100",
+  };
+
+  return (
+    <div className={`rounded-xl border p-4 ${colorClasses[color]}`}>
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-lg ${color === "gray" ? "bg-gray-100" : color === "green" ? "bg-emerald-100" : color === "yellow" ? "bg-amber-100" : "bg-blue-100"}`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <div>
+          <p className="text-2xl font-bold text-ink">{value}</p>
+          <p className="text-xs font-medium uppercase tracking-wider opacity-80">{label}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminAssets() {
   const { user } = useUser();
   const { getToken } = useAuth();
@@ -24,6 +53,9 @@ export default function AdminAssets() {
   
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
   
   // Delete confirmation modal state
   const [deleteModal, setDeleteModal] = useState<{ 
@@ -60,19 +92,52 @@ export default function AdminAssets() {
     enabled: !!user,
   });
 
-  const assets = (assetsData?.assets || []) as AdminAsset[];
+  const assets = useMemo(() => 
+    (assetsData?.assets || []) as AdminAsset[], 
+    [assetsData?.assets]
+  );
 
-  const filteredAssets = assets.filter((asset) => {
-    if (filter === "all") return true;
-    return asset.status === filter;
-  });
+  // Calculate metrics
+  const metrics = useMemo(() => ({
+    total: assets.length,
+    published: assets.filter(a => a.status === "published").length,
+    draft: assets.filter(a => a.status === "draft").length,
+    downloads: assets.reduce((sum, a) => sum + (a.downloads || 0), 0),
+  }), [assets]);
+
+  // Filter by status
+  const filteredByStatus = useMemo(() => {
+    if (filter === "all") return assets;
+    return assets.filter(a => a.status === filter);
+  }, [assets, filter]);
+
+  // Filter by search query
+  const filteredAssets = useMemo(() => {
+    if (!searchQuery.trim()) return filteredByStatus;
+    const q = searchQuery.toLowerCase();
+    return filteredByStatus.filter(a => 
+      a.title.toLowerCase().includes(q) ||
+      a.category.toLowerCase().includes(q)
+    );
+  }, [filteredByStatus, searchQuery]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAssets.length / itemsPerPage);
+  const paginatedAssets = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredAssets.slice(start, start + itemsPerPage);
+  }, [filteredAssets, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchQuery]);
 
   // Mutations
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'published' | 'draft' }) => {
       const token = await getToken();
       if (!token) throw new Error("No token");
-      // Use single update or bulk? The UI calls toggleStatus per item.
       return apiClient.admin.updateStatus(id, status, token);
     },
     onSuccess: () => {
@@ -164,10 +229,10 @@ export default function AdminAssets() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredAssets.length) {
+    if (selectedIds.size === paginatedAssets.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredAssets.map(a => a.id)));
+      setSelectedIds(new Set(paginatedAssets.map(a => a.id)));
     }
   };
 
@@ -189,6 +254,10 @@ export default function AdminAssets() {
     if (selectedIds.size === 0) return;
     bulkStatusMutation.mutate({ ids: Array.from(selectedIds), status });
   };
+
+  // Thumbnail URL helper
+  const getThumbnailUrl = (assetId: string) => 
+    `https://assets.huepress.co/thumbnails/${assetId}.webp`;
 
   if (loading) {
     return <div className="p-8 text-center text-gray-500">Loading assets...</div>;
@@ -220,7 +289,8 @@ export default function AdminAssets() {
       />
       
       <div>
-      <div className="flex items-center justify-between mb-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-serif text-h2 text-ink">Assets</h1>
           <p className="text-gray-500">Manage your coloring page library</p>
@@ -273,51 +343,81 @@ export default function AdminAssets() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 mb-6">
-        {(["all", "published", "draft"] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === f
-                ? "bg-ink text-white"
-                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-            }`}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-            {f === "all" && ` (${assets.length})`}
-            {f === "published" && ` (${assets.filter(a => a.status === "published").length})`}
-            {f === "draft" && ` (${assets.filter(a => a.status === "draft").length})`}
-          </button>
-        ))}
+      {/* Metrics Dashboard */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <StatCard icon={Layers} label="Total Assets" value={metrics.total} />
+        <StatCard icon={Eye} label="Published" value={metrics.published} color="green" />
+        <StatCard icon={EyeOff} label="Drafts" value={metrics.draft} color="yellow" />
+        <StatCard icon={Download} label="Downloads" value={metrics.downloads.toLocaleString()} color="blue" />
+      </div>
+
+      {/* Search & Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search by title or category..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm"
+          />
+        </div>
+        
+        {/* Filter Tabs */}
+        <div className="flex gap-2">
+          {(["all", "published", "draft"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filter === f
+                  ? "bg-ink text-white"
+                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Assets Table */}
-      <div className="bg-white/80 backdrop-blur-md rounded-xl shadow-sm border border-white/60 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              <th className="text-left px-6 py-3 w-12">
+              <th className="text-left px-4 py-3 w-12">
                 <input 
                   type="checkbox" 
-                  checked={selectedIds.size === filteredAssets.length && filteredAssets.length > 0}
+                  checked={selectedIds.size === paginatedAssets.length && paginatedAssets.length > 0}
                   onChange={toggleSelectAll}
                   className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                 />
               </th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Skill</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Downloads</th>
-              <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="text-left px-4 py-3 w-16 text-xs font-medium text-gray-500 uppercase tracking-wider">Preview</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Skill</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Downloads</th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredAssets.map((asset) => (
-              <tr key={asset.id} className={`hover:bg-white/60 transition-colors group ${selectedIds.has(asset.id) ? 'bg-primary/5' : ''}`}>
-                <td className="px-6 py-4">
+            {paginatedAssets.map((asset, idx) => (
+              <tr 
+                key={asset.id} 
+                className={`transition-colors ${
+                  selectedIds.has(asset.id) 
+                    ? 'bg-primary/5' 
+                    : idx % 2 === 0 
+                      ? 'bg-white' 
+                      : 'bg-gray-50/50'
+                } hover:bg-primary/5`}
+              >
+                <td className="px-4 py-3">
                   <input 
                     type="checkbox" 
                     checked={selectedIds.has(asset.id)}
@@ -325,42 +425,60 @@ export default function AdminAssets() {
                     className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
                 </td>
-                <td className="px-6 py-4">
-                  <p className="font-medium text-ink group-hover:text-primary transition-colors">{asset.title}</p>
-                  <p className="text-xs text-gray-400">Created {asset.createdAt}</p>
+                <td className="px-4 py-3">
+                  <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200">
+                    <img 
+                      src={getThumbnailUrl(asset.id)} 
+                      alt="" 
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                    <div className="hidden absolute inset-0 items-center justify-center text-gray-300">
+                      <ImageIcon className="w-5 h-5" />
+                    </div>
+                  </div>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-600">{asset.category}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{asset.skill}</td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-3">
+                  <p className="font-medium text-ink">{asset.title}</p>
+                  <p className="text-xs text-gray-400">{asset.createdAt}</p>
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-600">{asset.category}</td>
+                <td className="px-4 py-3 text-sm text-gray-600">{asset.skill}</td>
+                <td className="px-4 py-3">
                   <span
-                    className={`px-3 py-1 text-xs font-medium rounded-full border ${
+                    className={`px-2.5 py-1 text-xs font-medium rounded-full ${
                       asset.status === "published"
-                        ? "bg-green-50 text-green-700 border-green-200"
-                        : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-amber-50 text-amber-700"
                     }`}
                   >
-                    {asset.status.charAt(0).toUpperCase() + asset.status.slice(1)}
+                    {asset.status === "published" ? "Published" : "Draft"}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-600">{asset.downloads}</td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <td className="px-4 py-3 text-sm text-gray-600 font-medium">
+                  {(asset.downloads || 0).toLocaleString()}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center justify-end gap-1">
                     <button
                       onClick={() => toggleStatus(asset.id)}
-                      className="p-2 text-gray-400 hover:text-primary rounded-lg hover:bg-white hover:shadow-sm transition-all"
+                      className="p-2 text-gray-400 hover:text-primary rounded-lg hover:bg-gray-100 transition-all"
                       title={asset.status === "published" ? "Unpublish" : "Publish"}
                     >
                       {asset.status === "published" ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                     <Link
                       to={`/admin/assets/${asset.id}/edit`}
-                      className="p-2 text-gray-400 hover:text-primary rounded-lg hover:bg-white hover:shadow-sm transition-all"
+                      className="p-2 text-gray-400 hover:text-primary rounded-lg hover:bg-gray-100 transition-all"
                     >
                       <Pencil className="w-4 h-4" />
                     </Link>
                     <button
                       onClick={() => confirmDelete(asset.id)}
-                      className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-white hover:shadow-sm transition-all"
+                      className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-100 transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -370,6 +488,47 @@ export default function AdminAssets() {
             ))}
           </tbody>
         </table>
+        
+        {/* Pagination Footer */}
+        {filteredAssets.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50">
+            <p className="text-sm text-gray-500">
+              Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>
+              {" - "}
+              <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredAssets.length)}</span>
+              {" of "}
+              <span className="font-medium">{filteredAssets.length}</span> assets
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm text-gray-600 min-w-[80px] text-center">
+                Page {currentPage} of {totalPages || 1}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {filteredAssets.length === 0 && (
+          <div className="py-12 text-center text-gray-500">
+            <ImageIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <p className="font-medium">No assets found</p>
+            <p className="text-sm">Try adjusting your search or filters</p>
+          </div>
+        )}
       </div>
     </div>
     </>
