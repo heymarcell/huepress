@@ -91,6 +91,18 @@ export const apiClient = {
        // Just returns the URL, logic handled by browser/component usually
        const cleanBase = API_URL.replace(/\/$/, "");
        return `${cleanBase}/api/download/${id}`;
+    },
+    fetchDownloadBlob: async (id: string, token: string) => {
+      const cleanBase = API_URL.replace(/\/$/, "");
+      const response = await fetch(`${cleanBase}/api/download/${id}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error("Failed to download file");
+      }
+      return response.blob();
     }
   },
   tags: {

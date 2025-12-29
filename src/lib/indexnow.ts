@@ -10,69 +10,75 @@
 const INDEXNOW_KEY = "6036370EF1A6D786631BBA0C2FE92864";
 const SITE_HOST = "huepress.co";
 
-// IndexNow endpoints - submitting to one shares with all participating engines
-const INDEXNOW_ENDPOINTS = [
-  "https://api.indexnow.org/indexnow",
-  "https://www.bing.com/indexnow",
-];
+// IndexNow endpoint
+const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
 
 interface IndexNowResult {
   success: boolean;
   url: string;
-  responses: { endpoint: string; status: number }[];
+  count: number;
+}
+
+/**
+ * Helper to fetch with retry logic for 429/5xx errors
+ */
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  let delay = 1000; // Start with 1s
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, options);
+
+      // Success
+      if (response.ok || response.status === 202) {
+        return response;
+      }
+
+      // Retry on Rate Limit (429) or Server Error (5xx)
+      if (response.status === 429 || response.status >= 500) {
+        console.warn(`[IndexNow] Request failed with ${response.status}. Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+        delay *= 2; // Exponential backoff
+        continue;
+      }
+
+      // Other client errors (400, 403, etc.) - do not retry
+      return response;
+    } catch (error) {
+      console.warn(`[IndexNow] Network error. Retrying in ${delay}ms...`, error);
+      await new Promise(r => setTimeout(r, delay));
+      delay *= 2;
+    }
+  }
+
+  // Final attempt
+  return fetch(url, options);
 }
 
 /**
  * Notify search engines about a single URL change
+ * Proxies to batch method for consistency
  */
 export async function notifyIndexNow(url: string): Promise<IndexNowResult> {
-  const responses: { endpoint: string; status: number }[] = [];
-  
-  // Use just the first endpoint - they share with each other
-  const endpoint = INDEXNOW_ENDPOINTS[0];
-  
-  try {
-    const requestUrl = `${endpoint}?url=${encodeURIComponent(url)}&key=${INDEXNOW_KEY}`;
-    
-    const response = await fetch(requestUrl, {
-      method: "GET",
-      headers: {
-        "User-Agent": "HuePress/1.0"
-      }
-    });
-    
-    responses.push({ endpoint, status: response.status });
-    
-    if (response.ok || response.status === 202) {
-      console.log(`[IndexNow] Successfully notified: ${url} (${response.status})`);
-    } else {
-      console.warn(`[IndexNow] Notification returned ${response.status} for: ${url}`);
-    }
-  } catch (error) {
-    console.error(`[IndexNow] Failed to notify ${endpoint}:`, error);
-    responses.push({ endpoint, status: 0 });
-  }
-  
+  const result = await notifyIndexNowBatch([url]);
   return {
-    success: responses.some(r => r.status === 200 || r.status === 202),
+    success: result.success,
     url,
-    responses
+    count: result.count
   };
 }
 
 /**
  * Notify search engines about multiple URL changes (batch)
- * More efficient for bulk operations
+ * More efficient for bulk operations & uses POST
  */
 export async function notifyIndexNowBatch(urls: string[]): Promise<{ success: boolean; count: number }> {
   if (urls.length === 0) {
     return { success: true, count: 0 };
   }
 
-  const endpoint = "https://api.indexnow.org/indexnow";
-  
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetchWithRetry(INDEXNOW_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json; charset=utf-8",
@@ -86,10 +92,10 @@ export async function notifyIndexNowBatch(urls: string[]): Promise<{ success: bo
     });
     
     if (response.ok || response.status === 202) {
-      console.log(`[IndexNow] Batch submitted ${urls.length} URLs (${response.status})`);
+      console.log(`[IndexNow] Successfully notified ${urls.length} URLs (Status: ${response.status})`);
       return { success: true, count: urls.length };
     } else {
-      console.warn(`[IndexNow] Batch returned ${response.status}`);
+      console.warn(`[IndexNow] Notification failed with status ${response.status}`);
       return { success: false, count: 0 };
     }
   } catch (error) {

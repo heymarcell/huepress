@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui";
 import { AlertModal } from "@/components/ui/AlertModal";
-import { Upload, Save, ArrowLeft, Eye, EyeOff, Sparkles, Code, ChevronDown, ChevronUp, Loader2, AlertCircle, Clock } from "lucide-react";
+import { Upload, Save, ArrowLeft, Eye, EyeOff, Sparkles, Code, ChevronDown, ChevronUp, Loader2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
@@ -102,8 +102,12 @@ export default function AdminAssetForm() {
             setOgPreviewUrl(`https://assets.huepress.co/${asset.r2_key_og}`);
           }
           if (asset.r2_key_private && !(asset.r2_key_private as string).startsWith("__draft__")) {
-            const previewLink = apiClient.assets.getDownloadUrl(asset.id as string);
-            setPdfPreviewUrl(previewLink);
+            try {
+              const blob = await apiClient.assets.fetchDownloadBlob(asset.id as string, token);
+              setPdfPreviewUrl(URL.createObjectURL(blob));
+            } catch (e) {
+              console.error("Failed to load PDF preview", e);
+            }
           }
 
           // Fetch Source SVG for Regeneration
@@ -212,8 +216,14 @@ export default function AdminAssetForm() {
         if (status.files.og && !ogPreviewUrl?.includes('assets.huepress.co')) {
           setOgPreviewUrl(`https://assets.huepress.co/og-images/${id}.png?t=${Date.now()}`);
         }
-        if (status.files.pdf && !pdfPreviewUrl?.includes('/api/download')) {
-          setPdfPreviewUrl(apiClient.assets.getDownloadUrl(id));
+        if (status.files.pdf && !pdfPreviewUrl) {
+          try {
+             // Only fetch if we don't have it yet (or it was cleared)
+             const blob = await apiClient.assets.fetchDownloadBlob(id, token);
+             setPdfPreviewUrl(URL.createObjectURL(blob));
+          } catch (e) {
+             console.error("Failed to fetch new PDF", e);
+          }
         }
 
         // Stop polling if no active job
@@ -529,461 +539,407 @@ export default function AdminAssetForm() {
   ];
 
   return (
-    <div>
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <Link to="/admin/assets" className="flex items-center gap-2 text-gray-500 hover:text-ink mb-4 transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Assets
-          </Link>
-          <h1 className="font-serif text-h2 text-ink">
-            {isEditing ? "Edit Asset" : "Add New Asset"}
-          </h1>
-        </div>
-        <div className="flex gap-3">
-          <Link to="/admin/assets">
-            <Button type="button" variant="outline">
-              Cancel
+    <div className="min-h-screen bg-gray-50/50 pb-20">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 shadow-sm transition-all duration-200">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link 
+              to="/admin/assets" 
+              className="p-2 -ml-2 text-gray-400 hover:text-ink hover:bg-gray-100 rounded-full transition-all"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
+            <h1 className="font-serif text-xl font-bold text-ink">
+              {isEditing ? "Edit Asset" : "New Asset"}
+            </h1>
+            {isEditing && (
+               <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                 {id}
+               </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link to="/admin/assets" tabIndex={-1}>
+              <Button type="button" variant="ghost" className="text-gray-500">
+                Cancel
+              </Button>
+            </Link>
+            
+            {isEditing && (
+               <Button
+                  type="button"
+                  variant="outline"
+                  className="hidden sm:flex"
+                  onClick={async () => {
+                    try {
+                      const token = await getToken();
+                      if (!token) throw new Error("No token");
+                      setAlertState({
+                        isOpen: true,
+                        title: "Regenerating All...",
+                        message: "Requesting full regeneration (Thumbnail, OG, PDF)...",
+                        variant: "info"
+                      });
+                      
+                      await apiClient.admin.bulkRegenerate([id!], token);
+                      
+                      setAlertState({
+                        isOpen: true,
+                        title: "Success",
+                        message: "Regeneration started. Updates will appear shortly.",
+                        variant: "success"
+                      });
+                    } catch (_e) {
+                      setAlertState({
+                        isOpen: true,
+                        title: "Error",
+                        message: "Failed to start regeneration",
+                        variant: "error"
+                      });
+                    }
+                  }}
+                >
+                  <Sparkles className="w-4 h-4 mr-2 text-primary" />
+                  Regenerate
+                </Button>
+            )}
+            
+            <Button 
+              onClick={handleSubmit} 
+              variant="primary" 
+              isLoading={isSubmitting}
+              className="shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95 transition-all"
+            >
+              <Save className="w-4 h-4" />
+              {isEditing ? "Save Changes" : "Create Asset"}
             </Button>
-          </Link>
-          {isEditing && (
-             <Button
-                type="button"
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    const token = await getToken();
-                    if (!token) throw new Error("No token");
-                    setAlertState({
-                      isOpen: true,
-                      title: "Regenerating All...",
-                      message: "Requesting full regeneration (Thumbnail, OG, PDF)...",
-                      variant: "info"
-                    });
-                    
-                    // Use bulk regenerate for single item
-                    await apiClient.admin.bulkRegenerate([id!], token);
-                    
-                    setAlertState({
-                      isOpen: true,
-                      title: "Success",
-                      message: "Full regeneration started. Please wait a few seconds and refresh.",
-                      variant: "success"
-                    });
-                  } catch (_e) {
-                    setAlertState({
-                      isOpen: true,
-                      title: "Error",
-                      message: "Failed to start regeneration",
-                      variant: "error"
-                    });
-                  }
-                }}
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Full Regenerate
-              </Button>
-          )}
-          <Button onClick={handleSubmit} variant="primary" isLoading={isSubmitting}>
-            <Save className="w-4 h-4" />
-            {isEditing ? "Update" : "Save Asset"}
-          </Button>
+          </div>
         </div>
       </div>
 
-      {/* JSON Quick Import Panel */}
-      <div className="mb-6 bg-gradient-to-r from-slate-50 to-gray-50 rounded-xl border border-gray-200 overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setIsJsonImportOpen(!isJsonImportOpen)}
-          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center">
-              <Code className="w-4 h-4 text-slate-600" />
-            </div>
-            <div className="text-left">
-              <span className="font-semibold text-ink">Quick Import (JSON)</span>
-              <span className="text-xs text-gray-500 block">Paste JSON data to auto-fill the form</span>
-            </div>
-          </div>
-          {isJsonImportOpen ? (
-            <ChevronUp className="w-5 h-5 text-gray-400" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
-          )}
-        </button>
-        
-        {isJsonImportOpen && (
-          <div className="px-6 pb-6 space-y-3 border-t border-gray-100">
-            <textarea
-              value={jsonInput}
-              onChange={(e) => setJsonInput(e.target.value)}
-              rows={6}
-              className="w-full mt-4 px-4 py-3 font-mono text-sm border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none transition-all bg-white"
-              placeholder={`{\n  "title": "Friendly Capybara",\n  "description": "A cute capybara...",\n  "category": "Animals",\n  "skill": "Easy",\n  "tags": "cute, animal"\n}`}
-            />
-            {jsonError && (
-              <p className="text-red-500 text-sm">{jsonError}</p>
-            )}
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="primary"
-                onClick={handleJsonImport}
-                disabled={!jsonInput.trim()}
-              >
-                Apply JSON
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        {/* Left Column: Form Fields */}
-        <div className="space-y-6">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Basic Info Card */}
-          <div className="bg-white/80 backdrop-blur-md rounded-xl shadow-sm border border-white/60 p-8 space-y-6">
-            <h2 className="font-serif text-xl text-ink font-bold">Basic Information</h2>
+          {/* Left Column: Form Fields (Inputs) */}
+          <div className="lg:col-span-8 space-y-8">
             
-            {/* Title */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-2">Title *</label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all"
-                placeholder="e.g., Friendly Capybara in Flower Garden"
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-2">Description *</label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                required
-                rows={3}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none transition-all"
-                placeholder="A cute capybara surrounded by beautiful flowers..."
-              />
-            </div>
-
-            {/* Extended Description */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-2">Extended Description</label>
-              <textarea
-                name="extendedDescription"
-                value={formData.extendedDescription}
-                onChange={handleChange}
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none transition-all"
-                placeholder="Detailed story about the subject..."
-              />
-            </div>
-          </div>
-
-          {/* Organization Card */}
-          <div className="bg-white/80 backdrop-blur-md rounded-xl shadow-sm border border-white/60 p-8 space-y-6">
-            <h2 className="font-serif text-xl text-ink font-bold">Organization</h2>
-
-            <div className="grid grid-cols-2 gap-4">
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium text-ink mb-2">Category *</label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-white transition-all"
-                >
-                  <option value="">Select Category</option>
-                  {(availableTags.category || []).map((cat) => (
-                    <option key={cat.id} value={cat.name}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Skill Level */}
-              <div>
-                <label className="block text-sm font-medium text-ink mb-2">Skill Level *</label>
-                <select
-                  name="skill"
-                  value={formData.skill}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-white transition-all"
-                >
-                  <option value="">Select Skill</option>
-                  {(availableTags.skill || []).map((s) => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Tags Input */}
-            <div>
-               <label className="block text-sm font-medium text-ink mb-2">Tags *</label>
-                <input
-                  type="text"
-                  name="tags"
-                  value={formData.tags}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all text-sm"
-                  placeholder="cat, garden, sunshine..."
-                />
-                 {/* Theme Clouds */}
-                 {availableTags.theme && (
-                   <div className="mt-3 flex flex-wrap gap-1.5">
-                     {availableTags.theme.slice(0, 8).map(tag => (
-                       <button
-                         type="button"
-                         key={tag.id}
-                         onClick={() => {
-                            const current = parseTags(formData.tags);
-                            if (!current.includes(tag.name)) {
-                              setFormData(prev => ({ ...prev, tags: [...current, tag.name].join(", ") }));
-                            }
-                         }}
-                         className="px-2 py-1 text-[10px] uppercase font-bold bg-gray-100 text-gray-500 rounded hover:bg-gray-200 transition-colors"
-                       >
-                         {tag.name}
-                       </button>
-                     ))}
-                   </div>
-                 )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Sticky Sidebar */}
-        <div className="space-y-6 lg:sticky lg:top-24">
-          
-          {/* Status Card */}
-          <div className="bg-white/80 backdrop-blur-md rounded-xl shadow-sm border border-white/60 p-6 space-y-4">
-            <h3 className="font-bold text-ink">Publishing</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { val: "draft", label: "Draft", icon: EyeOff, desc: "Only visible to you" },
-                { val: "published", label: "Published", icon: Eye, desc: "Visible to everyone" }
-              ].map((option) => (
-                <label key={option.val} className="relative cursor-pointer group">
-                  <input
-                    type="radio"
-                    name="status"
-                    value={option.val}
-                    checked={formData.status === option.val}
-                    onChange={handleChange}
-                    className="peer sr-only"
-                  />
-                  <div className={`p-3 rounded-lg border-2 transition-all text-center ${
-                    formData.status === option.val 
-                      ? option.val === "draft" 
-                        ? "border-yellow-400 bg-yellow-50" 
-                        : "border-green-400 bg-green-50"
-                      : "border-transparent bg-gray-50 hover:bg-gray-100"
-                  }`}>
-                    <option.icon className={`w-5 h-5 mx-auto mb-1 ${
-                      formData.status === option.val 
-                        ? option.val === "draft" ? "text-yellow-600" : "text-green-600"
-                        : "text-gray-400"
-                    }`} />
-                    <span className={`block font-bold text-sm ${
-                      formData.status === option.val ? "text-ink" : "text-gray-500"
-                    }`}>{option.label}</span>
-                    <span className="text-[10px] text-gray-400">{option.desc}</span>
+            {/* JSON Quick Import Panel */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all">
+              <button
+                type="button"
+                onClick={() => setIsJsonImportOpen(!isJsonImportOpen)}
+                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center border border-slate-200">
+                    <Code className="w-4 h-4 text-slate-500" />
                   </div>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Media Card - SVG Upload Only */}
-          <div className="bg-white/80 backdrop-blur-md rounded-xl shadow-sm border border-white/60 p-6 space-y-4">
-            <h3 className="font-bold text-ink">Media</h3>
-            
-            {/* Processing Status Banner */}
-            {processingStatus?.hasActiveJob && (
-              <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-blue-800">
-                    {processingStatus.job?.status === 'processing' ? 'Generating assets...' : 'Queued for processing...'}
-                  </p>
-                  <p className="text-xs text-blue-600">
-                    {processingStatus.job?.status === 'processing' 
-                      ? 'Creating thumbnail, PDF, and OpenGraph image'
-                      : 'Your asset will be processed shortly'}
-                  </p>
+                  <div className="text-left">
+                    <span className="font-semibold text-ink text-sm">Quick Import (JSON)</span>
+                    <span className="text-xs text-gray-500 block">Paste JSON data to auto-fill</span>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {/* Failed Job Banner */}
-            {processingStatus?.job?.status === 'failed' && (
-              <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-red-800">Processing failed</p>
-                  <p className="text-xs text-red-600">
-                    {processingStatus.job.errorMessage || 'Try clicking "Full Regenerate" to retry'}
-                  </p>
-                </div>
-              </div>
-            )}
-            
-            {/* Thumbnail Preview */}
-            {thumbnailPreviewUrl && processingStatus?.files?.thumbnail ? (
-              <div 
-                className="relative group w-full aspect-square bg-gray-50 rounded-lg border border-gray-100 overflow-hidden cursor-zoom-in"
-                onClick={() => setIsZoomOpen(true)}
-              >
-                <img 
-                  src={thumbnailPreviewUrl} 
-                  alt="Thumbnail Preview" 
-                  className="w-full h-full object-contain"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                  <span className="opacity-0 group-hover:opacity-100 bg-white/90 text-xs px-2 py-1 rounded-full shadow-sm text-ink font-medium">Click to Zoom</span>
-                </div>
-              </div>
-            ) : isEditing && !processingStatus?.files?.thumbnail ? (
-              <div className="w-full aspect-square bg-gray-50 rounded-lg border border-dashed border-gray-300 flex flex-col items-center justify-center gap-2">
-                {processingStatus?.hasActiveJob ? (
-                  <>
-                    <Clock className="w-8 h-8 text-gray-400 animate-pulse" />
-                    <span className="text-sm text-gray-500 font-medium">Generating thumbnail...</span>
-                  </>
+                {isJsonImportOpen ? (
+                  <ChevronUp className="w-4 h-4 text-gray-400" />
                 ) : (
-                  <>
-                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                      <Eye className="w-4 h-4 text-gray-400" />
-                    </div>
-                    <span className="text-sm text-gray-500">Thumbnail not ready</span>
-                  </>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
                 )}
-              </div>
-            ) : thumbnailPreviewUrl && (
-              <div 
-                className="relative group w-full aspect-square bg-gray-50 rounded-lg border border-gray-100 overflow-hidden cursor-zoom-in"
-                onClick={() => setIsZoomOpen(true)}
-              >
-                <img 
-                  src={thumbnailPreviewUrl} 
-                  alt="Thumbnail Preview" 
-                  className="w-full h-full object-contain"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                  <span className="opacity-0 group-hover:opacity-100 bg-white/90 text-xs px-2 py-1 rounded-full shadow-sm text-ink font-medium">Click to Zoom</span>
-                </div>
-              </div>
-            )}
-
-            {/* PDF Preview Link */}
-            {/* PDF Preview Link */}
-            {pdfPreviewUrl && processingStatus?.files?.pdf ? (
-              <a 
-                href={pdfPreviewUrl} 
-                target="_blank" 
-                rel="noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-2 bg-teal-50 text-teal-700 rounded-md text-sm font-bold hover:bg-teal-100 transition-colors border border-teal-100"
-              >
-                <Eye className="w-4 h-4" />
-                Preview PDF
-              </a>
-            ) : isEditing && !processingStatus?.files?.pdf ? (
-              <div className="flex items-center justify-center gap-2 w-full py-2 bg-gray-50 text-gray-400 rounded-md text-sm font-bold border border-dashed border-gray-300">
-                {processingStatus?.hasActiveJob ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating PDF...
-                  </>
-                ) : (
-                  <>
-                    <EyeOff className="w-4 h-4" />
-                    PDF not ready
-                  </>
-                )}
-              </div>
-            ) : pdfPreviewUrl && (
-              <a 
-                href={pdfPreviewUrl} 
-                target="_blank" 
-                rel="noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-2 bg-teal-50 text-teal-700 rounded-md text-sm font-bold hover:bg-teal-100 transition-colors border border-teal-100"
-              >
-                <Eye className="w-4 h-4" />
-                Preview PDF
-              </a>
-            )}
-
-            {/* OG Image Preview */}
-            {ogPreviewUrl && processingStatus?.files?.og ? (
-              <div className="relative group w-full aspect-[1.91/1] bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
-                <img 
-                  src={ogPreviewUrl} 
-                  alt="OG Preview" 
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1 text-center">
-                   <span className="text-[10px] text-white font-medium">OpenGraph Preview</span>
-                </div>
-              </div>
-            ) : isEditing && !processingStatus?.files?.og ? (
-              <div className="w-full aspect-[1.91/1] bg-gray-50 rounded-lg border border-dashed border-gray-300 flex flex-col items-center justify-center gap-2">
-                {processingStatus?.hasActiveJob ? (
-                  <>
-                    <Clock className="w-6 h-6 text-gray-400 animate-pulse" />
-                    <span className="text-xs text-gray-500">Generating OpenGraph...</span>
-                  </>
-                ) : (
-                  <span className="text-xs text-gray-500">OpenGraph not ready</span>
-                )}
-              </div>
-            ) : ogPreviewUrl && (
-              <div className="relative group w-full aspect-[1.91/1] bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
-                <img 
-                  src={ogPreviewUrl} 
-                  alt="OG Preview" 
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1 text-center">
-                   <span className="text-[10px] text-white font-medium">OpenGraph Preview</span>
-                </div>
-              </div>
-            )}
-
-
-            {/* Master SVG Upload (Magic) */}
-            <div className="bg-gradient-to-br from-primary/5 to-secondary/5 p-4 rounded-xl border border-primary/10">
-              <label className="flex items-center gap-2 text-sm font-bold text-ink mb-1">
-                <Sparkles className="w-4 h-4 text-primary" /> Magic Upload (SVG)
-              </label>
-              <p className="text-xs text-gray-500 mb-3">Upload an SVG to auto-generate PDF and Thumbnail</p>
+              </button>
               
-              {/* Warning for existing assets without source */}
+              {isJsonImportOpen && (
+                <div className="px-6 pb-6 space-y-4 border-t border-gray-100 bg-gray-50/50">
+                  <textarea
+                    value={jsonInput}
+                    onChange={(e) => setJsonInput(e.target.value)}
+                    rows={6}
+                    className="flex-1 min-h-[120px] p-3 rounded-lg border border-line bg-surface-subtle text-ink placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-black resize-none text-sm transition-shadow bg-white"
+                    placeholder={`{\n  "title": "Friendly Capybara",\n  "description": "...",\n  "category": "Animals",\n  "skill": "Easy",\n  "tags": "cute, animal"\n}`}
+                  />
+                  {jsonError && (
+                    <p className="text-red-500 text-xs flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" /> {jsonError}
+                    </p>
+                  )}
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={handleJsonImport}
+                      disabled={!jsonInput.trim()}
+                      className="text-xs h-8"
+                    >
+                      Apply JSON
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Basic Info Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-8 space-y-6">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-6 w-1 bg-primary rounded-full"></div>
+                <h2 className="font-serif text-lg text-ink font-bold">Basic Information</h2>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Title *</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-primary/20 rounded-lg focus:ring-4 focus:ring-primary/5 outline-none transition-all font-medium text-ink placeholder:text-gray-400"
+                    placeholder="e.g., Friendly Capybara in Flower Garden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Description *</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    required
+                    rows={3}
+                    className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-primary/20 rounded-lg focus:ring-4 focus:ring-primary/5 outline-none resize-none transition-all text-sm leading-relaxed"
+                    placeholder="A cute capybara surrounded by beautiful flowers..."
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Extended Description</label>
+                  <textarea
+                    name="extendedDescription"
+                    value={formData.extendedDescription}
+                    onChange={handleChange}
+                    rows={4}
+                    className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-primary/20 rounded-lg focus:ring-4 focus:ring-primary/5 outline-none resize-none transition-all text-sm leading-relaxed"
+                    placeholder="Detailed story about the subject..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Organization Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-8 space-y-6">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-6 w-1 bg-secondary rounded-full"></div>
+                <h2 className="font-serif text-lg text-ink font-bold">Organization</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Category *</label>
+                  <div className="relative">
+                    <select
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-primary/20 rounded-lg focus:ring-4 focus:ring-primary/5 outline-none appearance-none transition-all cursor-pointer"
+                    >
+                      <option value="">Select Category</option>
+                      {(availableTags.category || []).map((cat) => (
+                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Skill Level *</label>
+                  <div className="relative">
+                    <select
+                      name="skill"
+                      value={formData.skill}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-primary/20 rounded-lg focus:ring-4 focus:ring-primary/5 outline-none appearance-none transition-all cursor-pointer"
+                    >
+                      <option value="">Select Skill</option>
+                      {(availableTags.skill || []).map((s) => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Tags *</label>
+                  <input
+                    type="text"
+                    name="tags"
+                    value={formData.tags}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-primary/20 rounded-lg focus:ring-4 focus:ring-primary/5 outline-none transition-all text-sm placeholder:text-gray-400"
+                    placeholder="cat, garden, sunshine..."
+                  />
+                   {/* Theme Clouds */}
+                   {availableTags.theme && (
+                     <div className="mt-3 flex flex-wrap gap-2">
+                       {availableTags.theme.slice(0, 8).map(tag => (
+                         <button
+                           type="button"
+                           key={tag.id}
+                           onClick={() => {
+                              const current = parseTags(formData.tags);
+                              if (!current.includes(tag.name)) {
+                                setFormData(prev => ({ ...prev, tags: [...current, tag.name].join(", ") }));
+                              }
+                           }}
+                           className="px-2.5 py-1.5 text-[10px] font-bold bg-white border border-gray-200 text-gray-600 rounded-md hover:border-primary hover:text-primary transition-all shadow-sm"
+                         >
+                           + {tag.name}
+                         </button>
+                       ))}
+                     </div>
+                   )}
+              </div>
+            </div>
+
+            {/* Rich Content Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-6 space-y-6">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-1 bg-accent rounded-full"></div>
+                  <h2 className="font-serif text-lg text-ink font-bold">Rich Content</h2>
+                </div>
+                
+                {/* Tabs */}
+                <div className="flex bg-gray-100/80 p-1 rounded-lg">
+                  {richContentTabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveRichTab(tab.id)}
+                      className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${
+                        activeRichTab === tab.id
+                          ? "bg-white text-ink shadow-sm"
+                          : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tab Content */}
+              <div className="min-h-[200px]">
+                 {richContentTabs.map(tab => activeRichTab === tab.id && (
+                    <div key={tab.id} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      {tab.id === 'tips' ? (
+                        <div className="space-y-4">
+                           <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Coloring Tips</label>
+                            <textarea
+                              name="coloringTips"
+                              value={formData.coloringTips}
+                              onChange={handleChange}
+                              rows={3}
+                              className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-primary/20 rounded-lg focus:ring-4 focus:ring-primary/5 outline-none resize-none transition-all text-sm"
+                              placeholder="Start with light colors..."
+                            />
+                           </div>
+                           <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Therapeutic Benefits</label>
+                            <textarea
+                              name="therapeuticBenefits"
+                              value={formData.therapeuticBenefits}
+                              onChange={handleChange}
+                              rows={3}
+                              className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-primary/20 rounded-lg focus:ring-4 focus:ring-primary/5 outline-none resize-none transition-all text-sm"
+                              placeholder="Helps develop focus..."
+                            />
+                           </div>
+                        </div>
+                      ) : (
+                        <textarea
+                          name={tab.field}
+                          value={String(formData[tab.field])}
+                          onChange={handleChange}
+                          rows={tab.rows}
+                          className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-primary/20 rounded-lg focus:ring-4 focus:ring-primary/5 outline-none resize-none transition-all text-sm"
+                          placeholder={tab.placeholder}
+                        />
+                      )}
+                    </div>
+                 ))}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Column: Sticky Sidebar */}
+          <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+            
+            {/* Status Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-6 space-y-4">
+              <h3 className="font-bold text-ink text-sm uppercase tracking-wider">Publishing Status</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { val: "draft", label: "Draft", icon: EyeOff },
+                  { val: "published", label: "Published", icon: Eye }
+                ].map((option) => (
+                  <label key={option.val} className="relative cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="status"
+                      value={option.val}
+                      checked={formData.status === option.val}
+                      onChange={handleChange}
+                      className="peer sr-only"
+                    />
+                    <div className={`p-3 rounded-xl border-2 transition-all text-center flex flex-col items-center gap-2 ${
+                      formData.status === option.val 
+                        ? option.val === "draft" 
+                          ? "border-amber-200 bg-amber-50 text-amber-900" 
+                          : "border-emerald-200 bg-emerald-50 text-emerald-900"
+                        : "border-transparent bg-gray-50 text-gray-500 hover:bg-gray-100"
+                    }`}>
+                      <option.icon className={`w-5 h-5 ${
+                        formData.status === option.val 
+                          ? option.val === "draft" ? "text-amber-500" : "text-emerald-500"
+                          : "text-gray-400"
+                      }`} />
+                      <span className="font-bold text-sm">{option.label}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <div className="pt-2 border-t border-gray-100">
+                <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span>Last Saved</span>
+                  <span className="font-mono">{new Date().toLocaleTimeString()}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Magic Upload */}
+            <div className="bg-gradient-to-br from-primary/5 to-secondary/5 p-1 rounded-xl border border-primary/10 dashed-border relative overflow-hidden group">
+               <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
+               
+               {/* Warning for existing assets without source */}
               {isEditing && !originalSvgFile && (
-                <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
-                  <div className="mt-0.5 text-amber-500">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-amber-800">Source Missing</p>
-                    <p className="text-[10px] text-amber-700">Upload the SVG to enable regeneration.</p>
-                  </div>
+                <div className="mb-2 mx-2 mt-2 bg-amber-50/80 border border-amber-100 rounded-lg p-2.5 flex items-start gap-2">
+                   <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                   <div>
+                      <p className="text-xs font-bold text-amber-800">Source Missing</p>
+                      <p className="text-[10px] text-amber-700 leading-tight">Upload SVG to enable regeneration.</p>
+                   </div>
                 </div>
               )}
 
               <div 
-                className={`relative transition-all ${isDragging ? 'scale-[1.02]' : ''}`}
+                className={`relative bg-white/50 rounded-lg p-6 text-center transition-all ${isDragging ? 'bg-primary/10 scale-[0.98]' : 'hover:bg-white/80'}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -995,113 +951,94 @@ export default function AdminAssetForm() {
                   className="hidden"
                   id="svg-upload"
                 />
-                <label
-                  htmlFor="svg-upload"
-                  className={`flex flex-col items-center justify-center gap-2 w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer transition-all group ${
-                     isDragging 
-                     ? "border-primary bg-primary/10" 
-                     : "border-primary/30 bg-white/50 hover:border-primary hover:bg-white/80"
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white shadow-lg transition-transform ${isDragging ? "scale-110" : "group-hover:scale-110"}`}>
-                    <Upload className="w-5 h-5" />
+                <label htmlFor="svg-upload" className="cursor-pointer block">
+                  <div className={`w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white shadow-lg shadow-primary/20 mb-3 transition-transform duration-300 ${isDragging ? "scale-110" : "group-hover:scale-110 group-hover:rotate-3"}`}>
+                    <Upload className="w-6 h-6" />
                   </div>
-                  <span className="text-sm font-medium text-ink text-center">
-                    {isProcessingSvg ? "Processing..." : (isDragging ? "Drop SVG here!" : "Upload or Drop SVG")}
-                  </span>
+                  <h4 className="font-bold text-ink mb-1">
+                    {isProcessingSvg ? "Processing..." : (isDragging ? "Drop SVG Now!" : "Magic Upload")}
+                  </h4>
+                  <p className="text-xs text-gray-500">
+                    Drop your SVG here to auto-generate PDF, Thumbnail, and OG Image.
+                  </p>
                 </label>
               </div>
             </div>
-          </div>
 
-          {/* Rich Content Card with Tabs */}
-          <div className="bg-white/80 backdrop-blur-md rounded-xl shadow-sm border border-white/60 p-6 space-y-4">
-            <h3 className="font-bold text-ink">Rich Content</h3>
-            
-            {/* Tab Navigation */}
-            <div className="flex border-b border-gray-200">
-              {richContentTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveRichTab(tab.id)}
-                  className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
-                    activeRichTab === tab.id
-                      ? "border-primary text-primary"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            {/* Media Gallery Grid */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-5 space-y-4">
+              <h3 className="font-bold text-ink text-sm uppercase tracking-wider">Media Gallery</h3>
+               
+               <div className="grid grid-cols-2 gap-3">
+                  {/* Thumbnail */}
+                  <div className="col-span-2 relative aspect-[4/3] bg-gray-50 rounded-lg border border-gray-100 overflow-hidden group">
+                     {thumbnailPreviewUrl ? (
+                       <>
+                         <img src={thumbnailPreviewUrl} alt="Thumbnail" className="w-full h-full object-contain p-2" />
+                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <button 
+                              type="button"
+                              onClick={() => setIsZoomOpen(true)}
+                              className="p-2 bg-white rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all"
+                            >
+                               <Eye className="w-4 h-4 text-gray-700" />
+                            </button>
+                         </div>
+                       </>
+                     ) : (
+                       <div className="w-full h-full flex items-center justify-center text-gray-300">
+                         <div className="text-center">
+                           <Loader2 className={`w-6 h-6 mx-auto mb-2 ${isProcessingSvg || processingStatus?.hasActiveJob ? 'animate-spin text-primary' : ''}`} />
+                           <span className="text-xs">{processingStatus?.hasActiveJob ? "Generating..." : "Thumbnail"}</span>
+                         </div>
+                       </div>
+                     )}
+                     <span className="absolute top-2 left-2 text-[10px] font-bold bg-black/50 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">THUMBNAIL</span>
+                  </div>
+
+                  {/* OG Image */}
+                  <div className="relative aspect-video bg-gray-50 rounded-lg border border-gray-100 overflow-hidden group">
+                     {ogPreviewUrl ? (
+                       <img src={ogPreviewUrl} alt="OG" className="w-full h-full object-cover" />
+                     ) : (
+                       <div className="w-full h-full flex items-center justify-center text-gray-300">
+                         <span className="text-[10px]">OG Image</span>
+                       </div>
+                     )}
+                     <span className="absolute top-2 left-2 text-[10px] font-bold bg-black/50 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">SEO</span>
+                  </div>
+
+                  {/* PDF Preview */}
+                  <div className="relative aspect-[3/4] bg-gray-50 rounded-lg border border-gray-100 overflow-hidden group">
+                     {pdfPreviewUrl ? (
+                       <iframe src={pdfPreviewUrl} className="w-full h-full pointer-events-none opacity-80" aria-label="PDF Preview" />
+                     ) : (
+                       <div className="w-full h-full flex items-center justify-center text-gray-300">
+                         <span className="text-[10px]">PDF</span>
+                       </div>
+                     )}
+                     
+                     {/* Overlay Actions */}
+                     <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/5 transition-colors">
+                        {pdfPreviewUrl ? (
+                           <a 
+                             href={pdfPreviewUrl} 
+                             download={`${formData.title || 'asset'}.pdf`}
+                             className="opacity-0 group-hover:opacity-100 p-2 bg-white rounded-full shadow-md hover:scale-110 transition-all text-primary"
+                             title="Download PDF"
+                           >
+                             <Upload className="w-4 h-4 rotate-180" /> 
+                           </a>
+                        ) : null}
+                     </div>
+                     <span className="absolute top-2 left-2 text-[10px] font-bold bg-primary/90 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">PDF</span>
+                  </div>
+               </div>
             </div>
 
-            {/* Tab Content */}
-            <div className="pt-2">
-              {activeRichTab === "facts" && (
-                <textarea
-                  name="funFacts"
-                  value={formData.funFacts}
-                  onChange={handleChange}
-                  rows={5}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none transition-all text-sm"
-                  placeholder="One fact per line...&#10;Capybaras love water&#10;They are social animals"
-                />
-              )}
-              {activeRichTab === "activities" && (
-                <textarea
-                  name="suggestedActivities"
-                  value={formData.suggestedActivities}
-                  onChange={handleChange}
-                  rows={5}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none transition-all text-sm"
-                  placeholder="One activity per line...&#10;Count the flowers&#10;Color the water blue"
-                />
-              )}
-              {activeRichTab === "tips" && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Coloring Tips</label>
-                    <textarea
-                      name="coloringTips"
-                      value={formData.coloringTips}
-                      onChange={handleChange}
-                      rows={3}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none transition-all text-sm"
-                      placeholder="Start with light colors..."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Therapeutic Benefits</label>
-                    <textarea
-                      name="therapeuticBenefits"
-                      value={formData.therapeuticBenefits}
-                      onChange={handleChange}
-                      rows={3}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none resize-none transition-all text-sm"
-                      placeholder="Helps develop focus..."
-                    />
-                  </div>
-                </div>
-              )}
-              {activeRichTab === "seo" && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Meta Keywords</label>
-                  <input
-                    type="text"
-                    name="metaKeywords"
-                    value={formData.metaKeywords}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all text-sm"
-                    placeholder="keyword1, keyword2, keyword3"
-                  />
-                </div>
-              )}
-            </div>
           </div>
-
-        </div>
-      </form>
+        </form>
+      </div>
 
       <AlertModal 
         isOpen={alertState.isOpen}
@@ -1114,7 +1051,7 @@ export default function AdminAssetForm() {
       {/* Thumbnail Zoom Modal */}
       {isZoomOpen && thumbnailPreviewUrl && (
         <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-8 cursor-zoom-out"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-8 cursor-zoom-out animate-in fade-in duration-200"
           onClick={() => setIsZoomOpen(false)}
         >
           <img 
@@ -1123,7 +1060,7 @@ export default function AdminAssetForm() {
             alt="Zoomed Thumbnail"
           />
           <button 
-            className="absolute top-6 right-6 text-white/80 hover:text-white text-3xl font-light"
+            className="absolute top-6 right-6 text-white/50 hover:text-white text-4xl font-light transition-colors"
             onClick={() => setIsZoomOpen(false)}
           >
             ×
