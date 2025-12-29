@@ -1141,5 +1141,40 @@ app.patch("/requests/:id", async (c) => {
   return c.json({ success: true });
 });
 
+// ADMIN: Cleanup Stuck Queue Jobs (Manual Trigger)
+app.post("/queue/cleanup", async (c) => {
+  const isAdminUser = await verifyAdmin(c);
+  if (!isAdminUser) return c.json({ error: "Unauthorized" }, 401);
+
+  try {
+     // Configurable timeout (default 10m)
+     const minutes = parseInt(c.req.query("minutes") || "10");
+     const timeoutThreshold = new Date(Date.now() - minutes * 60 * 1000).toISOString();
+     
+     // 1. Reset retriable
+     const resetResult = await c.env.DB.prepare(`
+       UPDATE processing_queue 
+       SET status = 'pending', started_at = NULL, attempts = attempts + 1
+       WHERE status = 'processing' AND started_at < ? AND attempts < max_attempts
+     `).bind(timeoutThreshold).run();
+     
+     // 2. Fail permanent
+     const failResult = await c.env.DB.prepare(`
+       UPDATE processing_queue 
+       SET status = 'failed', error_message = 'Timeout: Processing stuck > ' || ? || 'm'
+       WHERE status = 'processing' AND started_at < ? AND attempts >= max_attempts
+     `).bind(minutes, timeoutThreshold).run();
+
+     return c.json({
+       success: true,
+       resetCount: resetResult.meta.changes,
+       failedCount: failResult.meta.changes
+     });
+  } catch (err) {
+    console.error("Queue cleanup error:", err);
+    return c.json({ error: "Failed to cleanup queue" }, 500);
+  }
+});
+
 export default app;
 

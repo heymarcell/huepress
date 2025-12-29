@@ -167,6 +167,27 @@ const worker = {
        ]);
        
        console.log(`[Cron] D1 operations completed in ${Date.now() - start}ms`);
+
+       // [ZOMBIE CLEANUP] Fix stuck processes > 10 minutes old
+       const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+       
+       // 1. Reset retriable zombies (increment attempts, back to pending)
+       const resetResult = await env.DB.prepare(`
+         UPDATE processing_queue 
+         SET status = 'pending', started_at = NULL, attempts = attempts + 1
+         WHERE status = 'processing' AND started_at < ? AND attempts < max_attempts
+       `).bind(tenMinutesAgo).run();
+       
+       // 2. Fail permanent zombies
+       const failResult = await env.DB.prepare(`
+         UPDATE processing_queue 
+         SET status = 'failed', error_message = 'Timeout: Processing stuck > 10m'
+         WHERE status = 'processing' AND started_at < ? AND attempts >= max_attempts
+       `).bind(tenMinutesAgo).run();
+       
+       if ((resetResult.meta.changes || 0) > 0 || (failResult.meta.changes || 0) > 0) {
+          console.log(`[Cron] Zombie cleanup: Reset ${resetResult.meta.changes}, Failed ${failResult.meta.changes}`);
+       }
        
        // Check result of the 3rd query (queue check)
        const pendingJob = results[2]?.results?.[0];
