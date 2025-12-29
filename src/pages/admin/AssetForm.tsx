@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui";
 import { AlertModal } from "@/components/ui/AlertModal";
-import { Upload, Save, ArrowLeft, Eye, EyeOff, Sparkles, Code, ChevronDown, ChevronUp, Loader2, AlertCircle, Printer } from "lucide-react";
+import { Upload, Save, ArrowLeft, Eye, EyeOff, Sparkles, Code, ChevronDown, ChevronUp, Loader2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
@@ -965,9 +965,9 @@ export default function AdminAssetForm() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-6 space-y-5">
               <h3 className="font-bold text-ink text-sm uppercase tracking-wider">Media Gallery</h3>
                
-               <div className="grid grid-cols-2 gap-3">
+               <div className="space-y-3">
                   {/* Thumbnail */}
-                  <div className="col-span-2 relative aspect-[4/3] bg-gray-50 rounded-lg border border-gray-100 overflow-hidden group">
+                  <div className="relative aspect-[4/3] bg-gray-50 rounded-lg border border-gray-100 overflow-hidden group">
                      {thumbnailPreviewUrl ? (
                        <>
                          <img src={thumbnailPreviewUrl} alt="Thumbnail" className="w-full h-full object-contain p-2" />
@@ -1012,7 +1012,7 @@ export default function AdminAssetForm() {
                          <span className="text-[10px]">OG Image</span>
                        </div>
                      )}
-                     <span className="absolute top-2 left-2 text-[10px] font-bold bg-black/50 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">OG IMAGE</span>
+                     <span className="absolute top-2 left-2 text-[10px] font-bold bg-black/50 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">OG</span>
                   </div>
 
                   {/* PDF Preview */}
@@ -1034,7 +1034,7 @@ export default function AdminAssetForm() {
                              className="opacity-0 group-hover:opacity-100 p-2 bg-white rounded-full shadow-md hover:scale-110 transition-all text-primary"
                              title="Print Preview"
                            >
-                             <Printer className="w-4 h-4" /> 
+                             <Eye className="w-4 h-4" /> 
                            </button>
                         ) : null}
                      </div>
