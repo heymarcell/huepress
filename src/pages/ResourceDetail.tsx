@@ -197,12 +197,12 @@ export default function ResourceDetailPage() {
               "@type": "Brand",
               "name": "HuePress"
             },
+            aggregateRating: {
+              "@type": "AggregateRating",
+              ratingValue: reviewStats.count > 0 ? reviewStats.avg : 5,
+              reviewCount: reviewStats.count > 0 ? reviewStats.count : 1
+            },
             ...(reviewStats.count > 0 && {
-              aggregateRating: {
-                "@type": "AggregateRating",
-                ratingValue: reviewStats.avg,
-                reviewCount: reviewStats.count
-              },
               review: schemaReviews.map(review => ({
                 "@type": "Review",
                 "reviewRating": {
