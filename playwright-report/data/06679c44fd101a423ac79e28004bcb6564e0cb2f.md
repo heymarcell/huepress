@@ -1,0 +1,517 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e9]:
+        - heading "Your Privacy Matters" [level=3] [ref=e10]
+        - paragraph [ref=e11]: We use necessary cookies to make our site work. We'd also like to use analytics and marketing cookies to improve your experience and show you improved content.
+    - generic [ref=e12]:
+      - button "Customize" [ref=e13] [cursor=pointer]
+      - button "Reject All" [ref=e14] [cursor=pointer]
+      - button "Accept All" [ref=e15] [cursor=pointer]
+  - generic [ref=e16]:
+    - navigation [ref=e17]:
+      - generic [ref=e19]:
+        - link "HuePress" [ref=e21] [cursor=pointer]:
+          - /url: /
+          - img "HuePress" [ref=e22]
+        - button "Open menu" [ref=e23] [cursor=pointer]:
+          - img [ref=e24]
+    - main [ref=e26]:
+      - generic [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e29]:
+            - heading "The Vault" [level=1] [ref=e30]
+            - paragraph [ref=e31]: 29 fridge-worthy designs, ready to print
+          - generic [ref=e34]:
+            - img [ref=e35]
+            - textbox "Search designs..." [ref=e37]
+          - generic [ref=e38]:
+            - button "Filters" [ref=e39] [cursor=pointer]:
+              - img [ref=e40]
+              - generic [ref=e42]: Filters
+            - button "Newest" [ref=e44] [cursor=pointer]:
+              - img [ref=e45]
+              - generic [ref=e48]: Newest
+          - generic [ref=e49]:
+            - article [ref=e50]:
+              - link "Cherry Blossom Kite Day Unlock Full Page Cherry Blossom Kite Day Members-only cherry-blossoms kites" [ref=e51] [cursor=pointer]:
+                - /url: /coloring-pages/cherry-blossom-kite-day-00148
+                - generic [ref=e52]:
+                  - generic [ref=e53]:
+                    - img "Cherry Blossom Kite Day" [ref=e54]
+                    - generic [ref=e56]: Unlock Full Page
+                  - generic [ref=e57]:
+                    - generic [ref=e58]:
+                      - heading "Cherry Blossom Kite Day" [level=3] [ref=e59]
+                      - generic "Club members only" [ref=e60]:
+                        - img [ref=e61]
+                        - generic [ref=e63]: Members-only
+                    - generic [ref=e64]:
+                      - generic [ref=e65]: cherry-blossoms
+                      - generic [ref=e66]: kites
+            - article [ref=e67]:
+              - link "Cloud Castle Tea Picnic Unlock Full Page Cloud Castle Tea Picnic Members-only cloud-castle tea-party" [ref=e68] [cursor=pointer]:
+                - /url: /coloring-pages/cloud-castle-tea-picnic-00147
+                - generic [ref=e69]:
+                  - generic [ref=e70]:
+                    - img "Cloud Castle Tea Picnic" [ref=e71]
+                    - generic [ref=e73]: Unlock Full Page
+                  - generic [ref=e74]:
+                    - generic [ref=e75]:
+                      - heading "Cloud Castle Tea Picnic" [level=3] [ref=e76]
+                      - generic "Club members only" [ref=e77]:
+                        - img [ref=e78]
+                        - generic [ref=e80]: Members-only
+                    - generic [ref=e81]:
+                      - generic [ref=e82]: cloud-castle
+                      - generic [ref=e83]: tea-party
+            - article [ref=e84]:
+              - link "Springtime Cargo Bike Delivery Unlock Full Page Springtime Cargo Bike Delivery Members-only cargo-bike delivery" [ref=e85] [cursor=pointer]:
+                - /url: /coloring-pages/springtime-cargo-bike-delivery-00146
+                - generic [ref=e86]:
+                  - generic [ref=e87]:
+                    - img "Springtime Cargo Bike Delivery" [ref=e88]
+                    - generic [ref=e90]: Unlock Full Page
+                  - generic [ref=e91]:
+                    - generic [ref=e92]:
+                      - heading "Springtime Cargo Bike Delivery" [level=3] [ref=e93]
+                      - generic "Club members only" [ref=e94]:
+                        - img [ref=e95]
+                        - generic [ref=e97]: Members-only
+                    - generic [ref=e98]:
+                      - generic [ref=e99]: cargo-bike
+                      - generic [ref=e100]: delivery
+            - article [ref=e101]:
+              - link "Rainbow Bento Lunch Prep Unlock Full Page Rainbow Bento Lunch Prep Members-only bento lunchbox" [ref=e102] [cursor=pointer]:
+                - /url: /coloring-pages/rainbow-bento-lunch-prep-00145
+                - generic [ref=e103]:
+                  - generic [ref=e104]:
+                    - img "Rainbow Bento Lunch Prep" [ref=e105]
+                    - generic [ref=e107]: Unlock Full Page
+                  - generic [ref=e108]:
+                    - generic [ref=e109]:
+                      - heading "Rainbow Bento Lunch Prep" [level=3] [ref=e110]
+                      - generic "Club members only" [ref=e111]:
+                        - img [ref=e112]
+                        - generic [ref=e114]: Members-only
+                    - generic [ref=e115]:
+                      - generic [ref=e116]: bento
+                      - generic [ref=e117]: lunchbox
+            - generic [ref=e121]:
+              - generic [ref=e122]:
+                - heading "Try 3 free pages?" [level=2] [ref=e123]
+                - paragraph [ref=e124]: See the difference bold lines make. We’ll send them to your inbox.
+              - generic [ref=e126]:
+                - generic [ref=e127]:
+                  - generic [ref=e128]: Email address
+                  - generic [ref=e129]:
+                    - textbox "Email address for free sample pack" [ref=e132]:
+                      - /placeholder: mom@example.com
+                    - button "Send Me Free Pages" [ref=e134] [cursor=pointer]:
+                      - img [ref=e135]
+                      - text: Send Me Free Pages
+                - generic [ref=e139]:
+                  - paragraph [ref=e140]: No credit card. Sent in 1–2 minutes.
+                  - paragraph [ref=e141]:
+                    - text: By signing up, you agree to our
+                    - link "Privacy Policy" [ref=e142] [cursor=pointer]:
+                      - /url: /privacy
+                    - text: and to receive occasional updates. Unsubscribe anytime.
+            - article [ref=e143]:
+              - link "Family Storytime Pillow Fort Unlock Full Page Family Storytime Pillow Fort Members-only pillow-fort storytime" [ref=e144] [cursor=pointer]:
+                - /url: /coloring-pages/family-storytime-pillow-fort-00144
+                - generic [ref=e145]:
+                  - generic [ref=e146]:
+                    - img "Family Storytime Pillow Fort" [ref=e147]
+                    - generic [ref=e149]: Unlock Full Page
+                  - generic [ref=e150]:
+                    - generic [ref=e151]:
+                      - heading "Family Storytime Pillow Fort" [level=3] [ref=e152]
+                      - generic "Club members only" [ref=e153]:
+                        - img [ref=e154]
+                        - generic [ref=e156]: Members-only
+                    - generic [ref=e157]:
+                      - generic [ref=e158]: pillow-fort
+                      - generic [ref=e159]: storytime
+            - article [ref=e160]:
+              - link "Valentine Heart Postcard Workshop Unlock Full Page Valentine Heart Postcard Workshop Members-only valentines hearts" [ref=e161] [cursor=pointer]:
+                - /url: /coloring-pages/valentine-heart-postcard-workshop-00143
+                - generic [ref=e162]:
+                  - generic [ref=e163]:
+                    - img "Valentine Heart Postcard Workshop" [ref=e164]
+                    - generic [ref=e166]: Unlock Full Page
+                  - generic [ref=e167]:
+                    - generic [ref=e168]:
+                      - heading "Valentine Heart Postcard Workshop" [level=3] [ref=e169]
+                      - generic "Club members only" [ref=e170]:
+                        - img [ref=e171]
+                        - generic [ref=e173]: Members-only
+                    - generic [ref=e174]:
+                      - generic [ref=e175]: valentines
+                      - generic [ref=e176]: hearts
+            - article [ref=e177]:
+              - link "Recycling Sorting Challenge Poster Unlock Full Page Recycling Sorting Challenge Poster Members-only recycling sorting" [ref=e178] [cursor=pointer]:
+                - /url: /coloring-pages/recycling-sorting-challenge-poster-00142
+                - generic [ref=e179]:
+                  - generic [ref=e180]:
+                    - img "Recycling Sorting Challenge Poster" [ref=e181]
+                    - generic [ref=e183]: Unlock Full Page
+                  - generic [ref=e184]:
+                    - generic [ref=e185]:
+                      - heading "Recycling Sorting Challenge Poster" [level=3] [ref=e186]
+                      - generic "Club members only" [ref=e187]:
+                        - img [ref=e188]
+                        - generic [ref=e190]: Members-only
+                    - generic [ref=e191]:
+                      - generic [ref=e192]: recycling
+                      - generic [ref=e193]: sorting
+            - article [ref=e194]:
+              - link "Citrus Slice Tile Pattern Unlock Full Page Citrus Slice Tile Pattern Members-only citrus tile-pattern" [ref=e195] [cursor=pointer]:
+                - /url: /coloring-pages/citrus-slice-tile-pattern-00141
+                - generic [ref=e196]:
+                  - generic [ref=e197]:
+                    - img "Citrus Slice Tile Pattern" [ref=e198]
+                    - generic [ref=e200]: Unlock Full Page
+                  - generic [ref=e201]:
+                    - generic [ref=e202]:
+                      - heading "Citrus Slice Tile Pattern" [level=3] [ref=e203]
+                      - generic "Club members only" [ref=e204]:
+                        - img [ref=e205]
+                        - generic [ref=e207]: Members-only
+                    - generic [ref=e208]:
+                      - generic [ref=e209]: citrus
+                      - generic [ref=e210]: tile-pattern
+            - article [ref=e211]:
+              - link "Robot Pet Repair Station Unlock Full Page Robot Pet Repair Station Members-only robot-pet workshop" [ref=e212] [cursor=pointer]:
+                - /url: /coloring-pages/robot-pet-repair-station-00140
+                - generic [ref=e213]:
+                  - generic [ref=e214]:
+                    - img "Robot Pet Repair Station" [ref=e215]
+                    - generic [ref=e217]: Unlock Full Page
+                  - generic [ref=e218]:
+                    - generic [ref=e219]:
+                      - heading "Robot Pet Repair Station" [level=3] [ref=e220]
+                      - generic "Club members only" [ref=e221]:
+                        - img [ref=e222]
+                        - generic [ref=e224]: Members-only
+                    - generic [ref=e225]:
+                      - generic [ref=e226]: robot-pet
+                      - generic [ref=e227]: workshop
+            - article [ref=e228]:
+              - link "Penguin Post Office Parade Unlock Full Page Penguin Post Office Parade Members-only penguins mail" [ref=e229] [cursor=pointer]:
+                - /url: /coloring-pages/penguin-post-office-parade-00139
+                - generic [ref=e230]:
+                  - generic [ref=e231]:
+                    - img "Penguin Post Office Parade" [ref=e232]
+                    - generic [ref=e234]: Unlock Full Page
+                  - generic [ref=e235]:
+                    - generic [ref=e236]:
+                      - heading "Penguin Post Office Parade" [level=3] [ref=e237]
+                      - generic "Club members only" [ref=e238]:
+                        - img [ref=e239]
+                        - generic [ref=e241]: Members-only
+                    - generic [ref=e242]:
+                      - generic [ref=e243]: penguins
+                      - generic [ref=e244]: mail
+            - article [ref=e245]:
+              - link "Moon Phase Garden Wreath Unlock Full Page Moon Phase Garden Wreath Members-only moon-phases floral-wreath" [ref=e246] [cursor=pointer]:
+                - /url: /coloring-pages/moon-phase-garden-wreath-00138
+                - generic [ref=e247]:
+                  - generic [ref=e248]:
+                    - img "Moon Phase Garden Wreath" [ref=e249]
+                    - generic [ref=e251]: Unlock Full Page
+                  - generic [ref=e252]:
+                    - generic [ref=e253]:
+                      - heading "Moon Phase Garden Wreath" [level=3] [ref=e254]
+                      - generic "Club members only" [ref=e255]:
+                        - img [ref=e256]
+                        - generic [ref=e258]: Members-only
+                    - generic [ref=e259]:
+                      - generic [ref=e260]: moon-phases
+                      - generic [ref=e261]: floral-wreath
+            - article [ref=e262]:
+              - link "Tiny Dragon Library Helper Unlock Full Page Tiny Dragon Library Helper Members-only dragon library" [ref=e263] [cursor=pointer]:
+                - /url: /coloring-pages/tiny-dragon-library-helper-00137
+                - generic [ref=e264]:
+                  - generic [ref=e265]:
+                    - img "Tiny Dragon Library Helper" [ref=e266]
+                    - generic [ref=e268]: Unlock Full Page
+                  - generic [ref=e269]:
+                    - generic [ref=e270]:
+                      - heading "Tiny Dragon Library Helper" [level=3] [ref=e271]
+                      - generic "Club members only" [ref=e272]:
+                        - img [ref=e273]
+                        - generic [ref=e275]: Members-only
+                    - generic [ref=e276]:
+                      - generic [ref=e277]: dragon
+                      - generic [ref=e278]: library
+            - article [ref=e279]:
+              - link "Snowplow Morning Street Scene Unlock Full Page Snowplow Morning Street Scene Members-only snowplow winter" [ref=e280] [cursor=pointer]:
+                - /url: /coloring-pages/snowplow-morning-street-scene-00136
+                - generic [ref=e281]:
+                  - generic [ref=e282]:
+                    - img "Snowplow Morning Street Scene" [ref=e283]
+                    - generic [ref=e285]: Unlock Full Page
+                  - generic [ref=e286]:
+                    - generic [ref=e287]:
+                      - heading "Snowplow Morning Street Scene" [level=3] [ref=e288]
+                      - generic "Club members only" [ref=e289]:
+                        - img [ref=e290]
+                        - generic [ref=e292]: Members-only
+                    - generic [ref=e293]:
+                      - generic [ref=e294]: snowplow
+                      - generic [ref=e295]: winter
+            - article [ref=e296]:
+              - link "Build Your Own Pizza Night Unlock Full Page Build Your Own Pizza Night Members-only pizza toppings" [ref=e297] [cursor=pointer]:
+                - /url: /coloring-pages/build-your-own-pizza-night-00135
+                - generic [ref=e298]:
+                  - generic [ref=e299]:
+                    - img "Build Your Own Pizza Night" [ref=e300]
+                    - generic [ref=e302]: Unlock Full Page
+                  - generic [ref=e303]:
+                    - generic [ref=e304]:
+                      - heading "Build Your Own Pizza Night" [level=3] [ref=e305]
+                      - generic "Club members only" [ref=e306]:
+                        - img [ref=e307]
+                        - generic [ref=e309]: Members-only
+                    - generic [ref=e310]:
+                      - generic [ref=e311]: pizza
+                      - generic [ref=e312]: toppings
+            - article [ref=e313]:
+              - link "Community Swap Shop Smiles Unlock Full Page Community Swap Shop Smiles Members-only community sharing" [ref=e314] [cursor=pointer]:
+                - /url: /coloring-pages/community-swap-shop-smiles-00134
+                - generic [ref=e315]:
+                  - generic [ref=e316]:
+                    - img "Community Swap Shop Smiles" [ref=e317]
+                    - generic [ref=e319]: Unlock Full Page
+                  - generic [ref=e320]:
+                    - generic [ref=e321]:
+                      - heading "Community Swap Shop Smiles" [level=3] [ref=e322]
+                      - generic "Club members only" [ref=e323]:
+                        - img [ref=e324]
+                        - generic [ref=e326]: Members-only
+                    - generic [ref=e327]:
+                      - generic [ref=e328]: community
+                      - generic [ref=e329]: sharing
+            - article [ref=e330]:
+              - link "Lunar New Year Lantern Craft Unlock Full Page Lunar New Year Lantern Craft Members-only lunar-new-year lanterns" [ref=e331] [cursor=pointer]:
+                - /url: /coloring-pages/lunar-new-year-lantern-craft-00128
+                - generic [ref=e332]:
+                  - generic [ref=e333]:
+                    - img "Lunar New Year Lantern Craft" [ref=e334]
+                    - generic [ref=e336]: Unlock Full Page
+                  - generic [ref=e337]:
+                    - generic [ref=e338]:
+                      - heading "Lunar New Year Lantern Craft" [level=3] [ref=e339]
+                      - generic "Club members only" [ref=e340]:
+                        - img [ref=e341]
+                        - generic [ref=e343]: Members-only
+                    - generic [ref=e344]:
+                      - generic [ref=e345]: lunar-new-year
+                      - generic [ref=e346]: lanterns
+            - article [ref=e347]:
+              - link "Weather Tools Mini Science Lab Unlock Full Page Weather Tools Mini Science Lab Members-only weather science-lab" [ref=e348] [cursor=pointer]:
+                - /url: /coloring-pages/weather-tools-mini-science-lab-00127
+                - generic [ref=e349]:
+                  - generic [ref=e350]:
+                    - img "Weather Tools Mini Science Lab" [ref=e351]
+                    - generic [ref=e353]: Unlock Full Page
+                  - generic [ref=e354]:
+                    - generic [ref=e355]:
+                      - heading "Weather Tools Mini Science Lab" [level=3] [ref=e356]
+                      - generic "Club members only" [ref=e357]:
+                        - img [ref=e358]
+                        - generic [ref=e360]: Members-only
+                    - generic [ref=e361]:
+                      - generic [ref=e362]: weather
+                      - generic [ref=e363]: science-lab
+            - article [ref=e364]:
+              - link "Sunburst Tile Mandala Pattern Unlock Full Page Sunburst Tile Mandala Pattern Members-only mandala sunburst" [ref=e365] [cursor=pointer]:
+                - /url: /coloring-pages/sunburst-tile-mandala-pattern-00121
+                - generic [ref=e366]:
+                  - generic [ref=e367]:
+                    - img "Sunburst Tile Mandala Pattern" [ref=e368]
+                    - generic [ref=e370]: Unlock Full Page
+                  - generic [ref=e371]:
+                    - generic [ref=e372]:
+                      - heading "Sunburst Tile Mandala Pattern" [level=3] [ref=e373]
+                      - generic "Club members only" [ref=e374]:
+                        - img [ref=e375]
+                        - generic [ref=e377]: Members-only
+                    - generic [ref=e378]:
+                      - generic [ref=e379]: mandala
+                      - generic [ref=e380]: sunburst
+            - article [ref=e381]:
+              - link "Friendly Monster School Supplies Unlock Full Page Friendly Monster School Supplies Members-only friendly-monster school" [ref=e382] [cursor=pointer]:
+                - /url: /coloring-pages/friendly-monster-school-supplies-00120
+                - generic [ref=e383]:
+                  - generic [ref=e384]:
+                    - img "Friendly Monster School Supplies" [ref=e385]
+                    - generic [ref=e387]: Unlock Full Page
+                  - generic [ref=e388]:
+                    - generic [ref=e389]:
+                      - heading "Friendly Monster School Supplies" [level=3] [ref=e390]
+                      - generic "Club members only" [ref=e391]:
+                        - img [ref=e392]
+                        - generic [ref=e394]: Members-only
+                    - generic [ref=e395]:
+                      - generic [ref=e396]: friendly-monster
+                      - generic [ref=e397]: school
+            - article [ref=e398]:
+              - link "Red Panda Bamboo Snack Break Unlock Full Page Red Panda Bamboo Snack Break Members-only red-panda bamboo" [ref=e399] [cursor=pointer]:
+                - /url: /coloring-pages/red-panda-bamboo-snack-break-00119
+                - generic [ref=e400]:
+                  - generic [ref=e401]:
+                    - img "Red Panda Bamboo Snack Break" [ref=e402]
+                    - generic [ref=e404]: Unlock Full Page
+                  - generic [ref=e405]:
+                    - generic [ref=e406]:
+                      - heading "Red Panda Bamboo Snack Break" [level=3] [ref=e407]
+                      - generic "Club members only" [ref=e408]:
+                        - img [ref=e409]
+                        - generic [ref=e411]: Members-only
+                    - generic [ref=e412]:
+                      - generic [ref=e413]: red-panda
+                      - generic [ref=e414]: bamboo
+            - article [ref=e415]:
+              - link "Tide Pool Shells And Seaweed Unlock Full Page Tide Pool Shells And Seaweed Members-only tide-pool shoreline" [ref=e416] [cursor=pointer]:
+                - /url: /coloring-pages/tide-pool-shells-and-seaweed-00118
+                - generic [ref=e417]:
+                  - generic [ref=e418]:
+                    - img "Tide Pool Shells And Seaweed" [ref=e419]
+                    - generic [ref=e421]: Unlock Full Page
+                  - generic [ref=e422]:
+                    - generic [ref=e423]:
+                      - heading "Tide Pool Shells And Seaweed" [level=3] [ref=e424]
+                      - generic "Club members only" [ref=e425]:
+                        - img [ref=e426]
+                        - generic [ref=e428]: Members-only
+                    - generic [ref=e429]:
+                      - generic [ref=e430]: tide-pool
+                      - generic [ref=e431]: shoreline
+            - article [ref=e432]:
+              - link "Forest Sprite Lantern Mushroom Party Unlock Full Page Forest Sprite Lantern Mushroom Party Members-only forest-sprite mushrooms" [ref=e433] [cursor=pointer]:
+                - /url: /coloring-pages/forest-sprite-lantern-mushroom-party-00117
+                - generic [ref=e434]:
+                  - generic [ref=e435]:
+                    - img "Forest Sprite Lantern Mushroom Party" [ref=e436]
+                    - generic [ref=e438]: Unlock Full Page
+                  - generic [ref=e439]:
+                    - generic [ref=e440]:
+                      - heading "Forest Sprite Lantern Mushroom Party" [level=3] [ref=e441]
+                      - generic "Club members only" [ref=e442]:
+                        - img [ref=e443]
+                        - generic [ref=e445]: Members-only
+                    - generic [ref=e446]:
+                      - generic [ref=e447]: forest-sprite
+                      - generic [ref=e448]: mushrooms
+            - article [ref=e449]:
+              - link "Neighborhood Tram Stop Morning Ride Unlock Full Page Neighborhood Tram Stop Morning Ride Members-only tram public-transport" [ref=e450] [cursor=pointer]:
+                - /url: /coloring-pages/neighborhood-tram-stop-morning-ride-00116
+                - generic [ref=e451]:
+                  - generic [ref=e452]:
+                    - img "Neighborhood Tram Stop Morning Ride" [ref=e453]
+                    - generic [ref=e455]: Unlock Full Page
+                  - generic [ref=e456]:
+                    - generic [ref=e457]:
+                      - heading "Neighborhood Tram Stop Morning Ride" [level=3] [ref=e458]
+                      - generic "Club members only" [ref=e459]:
+                        - img [ref=e460]
+                        - generic [ref=e462]: Members-only
+                    - generic [ref=e463]:
+                      - generic [ref=e464]: tram
+                      - generic [ref=e465]: public-transport
+            - article [ref=e466]:
+              - link "Space Explorer With Pet Bot Unlock Full Page Space Explorer With Pet Bot Members-only space-explorer pet-bot" [ref=e467] [cursor=pointer]:
+                - /url: /coloring-pages/space-explorer-with-pet-bot-00115
+                - generic [ref=e468]:
+                  - generic [ref=e469]:
+                    - img "Space Explorer With Pet Bot" [ref=e470]
+                    - generic [ref=e472]: Unlock Full Page
+                  - generic [ref=e473]:
+                    - generic [ref=e474]:
+                      - heading "Space Explorer With Pet Bot" [level=3] [ref=e475]
+                      - generic "Club members only" [ref=e476]:
+                        - img [ref=e477]
+                        - generic [ref=e479]: Members-only
+                    - generic [ref=e480]:
+                      - generic [ref=e481]: space-explorer
+                      - generic [ref=e482]: pet-bot
+          - generic [ref=e483]:
+            - generic [ref=e484]: Showing 1–24 of 29 designs
+            - generic [ref=e485]:
+              - button "Previous page" [disabled] [ref=e486]:
+                - img [ref=e487]
+              - generic [ref=e489]: Page 1 of 2
+              - button "Next page" [ref=e490] [cursor=pointer]:
+                - img [ref=e491]
+          - generic [ref=e493]:
+            - paragraph [ref=e494]: Ready to unlock the full vault?
+            - generic [ref=e495]:
+              - link "Join for instant downloads" [ref=e496] [cursor=pointer]:
+                - /url: /pricing
+                - button "Join for instant downloads" [ref=e497]
+              - paragraph [ref=e498]: Just $5/mo, cancel anytime
+          - generic [ref=e499]:
+            - heading "Therapy-Grade Coloring Pages for Motor Skills & Calm" [level=2] [ref=e500]
+            - paragraph [ref=e501]: HuePress provides high-quality, bold and easy printable art designed specifically for children. Our collection focuses on fine motor skills coloring, anxiety relief, and creative expression without the frustration of complex patterns.
+            - paragraph [ref=e502]: Trusted by parents, teachers, and occupational therapists, our library offers safe, ad-free downloads perfect for quiet time, classroom activities, and therapeutic sessions. Join the club to unlock unlimited access.
+        - generic [ref=e505]:
+          - generic [ref=e506]:
+            - img [ref=e507]
+            - textbox "Search..." [ref=e510]
+          - button [ref=e511] [cursor=pointer]:
+            - img [ref=e512]
+          - button "Newest" [ref=e514] [cursor=pointer]:
+            - img [ref=e515]
+            - generic [ref=e518]: Newest
+    - contentinfo [ref=e519]:
+      - generic [ref=e520]:
+        - generic [ref=e521]:
+          - generic [ref=e522]:
+            - img "HuePress" [ref=e524]
+            - paragraph [ref=e525]: Curated, therapy-grade coloring pages for design-conscious parents and pediatric professionals. Bold lines, big calm.
+          - generic [ref=e526]:
+            - heading "Product" [level=4] [ref=e527]
+            - list [ref=e528]:
+              - listitem [ref=e529]:
+                - link "The Vault" [ref=e530] [cursor=pointer]:
+                  - /url: /vault
+              - listitem [ref=e531]:
+                - link "Blog" [ref=e532] [cursor=pointer]:
+                  - /url: /blog
+              - listitem [ref=e533]:
+                - link "Pricing" [ref=e534] [cursor=pointer]:
+                  - /url: /pricing
+              - listitem [ref=e535]:
+                - link "For Therapists" [ref=e536] [cursor=pointer]:
+                  - /url: /vault?skill=Easy
+              - listitem [ref=e537]:
+                - link "About" [ref=e538] [cursor=pointer]:
+                  - /url: /about
+          - generic [ref=e539]:
+            - heading "Legal" [level=4] [ref=e540]
+            - list [ref=e541]:
+              - listitem [ref=e542]:
+                - link "Privacy Policy" [ref=e543] [cursor=pointer]:
+                  - /url: /privacy
+              - listitem [ref=e544]:
+                - link "Terms of Service" [ref=e545] [cursor=pointer]:
+                  - /url: /terms
+              - listitem [ref=e546]:
+                - button "Your Privacy Choices" [ref=e547] [cursor=pointer]
+        - generic [ref=e548]:
+          - paragraph [ref=e549]: © 2025 HuePress. All rights reserved.
+          - generic [ref=e550]:
+            - link "Pinterest" [ref=e551] [cursor=pointer]:
+              - /url: https://pinterest.com/huepressco
+            - link "Instagram" [ref=e552] [cursor=pointer]:
+              - /url: https://instagram.com/huepressco
+            - link "Facebook" [ref=e553] [cursor=pointer]:
+              - /url: https://facebook.com/huepressco
+  - region "Notifications alt+T"
+```

@@ -101,12 +101,12 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-gray-300 text-sm">
+        {/* Bottom Bar - Improved mobile spacing */}
+        <div className="border-t border-gray-800 mt-8 sm:mt-12 pt-6 sm:pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
+          <p className="text-gray-300 text-sm text-center sm:text-left">
             © {new Date().getFullYear()} HuePress. All rights reserved.
           </p>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
             {footerLinks.social.map((link) => (
               <a
                 key={link.href}

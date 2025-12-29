@@ -101,7 +101,8 @@ export default function HomePage() {
     };
 
     // Defer fetch to prioritize above-the-fold render
-    const timer = setTimeout(fetchFeatured, 1200);
+    // Reduced from 1200ms to 100ms for better perceived performance
+    const timer = setTimeout(fetchFeatured, 100);
     return () => { cancelled = true; clearTimeout(timer); };
   }, []);
 
@@ -221,8 +222,8 @@ export default function HomePage() {
             </div>
 
             {/* Right: Hero Image - Real thumbnails on white paper */}
-            <div className="relative">
-                <div className="relative rounded-2xl shadow-xl overflow-hidden border border-gray-100 rotate-1 hover:rotate-0 transition-transform duration-500">
+            <div className="relative w-full max-w-[400px] mx-auto lg:max-w-none">
+                <div className="relative rounded-2xl shadow-xl overflow-hidden border border-gray-100 rotate-1 hover:rotate-0 transition-transform duration-500 aspect-square">
                   <img 
                     src="/hero_lifestyle.webp" 
                     alt="Child coloring a HuePress page with markers"
@@ -285,15 +286,20 @@ export default function HomePage() {
                  slug={item.slug}
                />
              ))
-             ) : (
-               // Loading Skeletons
-               [...Array(4)].map((_, i) => (
-                   <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 h-64 animate-pulse">
-                       <div className="bg-gray-100 w-full h-40 rounded-lg mb-4"></div>
-                       <div className="bg-gray-100 h-4 w-3/4 rounded mb-2"></div>
-                       <div className="bg-gray-100 h-3 w-1/2 rounded"></div>
-                   </div>
-               ))
+              ) : (
+                // Loading Skeletons - Match ResourceCard design
+                [...Array(4)].map((_, i) => (
+                    <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-pulse">
+                        <div className="bg-gray-100 aspect-square w-full"></div>
+                        <div className="p-3 sm:p-4">
+                          <div className="bg-gray-100 h-4 w-3/4 rounded mb-2"></div>
+                          <div className="flex gap-2">
+                            <div className="bg-gray-100 h-5 w-12 rounded-full"></div>
+                            <div className="bg-gray-100 h-5 w-14 rounded-full"></div>
+                          </div>
+                        </div>
+                    </div>
+                ))
              )}
            </div>
            

@@ -95,9 +95,9 @@ export function AboutDesign({
         <div className="h-px bg-gray-200 flex-1" />
       </div>
 
-      {/* Extended Description - Full Width */}
+      {/* Extended Description - Full Width with better mobile readability */}
       {extendedDescription && (
-        <p className="text-lg text-gray-700 leading-relaxed max-w-4xl">
+        <p className="text-base sm:text-lg text-gray-700 leading-relaxed sm:leading-[1.8] max-w-4xl">
           {extendedDescription}
         </p>
       )}
