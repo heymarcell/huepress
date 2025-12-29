@@ -147,7 +147,7 @@ app.patch("/queue/:id", auth, async (c) => {
             query = "UPDATE processing_queue SET status = ?, started_at = datetime('now'), attempts = attempts + 1 WHERE id = ?";
             params = [status, id];
         } else if (status === 'completed') {
-            query = "UPDATE processing_queue SET status = ?, completed_at = datetime('now') WHERE id = ?";
+            query = "UPDATE processing_queue SET status = ?, completed_at = datetime('now'), error_message = NULL WHERE id = ?";
             params = [status, id];
         } else {
              query = "UPDATE processing_queue SET status = ?, error_message = ?, completed_at = datetime('now') WHERE id = ?";
