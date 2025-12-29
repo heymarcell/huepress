@@ -20,9 +20,11 @@ interface ReviewsResponse {
 interface ReviewListProps {
   assetId: string;
   refreshTrigger?: number;
+  currentUserEmail?: string;
+  onUserReviewFound?: (hasReview: boolean) => void;
 }
 
-export function ReviewList({ assetId, refreshTrigger }: ReviewListProps) {
+export function ReviewList({ assetId, refreshTrigger, currentUserEmail, onUserReviewFound }: ReviewListProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [totalReviews, setTotalReviews] = useState(0);
@@ -36,6 +38,14 @@ export function ReviewList({ assetId, refreshTrigger }: ReviewListProps) {
         setReviews(data.reviews || []);
         setAverageRating(data.averageRating);
         setTotalReviews(data.totalReviews);
+        
+        // Check if current user has already reviewed
+        if (currentUserEmail && onUserReviewFound) {
+          const userHasReview = data.reviews?.some(
+            (r) => r.user_email?.toLowerCase() === currentUserEmail.toLowerCase()
+          ) ?? false;
+          onUserReviewFound(userHasReview);
+        }
       } catch (error) {
         console.error("Failed to fetch reviews:", error);
       } finally {
@@ -44,7 +54,7 @@ export function ReviewList({ assetId, refreshTrigger }: ReviewListProps) {
     };
 
     fetchReviews();
-  }, [assetId, refreshTrigger]);
+  }, [assetId, refreshTrigger, currentUserEmail, onUserReviewFound]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
