@@ -111,6 +111,12 @@ describe("Assets API", () => {
         // Check if query contains FTS MATCH clause [F-001]
         const queryArg = mockPrepare.mock.calls[0][0];
         expect(queryArg).toContain("assets_fts MATCH ?");
+        
+        // Regression Check: Verify valid FTS5 syntax (phrase prefix "term"*)
+        // Previously referenced parameter as `"term" *` which caused syntax error
+        const params = mockBind.mock.calls[0];
+        const searchParam = params.find((p: unknown) => typeof p === 'string' && p.includes("dino"));
+        expect(searchParam).toBe('"dino"*');
     });
 
     it("GET /assets should handle null tags", async () => {

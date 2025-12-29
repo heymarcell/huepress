@@ -73,7 +73,7 @@ app.get("/assets", async (c) => {
     // FTS5 MATCH query syntax: "term*" for prefix matching
     // We sanitize input to prevent syntax errors (remove special chars)
     const sanitizedSearch = search.replace(/[^\w\s]/g, '').trim();
-    const searchParam = `"${sanitizedSearch}" *`; // Phrase match + prefix
+    const searchParam = `"${sanitizedSearch}"*`; // Phrase match + prefix
     params.push(searchParam);
   }
 
