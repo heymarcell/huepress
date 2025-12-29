@@ -261,9 +261,9 @@ export default function ResourceDetailPage() {
       )}
 
       {/* Hero Section */}
-      <div className="pt-6 lg:pt-8 pb-8">
+      <div className="pt-8 lg:pt-10 pb-8">
         <div className="container mx-auto px-6">
-          <div className="max-w-7xl mx-auto mb-4">
+          <div className="max-w-7xl mx-auto mb-6">
              {/* Breadcrumbs */}
              <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Link to="/" className="hover:text-primary transition-colors">Home</Link>
