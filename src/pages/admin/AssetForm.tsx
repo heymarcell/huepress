@@ -888,18 +888,19 @@ export default function AdminAssetForm() {
             )}
 
             {/* PDF Preview Link */}
+            {/* PDF Preview Link */}
             {pdfPreviewUrl && processingStatus?.files?.pdf ? (
               <a 
                 href={pdfPreviewUrl} 
                 target="_blank" 
                 rel="noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-2 bg-teal-50 text-teal-700 rounded-lg text-sm font-medium hover:bg-teal-100 transition-colors border border-teal-100"
+                className="flex items-center justify-center gap-2 w-full py-2 bg-teal-50 text-teal-700 rounded-md text-sm font-bold hover:bg-teal-100 transition-colors border border-teal-100"
               >
                 <Eye className="w-4 h-4" />
                 Preview PDF
               </a>
             ) : isEditing && !processingStatus?.files?.pdf ? (
-              <div className="flex items-center justify-center gap-2 w-full py-2 bg-gray-50 text-gray-400 rounded-lg text-sm font-medium border border-dashed border-gray-300">
+              <div className="flex items-center justify-center gap-2 w-full py-2 bg-gray-50 text-gray-400 rounded-md text-sm font-bold border border-dashed border-gray-300">
                 {processingStatus?.hasActiveJob ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -917,7 +918,7 @@ export default function AdminAssetForm() {
                 href={pdfPreviewUrl} 
                 target="_blank" 
                 rel="noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-2 bg-teal-50 text-teal-700 rounded-lg text-sm font-medium hover:bg-teal-100 transition-colors border border-teal-100"
+                className="flex items-center justify-center gap-2 w-full py-2 bg-teal-50 text-teal-700 rounded-md text-sm font-bold hover:bg-teal-100 transition-colors border border-teal-100"
               >
                 <Eye className="w-4 h-4" />
                 Preview PDF

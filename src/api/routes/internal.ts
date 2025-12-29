@@ -136,7 +136,7 @@ app.patch("/queue/:id", auth, async (c) => {
         }
         
         let query = "";
-        let params: any[] = [];
+        let params: unknown[] = [];
         
         if (status === 'processing') {
             query = "UPDATE processing_queue SET status = ?, started_at = datetime('now'), attempts = attempts + 1 WHERE id = ?";
