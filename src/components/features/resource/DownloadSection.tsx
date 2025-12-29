@@ -21,6 +21,9 @@ export function DownloadSection({ assetId, formattedAssetId, title }: DownloadSe
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
   const [showEmailCapture, setShowEmailCapture] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  
   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
     isOpen: false,
     title: "",
@@ -30,6 +33,7 @@ export function DownloadSection({ assetId, formattedAssetId, title }: DownloadSe
 
   const handleDownload = async () => {
     try {
+      setIsDownloading(true);
       const downloadUrl = apiClient.assets.getDownloadUrl(assetId);
       
       const token = await getToken();
@@ -80,11 +84,14 @@ export function DownloadSection({ assetId, formattedAssetId, title }: DownloadSe
         message: "We encountered an issue downloading your file. Please try again.",
         variant: "error"
       });
+    } finally {
+      setIsDownloading(false);
     }
   };
 
   const handlePrint = async () => {
     try {
+      setIsPrinting(true);
       const downloadUrl = apiClient.assets.getDownloadUrl(assetId);
       
       const token = await getToken();
@@ -138,6 +145,8 @@ export function DownloadSection({ assetId, formattedAssetId, title }: DownloadSe
         message: "We encountered an issue printing your file. Please try again.",
         variant: "error"
       });
+    } finally {
+      setIsPrinting(false);
     }
   };
 
@@ -149,11 +158,23 @@ export function DownloadSection({ assetId, formattedAssetId, title }: DownloadSe
   if (isSubscriber) {
     return (
       <div className="flex gap-3">
-        <Button variant="primary" size="lg" className="flex-1" onClick={handleDownload}>
+        <Button 
+          variant="primary" 
+          size="lg" 
+          className="flex-1" 
+          onClick={handleDownload}
+          isLoading={isDownloading}
+        >
           <Download className="w-5 h-5" />
           Download
         </Button>
-        <Button variant="outline" size="lg" className="flex-1" onClick={handlePrint}>
+        <Button 
+          variant="outline" 
+          size="lg" 
+          className="flex-1" 
+          onClick={handlePrint}
+          isLoading={isPrinting}
+        >
           <Printer className="w-5 h-5" />
           Print
         </Button>
