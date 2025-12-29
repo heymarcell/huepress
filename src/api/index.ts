@@ -174,16 +174,22 @@ const worker = {
        if (pendingJob) {
           console.log("[Cron] Pending jobs found. Waking container...");
           const container = (await import("@cloudflare/containers")).getContainer(env.PROCESSING, "main");
-          // Fire and forget - don't await response to keep cron fast
-          // The container will wake up and process the queue
-          container.fetch("http://container/wakeup", {
-             headers: { 
-               "X-Internal-Secret": env.CONTAINER_AUTH_SECRET || "",
-               "X-Set-Internal-Token": env.INTERNAL_API_TOKEN || "",
-               "X-Set-Auth-Secret": env.CONTAINER_AUTH_SECRET || ""
-             }
-          });
-          console.log("[Cron] Wakeup signal sent.");
+          // Use waitUntil to ensure fetch completes before worker terminates
+          const ctx = _ctx as { waitUntil: (promise: Promise<unknown>) => void };
+          ctx.waitUntil(
+            container.fetch("http://container/wakeup", {
+               headers: { 
+                 "X-Internal-Secret": env.CONTAINER_AUTH_SECRET || "",
+                 "X-Set-Internal-Token": env.INTERNAL_API_TOKEN || "",
+                 "X-Set-Auth-Secret": env.CONTAINER_AUTH_SECRET || ""
+               }
+            }).then(res => {
+               console.log(`[Cron] Wakeup response: ${res.status}`);
+            }).catch(err => {
+               console.error("[Cron] Wakeup failed:", err);
+            })
+          );
+          console.log("[Cron] Wakeup signal queued.");
        } else {
           console.log("[Cron] No pending jobs.");
        }
