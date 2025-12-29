@@ -698,6 +698,8 @@ app.get("/assets/:id/source", async (c) => {
     file.writeHttpMetadata(headers);
     headers.set("Content-Type", "image/svg+xml");
     headers.set("Cache-Control", "no-cache");
+    // [F-003] Security: Prevent Stored XSS in SVGs
+    headers.set("Content-Security-Policy", "default-src 'none'; script-src 'none'; object-src 'none'; style-src 'none'");
 
     return new Response(file.body, { headers });
   } catch (error) {

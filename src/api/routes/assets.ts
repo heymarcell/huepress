@@ -60,9 +60,21 @@ app.get("/assets", async (c) => {
 
   const search = c.req.query("search");
   if (search) {
-    const term = `%${search}%`;
-    whereClause += " AND (title LIKE ? OR description LIKE ? OR asset_id LIKE ? OR EXISTS (SELECT 1 FROM json_each(tags) WHERE value LIKE ?))";
-    params.push(term, term, term, term);
+    // [F-001] FTS5 Optimization
+    // Use the virtual table for fast full-text search
+    // We join back to the main assets table to get the full record
+    whereClause += ` 
+      AND id IN (
+        SELECT id FROM assets_fts 
+        WHERE assets_fts MATCH ? 
+        ORDER BY rank
+      )
+    `;
+    // FTS5 MATCH query syntax: "term*" for prefix matching
+    // We sanitize input to prevent syntax errors (remove special chars)
+    const sanitizedSearch = search.replace(/[^\w\s]/g, '').trim();
+    const searchParam = `"${sanitizedSearch}" *`; // Phrase match + prefix
+    params.push(searchParam);
   }
 
   try {

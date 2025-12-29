@@ -108,9 +108,9 @@ describe("Assets API", () => {
         await app.request("http://localhost/assets?search=dino", {}, mockEnv);
 
         expect(mockPrepare).toHaveBeenCalled();
-        // Check if query contains LIKE clauses
+        // Check if query contains FTS MATCH clause [F-001]
         const queryArg = mockPrepare.mock.calls[0][0];
-        expect(queryArg).toContain("title LIKE ?");
+        expect(queryArg).toContain("assets_fts MATCH ?");
     });
 
     it("GET /assets should handle null tags", async () => {

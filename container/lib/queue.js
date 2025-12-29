@@ -4,13 +4,16 @@ const { generateThumbnailBuffer, generateOgBuffer, generatePdfBuffer } = require
 let thumbnailQueue, ogQueue, pdfQueue;
 let isProcessingQueue = false;
 
-// Helper: Upload file to R2 via internal API
-async function uploadFile(apiUrl, token, bucket, key, buffer, contentType) {
-  const endpoint = bucket === 'public' ? 'upload-public' : 'upload-private';
-  const res = await fetchWithRetry(`${apiUrl}/api/internal/${endpoint}?key=${encodeURIComponent(key)}`, {
+// Helper: Upload file via Signed URL (no token needed, signature is in URL)
+async function uploadFile(uploadUrl, buffer, contentType) {
+  if (!uploadUrl) {
+      throw new Error("Missing upload URL");
+  }
+  
+  // The URL already contains ?key=...&sig=...&expires=...
+  const res = await fetchWithRetry(uploadUrl, {
     method: 'PUT',
     headers: {
-      'Authorization': `Bearer ${token}`,
       'X-Content-Type': contentType
     },
     body: buffer
@@ -75,8 +78,6 @@ async function processQueue() {
     });
     
     if (!jobsRes.ok) {
-        // 404 is acceptable if no jobs? No, endpoint returns {element: []} usually.
-        // But logs say "Failed to fetch jobs".
         console.error(`[Queue] Failed to fetch jobs: ${jobsRes.status}`);
         return;
     }
@@ -98,43 +99,50 @@ async function processQueue() {
           body: JSON.stringify({ status: 'processing' })
         });
         
-        // Critical Fix: check OK. If 404 (row not updated), abort to prevent loop.
         if (!statusRes.ok) throw new Error(`Failed to set processing status: ${statusRes.status}`);
         
-        // Fetch Asset
+        // Fetch Asset Data (SVG Content)
+        // We still use the API to get the SVG content as we haven't implemented Signed GETs for source yet 
+        // (and it's a read, so token auth is acceptable/safe)
         const assetRes = await fetchWithRetry(`${apiUrl}/api/internal/assets/${job.asset_id}`, {
              headers: { 'Authorization': `Bearer ${internalToken}` }
         });
         
         if (!assetRes.ok) throw new Error(`Failed to fetch asset: ${assetRes.status}`);
         
-        const { asset, svgContent } = await assetRes.json(); // Wait, internal/assets/:id returns { ...asset, svgContent }?
-        // Step 1246 modified internal/assets/:id.
-        // I should verify response structure. Assuming { asset, svgContent } based on server.js usage.
-        // Actually server.js (Step 1336 line 413) used: `const { asset, svgContent } = await assetRes.json()`.
-        // Wait, line 405 fetched `/queue/${job.id}/asset`. Not `/assets/:id`?
-        // Step 1251 edit changed it to `/assets/${job.asset_id}`.
-        // So the response structure should be checked.
-        // Assuming it's correct as per previous code.
+        const { asset, svgContent } = await assetRes.json();
         
         if (!svgContent) throw new Error('No SVG content found');
         
+        // Extract Signed Upload URLs from job payload
+        const { thumbnail: thumbUrl, og: ogUrl, pdf: pdfUrl } = job.upload_urls || {};
+        
+        if (!thumbUrl && !ogUrl && !pdfUrl) {
+            console.warn('[Queue] No upload URLs provided in job. Legacy mode or error?');
+            // If strictly legacy, we could fallback, but we are enforcing new mode.
+            // Throwing error to surface the issue.
+            throw new Error('No signed upload URLs provided');
+        }
+
         console.log(`[Queue] Generating files for ${asset.asset_id}...`);
         
-        // Use Generators
-        // Logic from server.js used uploadFile helper immediately
-        
         // 1. Thumbnail
-        const thumbnailBuffer = await generateThumbnailBuffer(svgContent, asset.asset_id);
-        await uploadFile(apiUrl, internalToken, 'public', asset.r2_key_public, thumbnailBuffer, 'image/webp');
+        if (thumbUrl) {
+            const thumbnailBuffer = await generateThumbnailBuffer(svgContent, asset.asset_id);
+            await uploadFile(thumbUrl, thumbnailBuffer, 'image/webp');
+        }
         
         // 2. OG
-        const ogBuffer = await generateOgBuffer(svgContent, asset.title);
-        await uploadFile(apiUrl, internalToken, 'public', asset.r2_key_og, ogBuffer, 'image/png');
+        if (ogUrl) {
+            const ogBuffer = await generateOgBuffer(svgContent, asset.title);
+            await uploadFile(ogUrl, ogBuffer, 'image/png');
+        }
         
         // 3. PDF
-        const pdfBuffer = await generatePdfBuffer(svgContent, asset); // Helper handles logic
-        await uploadFile(apiUrl, internalToken, 'private', asset.r2_key_private, pdfBuffer, 'application/pdf');
+        if (pdfUrl) {
+            const pdfBuffer = await generatePdfBuffer(svgContent, asset);
+            await uploadFile(pdfUrl, pdfBuffer, 'application/pdf');
+        }
         
         // Complete
         const completeRes = await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}`, {

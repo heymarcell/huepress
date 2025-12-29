@@ -18,10 +18,9 @@ describe("Internal API", () => {
     });
 
     describe("Authentication", () => {
-        it("should reject requests without auth header", async () => {
-            const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", { // use valid key
-                method: "PUT",
-                body: new ArrayBuffer(10),
+        it("should reject queue requests without auth header", async () => {
+            const res = await app.request("http://localhost/queue/pending", {
+                method: "GET",
             }, mockEnv);
             
             expect(res.status).toBe(401);
@@ -29,255 +28,137 @@ describe("Internal API", () => {
             expect(data).toHaveProperty("error", "Unauthorized");
         });
 
-        it("should reject requests with invalid token", async () => {
-            const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", { // use valid key
-                method: "PUT",
+        it("should reject queue requests with invalid token", async () => {
+            const res = await app.request("http://localhost/queue/pending", {
+                method: "GET",
                 headers: { "Authorization": "Bearer wrong-token" },
-                body: new ArrayBuffer(10),
             }, mockEnv);
             
             expect(res.status).toBe(401);
         });
-
-        it("should accept requests with valid token", async () => {
-            const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", { // use valid key
-                method: "PUT",
-                headers: { 
-                    "Authorization": "Bearer test-secret-token",
-                    "X-Content-Type": "image/png"
-                },
-                body: new ArrayBuffer(10),
-            }, mockEnv);
-            
-            expect(res.status).toBe(200);
-        });
     });
 
-    describe("PUT /upload-public", () => {
-        it("should upload to public bucket successfully (thumbnails)", async () => {
-            const testData = new ArrayBuffer(100);
-            
-            const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", {
-                method: "PUT",
-                headers: { 
-                    "Authorization": "Bearer test-secret-token",
-                    "X-Content-Type": "image/webp"
-                },
-                body: testData,
-            }, mockEnv);
-            
-            expect(res.status).toBe(200);
-        });
+    describe("PUT /upload-signed/:bucket", () => {
+        const validExpires = String(Math.floor(Date.now() / 1000) + 3600);
+        
+        const generateSig = async (path: string, key: string, expires: string, secret: string) => {
+            const encoder = new TextEncoder();
+            const keyData = encoder.encode(secret);
+            const dataToSign = `${path}:${key}:${expires}`;
+            const messageData = encoder.encode(dataToSign);
+            const cryptoKey = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+            const sigBuf = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
+            return Array.from(new Uint8Array(sigBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        };
 
-        it("should upload to public bucket successfully (og-images)", async () => {
-            const testData = new ArrayBuffer(100);
-            
-            const res = await app.request("http://localhost/upload-public?key=og-images/test.png", {
-                method: "PUT",
-                headers: { 
-                    "Authorization": "Bearer test-secret-token",
-                    "X-Content-Type": "image/png"
-                },
-                body: testData,
-            }, mockEnv);
-            
-            expect(res.status).toBe(200);
-        });
+        it("should upload to public bucket with valid signature", async () => {
+            const secret = mockEnv.INTERNAL_API_TOKEN as string;
+            const requestPath = "/upload-signed/public";
+            const signaturePath = "/api/internal/upload-signed/public";
+            const key = "thumbnails/valid.png";
+            const sig = await generateSig(signaturePath, key, validExpires, secret);
 
-        it("should reject invalid public keys", async () => {
-            const invalidKeys = ["test.png", "other/test.png", "pdfs/test.png"];
-            
-            for (const key of invalidKeys) {
-                const res = await app.request(`http://localhost/upload-public?key=${key}`, {
-                    method: "PUT",
-                    headers: { "Authorization": "Bearer test-secret-token" },
-                    body: new ArrayBuffer(10),
-                }, mockEnv);
-                expect(res.status).toBe(403);
-                expect(await res.json()).toHaveProperty("error", "Invalid key path");
-            }
-        });
-
-        it("should reject empty body", async () => {
-            const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", {
+            const res = await app.request(`http://localhost${requestPath}?key=${key}&expires=${validExpires}&sig=${sig}`, {
                 method: "PUT",
-                headers: { 
-                    "Authorization": "Bearer test-secret-token",
-                    "X-Content-Type": "image/png"
-                },
-                body: new ArrayBuffer(0),
-            }, mockEnv);
-            
-            expect(res.status).toBe(400);
-            const data = await res.json();
-            expect(data).toHaveProperty("error", "Invalid data");
-        });
-
-        it("should reject missing key", async () => {
-            const res = await app.request("http://localhost/upload-public", {
-                method: "PUT",
-                headers: { 
-                    "Authorization": "Bearer test-secret-token",
+                headers: {
+                    "X-Filename": "test.png",
                     "X-Content-Type": "image/png"
                 },
                 body: new ArrayBuffer(10),
             }, mockEnv);
             
-            expect(res.status).toBe(400);
-        });
-    });
-
-    describe("PUT /upload-private", () => {
-        it("should upload to private bucket successfully (pdfs)", async () => {
-            const testData = new ArrayBuffer(200);
-            
-            const res = await app.request("http://localhost/upload-private?key=pdfs/test.pdf", {
-                method: "PUT",
-                headers: { 
-                    "Authorization": "Bearer test-secret-token",
-                    "X-Content-Type": "application/pdf",
-                    "X-Filename": "document.pdf"
-                },
-                body: testData,
-            }, mockEnv);
-            
             expect(res.status).toBe(200);
+            expect(mockR2PutPublic).toHaveBeenCalledWith(
+                key,
+                expect.any(ArrayBuffer),
+                expect.objectContaining({
+                    httpMetadata: expect.objectContaining({ contentType: "image/png" })
+                })
+            );
         });
 
-        it("should reject invalid private keys", async () => {
-             const invalidKeys = ["test.pdf", "other/test.pdf", "thumbnails/test.pdf"]; // Private shouldn't accept thumbnails
-            
-            for (const key of invalidKeys) {
-                const res = await app.request(`http://localhost/upload-private?key=${key}`, {
-                    method: "PUT",
-                    headers: { "Authorization": "Bearer test-secret-token" },
-                    body: new ArrayBuffer(10),
-                }, mockEnv);
-                expect(res.status).toBe(403);
-            }
-        });
+        it("should upload to private bucket with valid signature", async () => {
+            const secret = mockEnv.INTERNAL_API_TOKEN as string;
+            const requestPath = "/upload-signed/private";
+            const signaturePath = "/api/internal/upload-signed/private";
+            const key = "pdfs/test.pdf";
+            const sig = await generateSig(signaturePath, key, validExpires, secret);
 
-        it("should use default content type if not provided", async () => {
-            const res = await app.request("http://localhost/upload-private?key=pdfs/test.pdf", {
+            const res = await app.request(`http://localhost${requestPath}?key=${key}&expires=${validExpires}&sig=${sig}`, {
                 method: "PUT",
-                headers: { 
-                    "Authorization": "Bearer test-secret-token"
-                },
-                body: new ArrayBuffer(10),
+                headers: { "X-Content-Type": "application/pdf" },
+                body: new ArrayBuffer(20)
             }, mockEnv);
             
             expect(res.status).toBe(200);
             expect(mockR2PutPrivate).toHaveBeenCalledWith(
-                "pdfs/test.pdf",
+                key,
                 expect.any(ArrayBuffer),
                 expect.objectContaining({
-                    httpMetadata: expect.objectContaining({
-                        contentType: "application/pdf"
-                    })
+                    httpMetadata: expect.objectContaining({ contentType: "application/pdf" })
                 })
             );
         });
-    });
 
-    describe("PUT /upload-pdf (legacy)", () => {
-        it("should upload PDF to private bucket", async () => {
-            const res = await app.request("http://localhost/upload-pdf?key=pdfs/legacy.pdf", {
+        it("should reject invalid signature", async () => {
+            const key = "thumbnails/evil.png";
+            const sig = "invalid_sig";
+            const requestPath = "/upload-signed/public";
+
+            const res = await app.request(`http://localhost${requestPath}?key=${key}&expires=${validExpires}&sig=${sig}`, {
                 method: "PUT",
-                headers: { 
-                    "Authorization": "Bearer test-secret-token",
-                    "X-Filename": "legacy.pdf"
-                },
-                body: new ArrayBuffer(50),
+                body: new ArrayBuffer(10)
             }, mockEnv);
             
-            expect(res.status).toBe(200);
-            expect(mockR2PutPrivate).toHaveBeenCalled();
+            expect(res.status).toBe(403);
+            const data = await res.json();
+            expect(data).toHaveProperty("error", "Invalid or expired signature");
         });
 
-        it("should reject empty body", async () => {
-            const res = await app.request("http://localhost/upload-pdf?key=pdfs/test.pdf", {
-                method: "PUT",
-                headers: { "Authorization": "Bearer test-secret-token" },
-                body: new ArrayBuffer(0),
-            }, mockEnv);
-            
-            expect(res.status).toBe(400);
-        });
+        it("should reject expired signature", async () => {
+            const secret = mockEnv.INTERNAL_API_TOKEN as string;
+            const requestPath = "/upload-signed/public";
+            const signaturePath = "/api/internal/upload-signed/public";
+            const key = "thumbnails/expired.png";
+            // Create a signature that was valid in the past
+            const expiredTime = String(Math.floor(Date.now() / 1000) - 100); 
+            const sig = await generateSig(signaturePath, key, expiredTime, secret);
 
-        it("should reject missing key", async () => {
-            const res = await app.request("http://localhost/upload-pdf", {
+            // Send request with expired timestamp and matching signature
+            const res = await app.request(`http://localhost${requestPath}?key=${key}&expires=${expiredTime}&sig=${sig}`, {
                 method: "PUT",
-                headers: { "Authorization": "Bearer test-secret-token" },
-                body: new ArrayBuffer(10),
-            }, mockEnv);
-            
-            expect(res.status).toBe(400);
-        });
-
-        it("should reject invalid key path", async () => {
-            const res = await app.request("http://localhost/upload-pdf?key=invalid/test.pdf", {
-                method: "PUT",
-                headers: { "Authorization": "Bearer test-secret-token" },
-                body: new ArrayBuffer(10),
+                body: new ArrayBuffer(10)
             }, mockEnv);
             
             expect(res.status).toBe(403);
         });
-
-        it("should handle R2 errors gracefully", async () => {
-            mockR2PutPrivate.mockRejectedValue(new Error("R2 error"));
-            
-            const res = await app.request("http://localhost/upload-pdf?key=pdfs/test.pdf", {
+        
+        it("should reject invalid bucket", async () => {
+             const res = await app.request(`http://localhost/upload-signed/fakebucket?key=foo&expires=1&sig=1`, {
                 method: "PUT",
-                headers: { "Authorization": "Bearer test-secret-token" },
-                body: new ArrayBuffer(10),
+                body: new ArrayBuffer(10)
             }, mockEnv);
-            
-            expect(res.status).toBe(500);
+            expect(res.status).toBe(400);
         });
+
+        it("should reject missing parameters", async () => {
+            const res = await app.request(`http://localhost/upload-signed/public?key=foo`, {
+               method: "PUT",
+               body: new ArrayBuffer(10)
+           }, mockEnv);
+           expect(res.status).toBe(400);
+       });
     });
-
+    
     describe("Error Handling", () => {
-        it("should handle R2 errors gracefully for public uploads", async () => {
-            mockR2PutPublic.mockRejectedValue(new Error("R2 connection failed"));
-            
-            const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", {
-                method: "PUT",
-                headers: { 
-                    "Authorization": "Bearer test-secret-token",
-                    "X-Content-Type": "image/png"
-                },
-                body: new ArrayBuffer(10),
-            }, mockEnv);
-            
-            expect(res.status).toBe(500);
-            const data = await res.json();
-            expect(data).toHaveProperty("error", "Internal Server Error");
-        });
-
-        it("should handle R2 errors gracefully for private uploads", async () => {
-            mockR2PutPrivate.mockRejectedValue(new Error("R2 connection failed"));
-            
-            const res = await app.request("http://localhost/upload-private?key=pdfs/test.pdf", {
-                method: "PUT",
-                headers: { "Authorization": "Bearer test-secret-token" },
-                body: new ArrayBuffer(10),
-            }, mockEnv);
-            
-            expect(res.status).toBe(500);
-        });
-
-        it("should reject auth when INTERNAL_API_TOKEN is not set", async () => {
-            const envWithoutToken = { ...mockEnv, INTERNAL_API_TOKEN: undefined };
-            
-            const res = await app.request("http://localhost/upload-public?key=thumbnails/test.png", {
-                method: "PUT",
-                headers: { "Authorization": "Bearer some-token" },
-                body: new ArrayBuffer(10),
+         it("should reject queue auth when INTERNAL_API_TOKEN is not set", async () => {
+            const envWithoutToken = { ...mockEnv, INTERNAL_API_TOKEN: "" };
+            const res = await app.request("http://localhost/queue/pending", {
+                method: "GET",
+                headers: { "Authorization": "Bearer some-token" }
             }, envWithoutToken);
             
             expect(res.status).toBe(401);
         });
     });
 });
-
