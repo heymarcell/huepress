@@ -45,6 +45,49 @@ export default function VaultPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Handle success redirect from Stripe - push purchase event for GTM deduplication
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      // Retrieve stored eventId from sessionStorage (set before Stripe redirect)
+      const storedEventId = sessionStorage.getItem('huepress_checkout_event_id');
+      const storedValue = sessionStorage.getItem('huepress_checkout_value') || '5';
+      
+      if (storedEventId && window.dataLayer) {
+        // Push purchase event with the same eventId for browser/server deduplication
+        window.dataLayer.push({
+          event: 'purchase',
+          eventID: storedEventId, // Meta Pixel uses camelCase
+          event_id: storedEventId, // Pinterest uses snake_case
+          ecommerce: {
+            transaction_id: `stripe_${Date.now()}`,
+            value: parseFloat(storedValue),
+            currency: 'USD',
+            items: [{ 
+              item_id: storedValue === '45' ? 'annual' : 'monthly', 
+              item_name: storedValue === '45' ? 'HuePress Annual' : 'HuePress Monthly',
+              price: parseFloat(storedValue),
+              quantity: 1 
+            }]
+          }
+        });
+        
+        // Clear stored values to prevent duplicate events on page refresh
+        sessionStorage.removeItem('huepress_checkout_event_id');
+        sessionStorage.removeItem('huepress_checkout_value');
+        
+        console.log('[Analytics] Purchase event pushed with eventId:', storedEventId);
+      }
+      
+      // Clean up URL (remove success param)
+      urlParams.delete('success');
+      const newUrl = urlParams.toString() 
+        ? `${window.location.pathname}?${urlParams}` 
+        : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
+
   // Reset page when filters change
   React.useEffect(() => {
     setPage(0);

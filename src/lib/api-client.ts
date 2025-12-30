@@ -349,6 +349,10 @@ export const apiClient = {
             items: [{ item_id: priceId, item_name: priceId, quantity: 1 }]
           }
         });
+        
+        // Store eventId in sessionStorage to retrieve on success page after Stripe redirect
+        sessionStorage.setItem('huepress_checkout_event_id', eventId);
+        sessionStorage.setItem('huepress_checkout_value', priceId.includes('annual') ? '45' : '5');
       }
       
       return fetchApi<{ url: string }>("/api/checkout", {
