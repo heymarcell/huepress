@@ -3,6 +3,7 @@ import { Webhook } from "svix";
 import { Bindings } from "../types";
 import { trackGA4Signup } from "../../lib/ga4-conversions";
 import { trackCompleteRegistration } from "../../lib/meta-conversions";
+import { trackPinterestSignup } from "../../lib/pinterest-conversions";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -120,6 +121,19 @@ app.post("/clerk", async (c) => {
           );
           if (metaResult.success) {
             console.log(`Meta CompleteRegistration event sent for user: ${user.id}`);
+          }
+        }
+
+        // Track signup in Pinterest
+        if (email && c.env.PINTEREST_ACCESS_TOKEN && c.env.PINTEREST_AD_ACCOUNT_ID) {
+          const pinterestResult = await trackPinterestSignup(
+            c.env.PINTEREST_ACCESS_TOKEN,
+            c.env.PINTEREST_AD_ACCOUNT_ID,
+            c.env.SITE_URL,
+            { email, externalId: user.id }
+          );
+          if (pinterestResult.success) {
+            console.log(`Pinterest Signup event sent for user: ${user.id}`);
           }
         }
         break;

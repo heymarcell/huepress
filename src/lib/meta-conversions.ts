@@ -59,7 +59,8 @@ async function hashValue(value: string): Promise<string> {
 }
 
 /**
- * Generate a unique event ID for deduplication
+ * Generate a unique event ID for deduplication (fallback)
+ * Prefer passing event_id from client-side for proper deduplication
  */
 function generateEventId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
@@ -85,10 +86,11 @@ export async function sendMetaEvent(
     fbp?: string; // Facebook browser ID (_fbp cookie)
     fbc?: string; // Facebook click ID (_fbc cookie)
     testEventCode?: string; // Set to your test code during development
+    eventId?: string; // Pass from client-side for browser/server deduplication
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const eventId = generateEventId();
+    const eventId = event.eventId || generateEventId();
     const eventTime = Math.floor(Date.now() / 1000);
 
     // Build user data with hashing
@@ -202,6 +204,7 @@ export async function trackPurchase(
     clientUserAgent?: string;
     fbp?: string;
     fbc?: string;
+    eventId?: string; // For browser/server deduplication
   }
 ): Promise<{ success: boolean; error?: string }> {
   return sendMetaEvent(accessToken, pixelId, {
@@ -216,6 +219,7 @@ export async function trackPurchase(
     fbp: data.fbp,
     fbc: data.fbc,
     eventSourceUrl: `${siteUrl}/pricing`,
+    eventId: data.eventId,
   });
 }
 
@@ -235,6 +239,7 @@ export async function trackSubscribe(
     clientUserAgent?: string;
     fbp?: string;
     fbc?: string;
+    eventId?: string; // For browser/server deduplication
   }
 ): Promise<{ success: boolean; error?: string }> {
   return sendMetaEvent(accessToken, pixelId, {
@@ -248,6 +253,7 @@ export async function trackSubscribe(
     fbp: data.fbp,
     fbc: data.fbc,
     eventSourceUrl: `${siteUrl}/pricing`,
+    eventId: data.eventId,
   });
 }
 

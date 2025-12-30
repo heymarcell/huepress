@@ -330,11 +330,31 @@ export const apiClient = {
       
       const fbp = getCookie('_fbp');  // Facebook browser ID
       const fbc = getCookie('_fbc');  // Facebook click ID (from ad clicks)
+      const gaCookie = getCookie('_ga'); // GA client ID cookie
+      
+      // Generate event_id for browser/server deduplication
+      // This same ID should be used for GTM dataLayer events and server CAPI
+      const eventId = crypto.randomUUID ? crypto.randomUUID() : 
+        `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+      
+      // Push begin_checkout event to dataLayer with event_id for GTM deduplication
+      if (typeof window !== 'undefined' && window.dataLayer) {
+        window.dataLayer.push({
+          event: 'begin_checkout',
+          eventID: eventId, // Meta Pixel uses camelCase
+          event_id: eventId, // Pinterest uses snake_case
+          ecommerce: {
+            value: priceId.includes('annual') ? 45 : 5,
+            currency: 'USD',
+            items: [{ item_id: priceId, item_name: priceId, quantity: 1 }]
+          }
+        });
+      }
       
       return fetchApi<{ url: string }>("/api/checkout", {
         method: "POST",
         token,
-        body: JSON.stringify({ priceId, email, fbp, fbc })
+        body: JSON.stringify({ priceId, email, fbp, fbc, eventId, gaCookie })
       });
     },
     createPortal: async (token: string) => {

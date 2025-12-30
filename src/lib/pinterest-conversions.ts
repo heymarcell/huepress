@@ -54,7 +54,8 @@ async function hashValue(value: string): Promise<string> {
 }
 
 /**
- * Generate a unique event ID for deduplication
+ * Generate a unique event ID for deduplication (fallback)
+ * Prefer passing event_id from client-side for proper deduplication
  */
 function generateEventId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
@@ -77,10 +78,11 @@ export async function sendPinterestEvent(
     clientIpAddress?: string;
     clientUserAgent?: string;
     externalId?: string;
+    eventId?: string; // Pass from client-side for browser/server deduplication
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const eventId = generateEventId();
+    const eventId = event.eventId || generateEventId();
     const eventTime = Math.floor(Date.now() / 1000);
 
     // Build user data with hashing
@@ -182,6 +184,7 @@ export async function trackPinterestCheckout(
     externalId?: string;
     clientIpAddress?: string;
     clientUserAgent?: string;
+    eventId?: string; // For browser/server deduplication
   }
 ): Promise<{ success: boolean; error?: string }> {
   return sendPinterestEvent(accessToken, adAccountId, {
@@ -194,6 +197,7 @@ export async function trackPinterestCheckout(
     clientIpAddress: data.clientIpAddress,
     clientUserAgent: data.clientUserAgent,
     eventSourceUrl: `${siteUrl}/pricing`,
+    eventId: data.eventId,
   });
 }
 

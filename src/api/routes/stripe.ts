@@ -10,8 +10,8 @@ const app = new Hono<{ Bindings: Bindings }>();
 
 // Create Stripe Checkout session
 app.post("/checkout", async (c) => {
-  const { priceId, email, fbp, fbc } = await c.req.json();
-  
+  const { priceId, email, fbp, fbc, eventId, gaCookie } = await c.req.json();
+
   // Validate Clerk auth properly (not just header existence)
   const auth = getAuth(c);
   if (!auth?.userId) {
@@ -19,19 +19,21 @@ app.post("/checkout", async (c) => {
   }
 
   // Capture client info for enhanced Event Match Quality
-  const clientIpAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for')?.split(',')[0]?.trim();
-  const clientUserAgent = c.req.header('user-agent');
+  const clientIpAddress =
+    c.req.header("cf-connecting-ip") ||
+    c.req.header("x-forwarded-for")?.split(",")[0]?.trim();
+  const clientUserAgent = c.req.header("user-agent");
 
   try {
     // Create Stripe Checkout Session using fetch (Workers compatible)
     const payload: Record<string, string> = {
-      "mode": "subscription",
-      "success_url": `${c.env.SITE_URL}/vault?success=true`,
-      "cancel_url": `${c.env.SITE_URL}/pricing?canceled=true`,
+      mode: "subscription",
+      success_url: `${c.env.SITE_URL}/vault?success=true`,
+      cancel_url: `${c.env.SITE_URL}/pricing?canceled=true`,
       "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
-      "allow_promotion_codes": "true", // Enable coupon/promo code field
-      "client_reference_id": auth.userId, // CRITICAL: Links payment to Clerk user ID
+      allow_promotion_codes: "true", // Enable coupon/promo code field
+      client_reference_id: auth.userId, // CRITICAL: Links payment to Clerk user ID
       "metadata[clerk_id]": auth.userId, // Also store in metadata for backup
       "metadata[waiver_accepted]": "true", // Record that they accepted the modal on frontend
     };
@@ -39,27 +41,42 @@ app.post("/checkout", async (c) => {
     // Store tracking data in metadata for webhook retrieval
     if (fbp) payload["metadata[fbp]"] = fbp;
     if (fbc) payload["metadata[fbc]"] = fbc;
+    if (eventId) payload["metadata[event_id]"] = eventId; // For Meta/Pinterest deduplication
+    if (gaCookie) payload["metadata[ga_cookie]"] = gaCookie.substring(0, 500); // For GA4 session stitching
     if (clientIpAddress) payload["metadata[client_ip]"] = clientIpAddress;
-    if (clientUserAgent) payload["metadata[client_ua]"] = clientUserAgent.substring(0, 500); // Stripe metadata limit
+    if (clientUserAgent)
+      payload["metadata[client_ua]"] = clientUserAgent.substring(0, 500); // Stripe metadata limit
 
     if (email) {
       payload["customer_email"] = email;
-    } 
+    }
 
-    const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${c.env.STRIPE_SECRET_KEY}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams(payload),
-    });
+    const response = await fetch(
+      "https://api.stripe.com/v1/checkout/sessions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${c.env.STRIPE_SECRET_KEY}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams(payload),
+      }
+    );
 
-    const session = await response.json() as { url?: string; error?: { message?: string } };
+    const session = (await response.json()) as {
+      url?: string;
+      error?: { message?: string };
+    };
 
     if (!response.ok) {
       console.error("Stripe error:", session);
-      return c.json({ error: session.error?.message || "Failed to create checkout session", details: session }, 500);
+      return c.json(
+        {
+          error: session.error?.message || "Failed to create checkout session",
+          details: session,
+        },
+        500
+      );
     }
 
     return c.json({ url: session.url });
@@ -79,7 +96,9 @@ app.post("/portal", async (c) => {
 
   try {
     // Get Stripe customer ID from D1 based on Clerk user
-    const user = await c.env.DB.prepare("SELECT * FROM users WHERE clerk_id = ?")
+    const user = await c.env.DB.prepare(
+      "SELECT * FROM users WHERE clerk_id = ?"
+    )
       .bind(auth.userId)
       .first();
 
@@ -89,23 +108,29 @@ app.post("/portal", async (c) => {
 
     const customerId = user.stripe_customer_id as string;
 
-    const response = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${c.env.STRIPE_SECRET_KEY}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        "customer": customerId,
-        "return_url": `${c.env.SITE_URL}/vault`,
-      }),
-    });
+    const response = await fetch(
+      "https://api.stripe.com/v1/billing_portal/sessions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${c.env.STRIPE_SECRET_KEY}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          customer: customerId,
+          return_url: `${c.env.SITE_URL}/vault`,
+        }),
+      }
+    );
 
-    const session = await response.json() as { url: string };
+    const session = (await response.json()) as { url: string };
 
     if (!response.ok) {
       console.error("Portal error:", session);
-      return c.json({ error: "Failed to create portal session", details: session }, 500);
+      return c.json(
+        { error: "Failed to create portal session", details: session },
+        500
+      );
     }
 
     return c.json({ url: session.url });
@@ -130,8 +155,14 @@ app.post("/webhooks/stripe", async (c) => {
   );
 
   if (!verificationResult.valid) {
-    console.error("Stripe webhook verification failed:", verificationResult.error);
-    return c.text(`Webhook signature verification failed: ${verificationResult.error}`, 401);
+    console.error(
+      "Stripe webhook verification failed:",
+      verificationResult.error
+    );
+    return c.text(
+      `Webhook signature verification failed: ${verificationResult.error}`,
+      401
+    );
   }
 
   let event;
@@ -140,7 +171,40 @@ app.post("/webhooks/stripe", async (c) => {
   } catch (err) {
     return c.text(`Webhook Error: Invalid JSON - ${err}`, 400);
   }
-  
+
+  // Idempotency check: Skip if this event was already processed
+  // This prevents duplicate processing from Stripe retries
+  const eventId = event.id;
+  if (eventId) {
+    const existing = await c.env.DB.prepare(
+      "SELECT id FROM processed_stripe_events WHERE event_id = ?"
+    )
+      .bind(eventId)
+      .first();
+
+    if (existing) {
+      console.log(
+        `Stripe webhook: Event ${eventId} already processed, skipping`
+      );
+      return c.json({ received: true, duplicate: true });
+    }
+
+    // Record this event as being processed (insert before processing to handle concurrent retries)
+    try {
+      await c.env.DB.prepare(
+        "INSERT INTO processed_stripe_events (id, event_id, event_type, processed_at) VALUES (?, ?, ?, datetime('now'))"
+      )
+        .bind(crypto.randomUUID(), eventId, event.type)
+        .run();
+    } catch (_insertErr) {
+      // If insert fails due to unique constraint, another worker already processing
+      console.log(
+        `Stripe webhook: Event ${eventId} is being processed concurrently`
+      );
+      return c.json({ received: true, duplicate: true });
+    }
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
@@ -149,12 +213,15 @@ app.post("/webhooks/stripe", async (c) => {
         const subscriptionId = session.subscription;
         const customerId = session.customer;
         // SECURITY: Use client_reference_id (Clerk ID) as primary lookup, fallback to email
-        const clerkIdFromSession = session.client_reference_id || session.metadata?.clerk_id;
+        const clerkIdFromSession =
+          session.client_reference_id || session.metadata?.clerk_id;
 
         // 1. Get User from D1 - prefer clerk_id lookup for accuracy
         let user;
         if (clerkIdFromSession) {
-          user = await c.env.DB.prepare("SELECT * FROM users WHERE clerk_id = ?")
+          user = await c.env.DB.prepare(
+            "SELECT * FROM users WHERE clerk_id = ?"
+          )
             .bind(clerkIdFromSession)
             .first();
         }
@@ -166,141 +233,167 @@ app.post("/webhooks/stripe", async (c) => {
         }
 
         if (!user) {
-          console.error("No user found for checkout:", { clerkIdFromSession, customerEmail });
+          console.error("No user found for checkout:", {
+            clerkIdFromSession,
+            customerEmail,
+          });
           break;
         }
 
         const clerkId = user.clerk_id as string;
-           // 2. Update D1 using clerk_id for reliability
-           await c.env.DB.prepare(`
+        // 2. Update D1 using clerk_id for reliability
+        await c.env.DB.prepare(
+          `
              UPDATE users 
              SET subscription_status = 'active', 
              stripe_customer_id = ?, 
              subscription_id = ?,
              updated_at = datetime('now')
              WHERE clerk_id = ?
-           `)
-           .bind(customerId, subscriptionId, clerkId)
-           .run();
+           `
+        )
+          .bind(customerId, subscriptionId, clerkId)
+          .run();
 
-           // 3. Update Clerk Metadata (so frontend unlocks)
-           const clerkResponse = await fetch(`https://api.clerk.com/v1/users/${clerkId}/metadata`, {
-             method: "PATCH",
-             headers: {
-               "Authorization": `Bearer ${c.env.CLERK_SECRET_KEY}`,
-               "Content-Type": "application/json",
-             },
-             body: JSON.stringify({
-               public_metadata: { subscriptionStatus: "active" },
-             }),
-           });
-           
-           if (!clerkResponse.ok) {
-             console.error("Clerk sync failed:", await clerkResponse.text());
-           } else {
-             console.log("Clerk metadata updated for:", clerkId);
-           }
+        // 3. Update Clerk Metadata (so frontend unlocks)
+        const clerkResponse = await fetch(
+          `https://api.clerk.com/v1/users/${clerkId}/metadata`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${c.env.CLERK_SECRET_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              public_metadata: { subscriptionStatus: "active" },
+            }),
+          }
+        );
 
-            // 4. Send Meta Conversions API events (server-side tracking)
-            const isAnnual = session.amount_total && session.amount_total >= 4000;
-            const subscriptionValue = isAnnual ? 45 : 5;
-            
-            const fbp = session.metadata?.fbp;
-            const fbc = session.metadata?.fbc;
-            const clientIpAddress = session.metadata?.client_ip;
-            const clientUserAgent = session.metadata?.client_ua;
-            
-            if (c.env.META_ACCESS_TOKEN) {
-              const purchaseResult = await trackPurchase(
-                c.env.META_ACCESS_TOKEN,
-                c.env.META_PIXEL_ID,
-                c.env.SITE_URL,
-                {
-                  email: customerEmail || (user.email as string),
-                  value: subscriptionValue,
-                  currency: 'USD',
-                  orderId: subscriptionId,
-                  externalId: clerkId,
-                  clientIpAddress,
-                  clientUserAgent,
-                  fbp,
-                  fbc,
-                }
-              );
-              
-              if (purchaseResult.success) {
-                console.log('Meta Purchase event sent for:', clerkId);
-              } else {
-                console.error('Meta Purchase event failed:', purchaseResult.error);
-              }
-              
-              const subscribeResult = await trackSubscribe(
-                c.env.META_ACCESS_TOKEN,
-                c.env.META_PIXEL_ID,
-                c.env.SITE_URL,
-                {
-                  email: customerEmail || (user.email as string),
-                  value: subscriptionValue,
-                  currency: 'USD',
-                  externalId: clerkId,
-                  clientIpAddress,
-                  clientUserAgent,
-                  fbp,
-                  fbc,
-                }
-              );
-              
-              if (subscribeResult.success) {
-                console.log('Meta Subscribe event sent for:', clerkId);
-              } else {
-                console.error('Meta Subscribe event failed:', subscribeResult.error);
-              }
+        if (!clerkResponse.ok) {
+          console.error("Clerk sync failed:", await clerkResponse.text());
+        } else {
+          console.log("Clerk metadata updated for:", clerkId);
+        }
+
+        // 4. Send Meta Conversions API events (server-side tracking)
+        const isAnnual = session.amount_total && session.amount_total >= 4000;
+        const subscriptionValue = isAnnual ? 45 : 5;
+
+        const fbp = session.metadata?.fbp;
+        const fbc = session.metadata?.fbc;
+        const clientIpAddress = session.metadata?.client_ip;
+        const clientUserAgent = session.metadata?.client_ua;
+        const eventIdFromBrowser = session.metadata?.event_id; // For deduplication
+        const gaCookie = session.metadata?.ga_cookie; // For GA4 session stitching
+        
+        // Parse GA client_id from cookie (format: GA1.1.XXXXXXXX.XXXXXXXX)
+        const gaClientId = gaCookie ? (() => {
+          const parts = gaCookie.split('.');
+          return parts.length >= 4 ? `${parts[parts.length - 2]}.${parts[parts.length - 1]}` : undefined;
+        })() : undefined;
+
+        if (c.env.META_ACCESS_TOKEN) {
+          const purchaseResult = await trackPurchase(
+            c.env.META_ACCESS_TOKEN,
+            c.env.META_PIXEL_ID,
+            c.env.SITE_URL,
+            {
+              email: customerEmail || (user.email as string),
+              value: subscriptionValue,
+              currency: "USD",
+              orderId: subscriptionId,
+              externalId: clerkId,
+              clientIpAddress,
+              clientUserAgent,
+              fbp,
+              fbc,
+              eventId: eventIdFromBrowser, // Pass browser event_id for deduplication
             }
+          );
 
-            // 5. Send Pinterest Conversions API event
-            if (c.env.PINTEREST_ACCESS_TOKEN) {
-              const pinterestResult = await trackPinterestCheckout(
-                c.env.PINTEREST_ACCESS_TOKEN,
-                c.env.PINTEREST_AD_ACCOUNT_ID,
-                c.env.SITE_URL,
-                {
-                  email: customerEmail || (user.email as string),
-                  value: subscriptionValue,
-                  currency: 'USD',
-                  orderId: subscriptionId,
-                  externalId: clerkId,
-                  clientIpAddress,
-                  clientUserAgent,
-                }
-              );
-              
-              if (pinterestResult.success) {
-                console.log('Pinterest Checkout event sent for:', clerkId);
-              } else {
-                console.error('Pinterest Checkout event failed:', pinterestResult.error);
-              }
-            }
+          if (purchaseResult.success) {
+            console.log("Meta Purchase event sent for:", clerkId);
+          } else {
+            console.error("Meta Purchase event failed:", purchaseResult.error);
+          }
 
-            // 6. Send GA4 Measurement Protocol event
-            if (c.env.GA4_API_SECRET && c.env.GA4_MEASUREMENT_ID) {
-              const ga4Result = await trackGA4Purchase(
-                c.env.GA4_MEASUREMENT_ID,
-                c.env.GA4_API_SECRET,
-                {
-                  transactionId: subscriptionId,
-                  value: subscriptionValue,
-                  currency: 'USD',
-                  userId: clerkId,
-                  itemName: isAnnual ? 'HuePress Annual' : 'HuePress Monthly',
-                }
-              );
-              
-              if (ga4Result.success) {
-                console.log('GA4 Purchase event sent for:', clerkId);
-              } else {
-                console.error('GA4 Purchase event failed:', ga4Result.error);
-              }
+          const subscribeResult = await trackSubscribe(
+            c.env.META_ACCESS_TOKEN,
+            c.env.META_PIXEL_ID,
+            c.env.SITE_URL,
+            {
+              email: customerEmail || (user.email as string),
+              value: subscriptionValue,
+              currency: "USD",
+              externalId: clerkId,
+              clientIpAddress,
+              clientUserAgent,
+              fbp,
+              fbc,
+              eventId: eventIdFromBrowser, // Pass browser event_id for deduplication
             }
+          );
+
+          if (subscribeResult.success) {
+            console.log("Meta Subscribe event sent for:", clerkId);
+          } else {
+            console.error(
+              "Meta Subscribe event failed:",
+              subscribeResult.error
+            );
+          }
+        }
+
+        // 5. Send Pinterest Conversions API event
+        if (c.env.PINTEREST_ACCESS_TOKEN) {
+          const pinterestResult = await trackPinterestCheckout(
+            c.env.PINTEREST_ACCESS_TOKEN,
+            c.env.PINTEREST_AD_ACCOUNT_ID,
+            c.env.SITE_URL,
+            {
+              email: customerEmail || (user.email as string),
+              value: subscriptionValue,
+              currency: "USD",
+              orderId: subscriptionId,
+              externalId: clerkId,
+              clientIpAddress,
+              clientUserAgent,
+              eventId: eventIdFromBrowser, // Pass browser event_id for deduplication
+            }
+          );
+
+          if (pinterestResult.success) {
+            console.log("Pinterest Checkout event sent for:", clerkId);
+          } else {
+            console.error(
+              "Pinterest Checkout event failed:",
+              pinterestResult.error
+            );
+          }
+        }
+
+        // 6. Send GA4 Measurement Protocol event
+        if (c.env.GA4_API_SECRET && c.env.GA4_MEASUREMENT_ID) {
+          const ga4Result = await trackGA4Purchase(
+            c.env.GA4_MEASUREMENT_ID,
+            c.env.GA4_API_SECRET,
+            {
+              transactionId: subscriptionId,
+              value: subscriptionValue,
+              currency: "USD",
+              userId: clerkId,
+              itemName: isAnnual ? "HuePress Annual" : "HuePress Monthly",
+              clientId: gaClientId, // Use browser client_id for session stitching
+            }
+          );
+
+          if (ga4Result.success) {
+            console.log("GA4 Purchase event sent for:", clerkId);
+          } else {
+            console.error("GA4 Purchase event failed:", ga4Result.error);
+          }
+        }
         break;
       }
 
@@ -309,41 +402,53 @@ app.post("/webhooks/stripe", async (c) => {
         const subscription = event.data.object;
         const customerId = subscription.customer;
         const status = subscription.status; // active, past_due, canceled, etc.
-        
-        const user = await c.env.DB.prepare("SELECT * FROM users WHERE stripe_customer_id = ?")
+
+        const user = await c.env.DB.prepare(
+          "SELECT * FROM users WHERE stripe_customer_id = ?"
+        )
           .bind(customerId)
           .first();
-          
+
         if (user) {
           // Map Stripe status to our status
-          let subscriptionStatus = 'free';
-          if (status === 'active' || status === 'trialing') {
-            subscriptionStatus = 'active';
-          } else if (status === 'past_due') {
-            subscriptionStatus = 'past_due';
-          } else if (status === 'canceled' || status === 'unpaid') {
-            subscriptionStatus = 'cancelled';
+          let subscriptionStatus = "free";
+          if (status === "active" || status === "trialing") {
+            subscriptionStatus = "active";
+          } else if (status === "past_due") {
+            subscriptionStatus = "past_due";
+          } else if (status === "canceled" || status === "unpaid") {
+            subscriptionStatus = "cancelled";
           }
-          
-          await c.env.DB.prepare(`
+
+          await c.env.DB.prepare(
+            `
             UPDATE users 
             SET subscription_status = ?,
             updated_at = datetime('now')
             WHERE stripe_customer_id = ?
-          `)
-          .bind(subscriptionStatus, customerId)
-          .run();
-          
+          `
+          )
+            .bind(subscriptionStatus, customerId)
+            .run();
+
           // Update Clerk metadata
           const clerkId = user.clerk_id as string;
-          const clerkStatus = subscriptionStatus === 'active' ? 'active' : 'free';
+          const clerkStatus =
+            subscriptionStatus === "active" ? "active" : "free";
           await fetch(`https://api.clerk.com/v1/users/${clerkId}/metadata`, {
             method: "PATCH",
-            headers: { Authorization: `Bearer ${c.env.CLERK_SECRET_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ public_metadata: { subscriptionStatus: clerkStatus } }),
+            headers: {
+              Authorization: `Bearer ${c.env.CLERK_SECRET_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              public_metadata: { subscriptionStatus: clerkStatus },
+            }),
           });
-          
-          console.log(`Subscription updated for ${clerkId}: ${subscriptionStatus}`);
+
+          console.log(
+            `Subscription updated for ${clerkId}: ${subscriptionStatus}`
+          );
         }
         break;
       }
@@ -353,59 +458,77 @@ app.post("/webhooks/stripe", async (c) => {
         const invoice = event.data.object;
         const customerId = invoice.customer;
         const attemptCount = invoice.attempt_count;
-        
-        const user = await c.env.DB.prepare("SELECT * FROM users WHERE stripe_customer_id = ?")
+
+        const user = await c.env.DB.prepare(
+          "SELECT * FROM users WHERE stripe_customer_id = ?"
+        )
           .bind(customerId)
           .first();
-          
+
         if (user) {
           // Mark as past_due after first failure
-          await c.env.DB.prepare(`
+          await c.env.DB.prepare(
+            `
             UPDATE users 
             SET subscription_status = 'past_due',
             updated_at = datetime('now')
             WHERE stripe_customer_id = ?
-          `)
-          .bind(customerId)
-          .run();
-          
+          `
+          )
+            .bind(customerId)
+            .run();
+
           // Optionally downgrade Clerk access after multiple failures
           if (attemptCount >= 3) {
             const clerkId = user.clerk_id as string;
             await fetch(`https://api.clerk.com/v1/users/${clerkId}/metadata`, {
               method: "PATCH",
-              headers: { Authorization: `Bearer ${c.env.CLERK_SECRET_KEY}`, "Content-Type": "application/json" },
-              body: JSON.stringify({ public_metadata: { subscriptionStatus: "past_due" } }),
+              headers: {
+                Authorization: `Bearer ${c.env.CLERK_SECRET_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                public_metadata: { subscriptionStatus: "past_due" },
+              }),
             });
           }
-          
-          console.log(`Payment failed for customer ${customerId}, attempt ${attemptCount}`);
+
+          console.log(
+            `Payment failed for customer ${customerId}, attempt ${attemptCount}`
+          );
         }
         break;
       }
 
       case "customer.subscription.deleted": {
-         // Handle cancellation logic...
-         const subscription = event.data.object;
-         const customerId = subscription.customer;
-         
-         const user = await c.env.DB.prepare("SELECT * FROM users WHERE stripe_customer_id = ?")
+        // Handle cancellation logic...
+        const subscription = event.data.object;
+        const customerId = subscription.customer;
+
+        const user = await c.env.DB.prepare(
+          "SELECT * FROM users WHERE stripe_customer_id = ?"
+        )
           .bind(customerId)
           .first();
-          
-         if (user) {
-             await c.env.DB.prepare("UPDATE users SET subscription_status = 'cancelled' WHERE stripe_customer_id = ?")
-               .bind(customerId)
-               .run();
-               
-             const clerkId = user.clerk_id as string;
-             await fetch(`https://api.clerk.com/v1/users/${clerkId}/metadata`, {
-               method: "PATCH",
-               headers: { Authorization: `Bearer ${c.env.CLERK_SECRET_KEY}`, "Content-Type": "application/json" },
-               body: JSON.stringify({ public_metadata: { role: "free" } }),
-             });
-         }
-         break;
+
+        if (user) {
+          await c.env.DB.prepare(
+            "UPDATE users SET subscription_status = 'cancelled' WHERE stripe_customer_id = ?"
+          )
+            .bind(customerId)
+            .run();
+
+          const clerkId = user.clerk_id as string;
+          await fetch(`https://api.clerk.com/v1/users/${clerkId}/metadata`, {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${c.env.CLERK_SECRET_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ public_metadata: { role: "free" } }),
+          });
+        }
+        break;
       }
     }
 

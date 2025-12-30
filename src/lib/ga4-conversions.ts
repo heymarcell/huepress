@@ -99,11 +99,13 @@ export async function trackGA4Purchase(
     currency: string;
     userId?: string;
     itemName?: string;
+    clientId?: string; // Pass browser _ga cookie value for session stitching
   }
 ): Promise<{ success: boolean; error?: string }> {
   return sendGA4Event(measurementId, apiSecret, {
     eventName: 'purchase',
     userId: data.userId,
+    clientId: data.clientId, // Use browser client_id if available
     params: {
       transaction_id: data.transactionId,
       value: data.value,
