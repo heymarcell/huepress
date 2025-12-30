@@ -1,10 +1,18 @@
 // src/lib/privacy/gtm.ts
-// Lazy GTM loader that only loads after consent is granted
+// Lazy GTM loader - now only used as fallback since GTM is in index.html
 
 let gtmLoaded = false;
 
 export function loadGTM(containerId: string): void {
   if (gtmLoaded) return;
+  
+  // Check if GTM is already loaded (from index.html)
+  const existingScript = document.querySelector(`script[src*="googletagmanager.com/gtm.js?id=${containerId}"]`);
+  if (existingScript) {
+    gtmLoaded = true;
+    return;
+  }
+  
   gtmLoaded = true;
 
   // Create and inject GTM script
