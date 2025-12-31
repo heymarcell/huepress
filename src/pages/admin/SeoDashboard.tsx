@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Heading, Button } from "@/components/ui";
+import { Heading, Button, AlertModal } from "@/components/ui";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, XCircle, Globe, ExternalLink, Trash2 } from "lucide-react";
@@ -10,6 +10,7 @@ export default function SeoDashboard() {
   const [logs, setLogs] = useState<{ keyword: string; status: 'pending' | 'success' | 'error'; message?: string; url?: string }[]>([]);
   const [existingPages, setExistingPages] = useState<{ id: string; slug: string; target_keyword: string; title: string; is_published: number; created_at: string }[]>([]);
   const [isLoadingPages, setIsLoadingPages] = useState(true);
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; pageId: string; pageTitle: string }>({ isOpen: false, pageId: '', pageTitle: '' });
 
   // Fetch existing pages on load
   useEffect(() => {
@@ -30,11 +31,14 @@ export default function SeoDashboard() {
   };
 
   const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Delete "${title}"?`)) return;
+    setDeleteModal({ isOpen: true, pageId: id, pageTitle: title });
+  };
 
+  const confirmDelete = async () => {
     try {
-      await apiClient.seo.deletePage(id);
+      await apiClient.seo.deletePage(deleteModal.pageId);
       toast.success("Page deleted");
+      setDeleteModal({ isOpen: false, pageId: '', pageTitle: '' });
       loadPages(); // Refresh list
     } catch (error) {
       toast.error("Failed to delete page");
@@ -95,7 +99,9 @@ export default function SeoDashboard() {
       
       for (const seed of seeds) {
         const result = await apiClient.seo.research(seed);
-        const top5 = result.results.slice(0, 5).map(r => r.keyword);
+        // Handle both array and object responses
+        const results = Array.isArray(result.results) ? result.results : [];
+        const top5 = results.slice(0, 5).map(r => r.keyword);
         allKeywords.push(...top5);
       }
 
@@ -261,6 +267,17 @@ easy mandala coloring pages`}
              </div>
           )}
        </div>
+
+      {/* Delete Confirmation Modal */}
+      <AlertModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, pageId: '', pageTitle: '' })}
+        title="Delete pSEO Page?"
+        message={`Are you sure you want to delete "${deleteModal.pageTitle}"? This action cannot be undone.`}
+        variant="error"
+        confirmText="Delete"
+        onConfirm={confirmDelete}
+      />
      </div>
    );
 }
