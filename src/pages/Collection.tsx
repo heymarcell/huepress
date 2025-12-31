@@ -71,23 +71,26 @@ export default function CollectionPage() {
 
         {/* The Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 gap-y-8">
-           {pageData.assets.map((asset) => (
-             <ResourceCard
-               key={asset.id}
-               id={asset.id}
-               title={asset.title}
-               imageUrl={asset.image_url}
-               tags={asset.tags}
-               isLocked={false} // Collections might be previews, but usually we want to show lock state based on auth. 
-               // For pSEO, we want users to CLICK. 
-               // If we pass isLocked=true, they see a lock.
-               // Let's assume standard behavior: locked unless subscriber.
-               // But we need `isSubscriber` hook here.
-               // For now, let's just pass false to make it look inviting, or fetch auth state.
-               slug={asset.slug}
-               assetId={asset.asset_id}
-             />
-           ))}
+           {pageData.assets.map((asset) => {
+             // Parse tags - they come as comma-separated string from DB
+             const tags = asset.tags as unknown;
+             const tagsArray = typeof tags === 'string' 
+               ? tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+               : Array.isArray(tags) ? tags : [];
+
+             return (
+               <ResourceCard
+                 key={asset.id}
+                 id={asset.id}
+                 title={asset.title}
+                 imageUrl={asset.image_url}
+                 tags={tagsArray}
+                 isLocked={false}
+                 slug={asset.slug}
+                 assetId={asset.asset_id}
+               />
+             );
+           })}
         </div>
 
         {/* Related Collections (Internal Link Mesh) */}
