@@ -71,7 +71,7 @@ export default function CollectionPage() {
 
         {/* The Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 gap-y-8">
-           {pageData.assets.map((asset: any) => (
+           {pageData.assets.map((asset) => (
              <ResourceCard
                key={asset.id}
                id={asset.id}
@@ -95,7 +95,7 @@ export default function CollectionPage() {
            <div className="mt-16 mb-12">
               <h3 className="text-xl font-bold text-gray-900 mb-6">Explore Related Collections</h3>
               <div className="flex flex-wrap gap-3">
-                 {pageData.related.map((link: any) => (
+                 {pageData.related.map((link) => (
                     <Link 
                       key={link.slug} 
                       to={`/collection/${link.slug}`}

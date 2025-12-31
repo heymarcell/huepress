@@ -19,7 +19,7 @@ interface Env {
 
 const MAILERLITE_GROUP_ID = "174544874173891597";
 
-export async function onRequestPost(context: EventContext<Env, any, any>) {
+export async function onRequestPost(context: EventContext<Env, string, Record<string, unknown>>) {
   const { request, env } = context;
 
   // CORS headers

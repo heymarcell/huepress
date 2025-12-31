@@ -4,6 +4,30 @@ import { Asset } from "../types";
 
 const app = new Hono<{ Bindings: Env }>();
 
+interface LandingPageRecord {
+  id: string;
+  slug: string;
+  target_keyword: string;
+  title: string;
+  meta_description: string;
+  intro_content: string;
+  asset_ids: string;
+  is_published: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+interface OpenAIResponse {
+  choices: {
+    message: {
+      content: string;
+    }
+  }[];
+  error?: {
+    message: string;
+  };
+}
+
 // GET /api/seo/landing-pages/:slug
 app.get("/landing-pages/:slug", async (c) => {
   const slug = c.req.param("slug");
@@ -11,7 +35,7 @@ app.get("/landing-pages/:slug", async (c) => {
   // 1. Fetch Page from DB
   const page = await c.env.DB.prepare(
     "SELECT * FROM landing_pages WHERE slug = ?"
-  ).bind(slug).first<any>();
+  ).bind(slug).first<LandingPageRecord>();
 
   if (!page) {
     return c.json({ error: "Page not found" }, 404);
@@ -45,7 +69,7 @@ app.get("/landing-pages/:slug", async (c) => {
   // Simple strategy: Random 8 other pages.
   const related = await c.env.DB.prepare(
     "SELECT slug, title, target_keyword FROM landing_pages WHERE status = 1 AND id != ? ORDER BY RANDOM() LIMIT 8"
-  ).bind(page.id).all<any>();
+  ).bind(page.id).all<{ slug: string; title: string; target_keyword: string }>();
 
   return c.json({
     ...page,
@@ -55,7 +79,7 @@ app.get("/landing-pages/:slug", async (c) => {
 });
 
 // Helper: OpenAIChat
-async function openAIChat(apiKey: string, messages: any[], jsonMode = false) {
+async function openAIChat(apiKey: string, messages: { role: "system" | "user" | "assistant"; content: string }[], jsonMode = false) {
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -70,7 +94,7 @@ async function openAIChat(apiKey: string, messages: any[], jsonMode = false) {
       })
   });
   
-  const data = await response.json() as any;
+  const data = await response.json() as OpenAIResponse;
   if (!response.ok) {
      throw new Error(data.error?.message || "OpenAI API Error");
   }
@@ -198,7 +222,7 @@ app.post("/generate", async (c) => {
 app.get("/sitemap", async (c) => {
   const pages = await c.env.DB.prepare(
     "SELECT slug, updated_at, created_at FROM landing_pages WHERE is_published = 1"
-  ).all<any>();
+  ).all<{ slug: string; updated_at: string; created_at: string }>();
 
   return c.json({ 
     pages: pages.results 

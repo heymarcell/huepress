@@ -36,13 +36,13 @@ export default function SeoDashboard() {
             };
             return newLogs;
          });
-       } catch (error: any) {
+       } catch (error) {
          setLogs(prev => {
             const newLogs = [...prev];
             newLogs[i] = { 
                 keyword, 
                 status: 'error', 
-                message: error.message || "Failed" 
+                message: error instanceof Error ? error.message : "Failed" 
             };
             return newLogs;
          });
