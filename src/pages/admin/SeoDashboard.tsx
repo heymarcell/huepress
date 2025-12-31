@@ -284,12 +284,12 @@ Tip: Click 'Discover Keywords' to auto-fill with 200+ AI suggestions"
             <div className="p-4 border-t border-gray-100 bg-gray-50 max-h-64 overflow-y-auto">
               <div className="space-y-2">
                 {logs.map((log, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-2 bg-white rounded">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border border-gray-100">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
                       {log.status === 'pending' && <Loader2 className="w-4 h-4 text-blue-500 animate-spin flex-shrink-0" />}
                       {log.status === 'success' && <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />}
                       {log.status === 'error' && <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />}
-                      <p className="text-sm truncate">{log.keyword}</p>
+                      <p className="text-sm truncate text-ink">{log.keyword}</p>
                     </div>
                     {log.url && (
                       <a href={log.url} target="_blank" rel="noopener noreferrer" className="p-1 text-primary hover:text-primary/80">
