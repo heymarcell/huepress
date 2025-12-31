@@ -2,7 +2,6 @@
 
 export interface KeywordSuggestion {
   keyword: string;
-  source: 'google' | 'datamuse' | 'gpt';
   score: number;
 }
 
@@ -201,7 +200,6 @@ async function expandAndScoreWithAI(
         // Fallback: return discovered keywords as-is
         return discoveredKeywords.map(k => ({
             keyword: k,
-            source: 'google' as const,
             score: 1.0
         }));
     }
@@ -272,13 +270,11 @@ Return ONLY valid JSON (no markdown):
                 .filter(k => k.score >= 6)
                 .map(k => ({
                     keyword: k.keyword,
-                    source: 'google' as const,
                     score: k.score / 10 // Normalize to 0-1
                 })),
             // AI-generated keywords (default score 0.9)
             ...result.generated.map(k => ({
                 keyword: k,
-                source: 'gpt' as const,
                 score: 0.9
             }))
         ];
@@ -301,7 +297,6 @@ Return ONLY valid JSON (no markdown):
         // Fallback to original keywords
         return discoveredKeywords.map(k => ({
             keyword: k,
-            source: 'google' as const,
             score: 1.0
         }));
     }
