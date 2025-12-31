@@ -120,13 +120,121 @@ export async function discoverKeywords(seed: string): Promise<{ results: Keyword
         }
     }
 
-    // Convert to object
-    const results = Array.from(suggestions).map(k => ({
-        keyword: k,
-        source: 'google' as const,
-        score: 1.0
-    }));
+    // C. AI Expansion & Scoring (New!)
+    const rawKeywords = Array.from(suggestions);
+    const enhancedResults = await expandAndScoreWithAI(seed, rawKeywords);
 
-    return { results };
+    return { results: enhancedResults };
+}
+
+// AI-Powered Keyword Expansion & Scoring
+async function expandAndScoreWithAI(
+    seed: string, 
+    discoveredKeywords: string[]
+): Promise<KeywordSuggestion[]> {
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    
+    if (!OPENAI_API_KEY) {
+        console.warn('No OpenAI API key - skipping AI enhancement');
+        // Fallback: return discovered keywords as-is
+        return discoveredKeywords.map(k => ({
+            keyword: k,
+            source: 'google' as const,
+            score: 1.0
+        }));
+    }
+
+    const prompt = `You are a keyword research expert for a coloring pages website. 
+
+Seed topic: "${seed}"
+Discovered keywords: ${discoveredKeywords.slice(0, 20).join(', ')}
+
+Task:
+1. Score each discovered keyword (0-10) for coloring pages relevance and search potential
+2. Generate 30 NEW related keyword variations that would make great coloring page landing pages
+
+Requirements for new keywords:
+- Must be specific and descriptive (3-6 words ideal)
+- Focus on themes, occasions, styles, age groups, difficulty levels
+- Examples: "easy floral mandala coloring pages", "dinosaur coloring pages for toddlers"
+- Avoid generic terms, therapy/medical, art supplies, or software
+
+Return ONLY valid JSON (no markdown):
+{
+  "scored": [{"keyword": "...", "score": 8}],
+  "generated": ["new keyword 1", "new keyword 2", ...]
+}`;
+
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${OPENAI_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.8,
+                max_tokens: 2000
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`OpenAI API error: ${response.statusText}`);
+        }
+
+        const data = await response.json() as {
+            choices: { message: { content: string } }[];
+        };
+
+        const content = data.choices[0]?.message?.content || '{}';
+        // Remove markdown code blocks if present
+        const cleanJson = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const result = JSON.parse(cleanJson) as {
+            scored: { keyword: string; score: number }[];
+            generated: string[];
+        };
+
+        // Combine scored + generated keywords
+        const allKeywords: KeywordSuggestion[] = [
+            // High-scoring discovered keywords (>= 6)
+            ...result.scored
+                .filter(k => k.score >= 6)
+                .map(k => ({
+                    keyword: k.keyword,
+                    source: 'google' as const,
+                    score: k.score / 10 // Normalize to 0-1
+                })),
+            // AI-generated keywords (default score 0.9)
+            ...result.generated.map(k => ({
+                keyword: k,
+                source: 'google' as const,
+                score: 0.9
+            }))
+        ];
+
+        // Deduplicate and sort by score
+        const uniqueKeywords = new Map<string, KeywordSuggestion>();
+        allKeywords.forEach(k => {
+            const existing = uniqueKeywords.get(k.keyword.toLowerCase());
+            if (!existing || k.score > existing.score) {
+                uniqueKeywords.set(k.keyword.toLowerCase(), k);
+            }
+        });
+
+        return Array.from(uniqueKeywords.values())
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 50); // Return top 50
+
+    } catch (error) {
+        console.error('AI expansion failed:', error);
+        // Fallback to original keywords
+        return discoveredKeywords.map(k => ({
+            keyword: k,
+            source: 'google' as const,
+            score: 1.0
+        }));
+    }
 }
 
