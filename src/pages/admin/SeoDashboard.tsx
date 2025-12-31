@@ -118,12 +118,13 @@ export default function SeoDashboard() {
           ? result.results 
           : (Array.isArray((result.results as any)?.results) ? (result.results as any).results : []);
         
-        const top5 = results.slice(0, 5).map((r: { keyword: string }) => r.keyword);
+        
+        const top5 = results.map((r: { keyword: string }) => r.keyword);
         allKeywords.push(...top5);
         
         // Update keywords in real-time so user sees progress
         setKeywords(allKeywords.join("\n"));
-        toast.success(`✓ "${seed}" → ${top5.length} keywords | Total: ${allKeywords.length}/${seeds.length * 5}`, {
+        toast.success(`✓ "${seed}" → ${top5.length} keywords | Total: ${allKeywords.length}`, {
           duration: 2000
         });
       }
