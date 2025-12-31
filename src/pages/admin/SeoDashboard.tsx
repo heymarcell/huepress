@@ -123,14 +123,16 @@ export default function SeoDashboard() {
         allKeywords.push(...top5);
         
         // Update keywords in real-time so user sees progress
-        setKeywords(allKeywords.join("\n"));
-        toast.success(`✓ "${seed}" → ${top5.length} keywords | Total: ${allKeywords.length}`, {
+        const uniqueKeywords = Array.from(new Set(allKeywords));
+        setKeywords(uniqueKeywords.join("\n"));
+        toast.success(`✓ "${seed}" → ${top5.length} keywords | Total: ${uniqueKeywords.length} unique`, {
           duration: 2000
         });
       }
 
+      const uniqueKeywords = Array.from(new Set(allKeywords));
       setShowKeywordInput(true);
-      toast.success(`🎉 Discovered ${allKeywords.length} keywords from ${seeds.length} topics!`, {
+      toast.success(`🎉 Discovered ${uniqueKeywords.length} unique keywords from ${seeds.length} topics!`, {
         duration: 4000
       });
     } catch (error) {
