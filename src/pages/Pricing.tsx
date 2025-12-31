@@ -12,7 +12,7 @@ import {
   Star
 } from "lucide-react";
 import SEO from "@/components/SEO";
-import { analytics } from "@/lib/analytics";
+
 
 const plans = [
   {
@@ -102,7 +102,7 @@ export default function PricingPage() {
     if (!selectedPriceId) return;
 
     setLoading(selectedPriceId);
-    analytics.checkoutStarted(selectedPriceId);
+    // analytics.checkoutStarted(selectedPriceId); // REMOVED: Redundant, handled in api-client.ts with event_id
     try {
       const token = await getToken();
       if (!token) throw new Error("No authentication token available");
