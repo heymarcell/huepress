@@ -68,16 +68,24 @@ export default function SeoDashboard() {
 
   const handleBulkGenerate = async () => {
     const lines = keywords.split("\n").map(k => k.trim()).filter(k => k.length > 0);
-    if (lines.length === 0) {
+    
+    // Deduplicate keywords to prevent duplicate page generation
+    const uniqueLines = Array.from(new Set(lines));
+    
+    if (uniqueLines.length === 0) {
       toast.error("Please enter at least one keyword");
       return;
     }
 
-    setIsGenerating(true);
-    setLogs(lines.map(k => ({ keyword: k, status: 'pending' })));
+    if (uniqueLines.length < lines.length) {
+      toast.info(`Removed ${lines.length - uniqueLines.length} duplicate keywords`);
+    }
 
-    for (let i = 0; i < lines.length; i++) {
-       const keyword = lines[i];
+    setIsGenerating(true);
+    setLogs(uniqueLines.map(k => ({ keyword: k, status: 'pending' })));
+
+    for (let i = 0; i < uniqueLines.length; i++) {
+       const keyword = uniqueLines[i];
        
        try {
          const res = await apiClient.seo.generate(keyword);
