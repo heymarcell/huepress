@@ -297,9 +297,9 @@ app.post("/generate", async (c) => {
        - If keyword is "kids" → Select age-appropriate, simple designs.
     
     2. **Metadata Matching**:
-       - **Skill Level**: If keyword implies "easy" or "kids", prioritize `skill: "beginner"`. If "intricate" or "adults", prioritize `skill: "intermediate"` or `skill: "advanced"`.
-       - **Category**: Ensure `category` aligns with the topic (e.g. "holidays" for Easter/Christmas).
-       - **Description**: Use the `description` to verify specific details (e.g. ensuring a "garden" scene actually contains flowers/plants).
+       - **Skill Level**: If keyword implies "easy" or "kids", prioritize 'skill: "beginner"'. If "intricate" or "adults", prioritize 'skill: "intermediate"' or 'skill: "advanced"'.
+       - **Category**: Ensure 'category' aligns with the topic (e.g. "holidays" for Easter/Christmas).
+       - **Description**: Use the 'description' to verify specific details (e.g. ensuring a "garden" scene actually contains flowers/plants).
 
     3. **Quality Check**: Prefer assets with descriptive titles that explicitly mention the keyword concept.
     
