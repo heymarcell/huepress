@@ -354,6 +354,7 @@ app.post("/generate", async (c) => {
   // 3. AI Writing: Title, Meta, Intro
   const writingPrompt = `
     You are an SEO expert for HuePress, a premium coloring pages website.
+    The collection contains **${selectedIds.length}** high-quality designs.
     Create ENGAGING, human-first content for: "${keyword}"
     
     CRITICAL RULES:
@@ -365,9 +366,12 @@ app.post("/generate", async (c) => {
     
     **Title** (Max 60 chars):
     - Include keyword naturally
-    - Mention "Printable PDF" or "Coloring Pages"
+    - ONE of these formats (strictly based on count):
+       - If count > 10: "...: 15+ Printable PDF Designs"
+       - If count 5-10: "...: ${selectedIds.length}+ Printable PDF Designs" 
+       - If count < 5: "...: Premium Printable PDF Designs" (Do NOT use numbers)
     - Make it compelling, not robotic
-    - Example: "Mandala Coloring Pages: 20+ Printable PDF Designs"
+    - Example: "Mandala Coloring Pages: ${selectedIds.length > 5 ? selectedIds.length + '+' : 'Premium'} Printable Designs"
     
     **Meta Description** (Max 160 chars):
     - Click-worthy benefit statement

@@ -132,7 +132,7 @@ export default function CollectionPage() {
                Join HuePress Club ($5/mo)
              </Button>
           </Link>
-          <p className="mt-4 text-sm text-gray-400">7-day money-back guarantee</p>
+
         </div>
 
       </div>
