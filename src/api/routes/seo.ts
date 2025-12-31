@@ -123,44 +123,33 @@ app.get("/landing-pages/:slug", async (c) => {
     return c.json({ error: "Page not found" }, 404);
   }
 
-  // 2. Dynamically fetch matching assets based on target_keyword
-  // This allows new assets to appear automatically (cached for 24h)
-  const keyword = page.target_keyword;
-  const searchPattern = `%${keyword}%`;
-  
-  // Search for assets matching the keyword in title, description, or tags
-  const candidates = await c.env.DB.prepare(`
-    SELECT * FROM assets 
-    WHERE status = 'published' 
-    AND (title LIKE ? OR description LIKE ? OR tags LIKE ?)
-    LIMIT 30
-  `).bind(searchPattern, searchPattern, searchPattern).all<Asset>();
-
-  // Fallback: if too few results, broaden search
-  let assets = candidates.results || [];
-  
-  if (assets.length < 10) {
-    const stopWords = ["coloring", "page", "pages", "printable", "sheet", "sheets", "pdf", "book", "for", "kids", "adults", "free", "download"];
-    const tokens = keyword.toLowerCase().split(/\s+/).filter(w => !stopWords.includes(w) && w.length > 2);
-    
-    if (tokens.length > 0) {
-      const conditions = tokens.map(() => "(title LIKE ? OR description LIKE ? OR tags LIKE ?)").join(" OR ");
-      const bindings = tokens.flatMap(t => [`%${t}%`, `%${t}%`, `%${t}%`]);
-      
-      const broadCandidates = await c.env.DB.prepare(`
-        SELECT * FROM assets 
-        WHERE status = 'published' 
-        AND (${conditions})
-        LIMIT 50
-      `).bind(...bindings).all<Asset>();
-      
-      assets = broadCandidates.results || [];
-    }
+  // 2. Hydrate Assets from stored asset_ids
+  // The DB stores asset_ids as a JSON string array ["id1", "id2"]
+  let assetIds: string[] = [];
+  try {
+    assetIds = JSON.parse(page.asset_ids);
+  } catch (e) {
+    console.error("Failed to parse asset_ids", e);
+    assetIds = [];
   }
 
-  // 3. Transform assets to include image_url (like in /assets endpoint)
+  if (assetIds.length === 0) {
+     return c.json({
+       ...page,
+       assets: [],
+       related: []
+     });
+  }
+
+  // 3. Fetch actual asset data
+  const placeholders = assetIds.map(() => "?").join(",");
+  const assetsResult = await c.env.DB.prepare(
+    `SELECT * FROM assets WHERE id IN (${placeholders}) AND status = 'published'`
+  ).bind(...assetIds).all<Asset>();
+
+  // 4. Transform assets to include image_url
   const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
-  const transformedAssets = assets.map((asset) => {
+  const transformedAssets = (assetsResult.results || []).map((asset) => {
     const r2Key = (asset as any).r2_key_public;
     let imageUrl = "";
     
