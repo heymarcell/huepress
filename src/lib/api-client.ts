@@ -329,7 +329,20 @@ export const apiClient = {
       };
       
       const fbp = getCookie('_fbp');  // Facebook browser ID
-      const fbc = getCookie('_fbc');  // Facebook click ID (from ad clicks)
+      
+      // Facebook Click ID (fbc) - Priority: Cookie > URL Parameter > undefined
+      let fbc = getCookie('_fbc');
+      
+      // If cookie is missing but we have fbclid in the URL, construct fbc manually
+      // Format: fb.1.{timestamp}.{fbclid}
+      if (!fbc && typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const fbclid = urlParams.get('fbclid');
+        if (fbclid) {
+          fbc = `fb.1.${Date.now()}.${fbclid}`;
+        }
+      }
+                                            
       const gaCookie = getCookie('_ga'); // GA client ID cookie
       
       // Generate event_id for browser/server deduplication
