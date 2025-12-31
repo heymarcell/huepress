@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useConsent } from "../../context/ConsentContext";
+import { analytics } from "@/lib/analytics";
 
 const footerLinks = {
   product: [
@@ -113,6 +114,7 @@ export function Footer() {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => analytics.selectContent('social', link.label)}
                 className="text-gray-300 hover:text-white transition-colors"
               >
                 {link.label}

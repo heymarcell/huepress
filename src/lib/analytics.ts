@@ -97,8 +97,18 @@ export const analytics = {
   },
 
   /** Track search queries */
-  search: (searchTerm: string) => {
-    pushToDataLayer('search', { search_term: searchTerm });
+  search: (term: string) => {
+    pushToDataLayer('search', {
+      search_term: term
+    });
+  },
+
+  /** Track when a user starts interacting with a form */
+  formStart: (formId: string, formName?: string) => {
+    pushToDataLayer('form_start', {
+      form_id: formId,
+      form_name: formName,
+    });
   },
 
   /** Track filter usage */

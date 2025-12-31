@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { analytics } from "@/lib/analytics";
 
 interface AccordionItemProps {
   question: string;
@@ -12,7 +13,12 @@ function AccordionItem({ question, answer, isOpen, onToggle }: AccordionItemProp
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <button
-        onClick={onToggle}
+        onClick={() => {
+          if (!isOpen) { 
+            analytics.selectContent('faq', question);
+          }
+          onToggle();
+        }}
         className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors"
         aria-expanded={isOpen}
       >

@@ -51,6 +51,8 @@ export function FreeSampleCapture({ source = "free_sample_homepage" }: { source?
       setSubmitted(true);
     } catch (err) {
       console.error("Subscribe error:", err);
+      const isError = err instanceof Error;
+      analytics.viewItem('form_error', isError ? err.message : 'Unknown error');
       setError("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
@@ -98,6 +100,10 @@ export function FreeSampleCapture({ source = "free_sample_homepage" }: { source?
               placeholder="mom@example.com"
               aria-label="Email address for free sample pack"
               error={error || undefined}
+              onFocus={() => {
+                // Track start only once per session/render to avoid spam
+                analytics.formStart('free_sample', 'Free Sample Capture');
+              }}
             />
           </div>
           <div className="w-full sm:w-auto">
