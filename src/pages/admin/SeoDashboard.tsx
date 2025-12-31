@@ -161,10 +161,12 @@ export default function SeoDashboard() {
         </div>
         <div className="flex items-center gap-3">
           {!showKeywordInput && keywords.length === 0 && (
-            <p className="text-sm text-ink-light flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              Start by discovering AI-powered keywords →
-            </p>
+            <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 rounded-lg border border-primary/20">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <p className="text-sm text-primary font-medium">
+                Start by discovering AI-powered keywords →
+              </p>
+            </div>
           )}
           <Button
             variant="outline"
@@ -200,9 +202,12 @@ export default function SeoDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="mb-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+              <FileText className="w-6 h-6 text-primary" />
+            </div>
             <div>
               <p className="text-3xl font-bold text-ink">{isLoadingPages ? '...' : pages.length}</p>
               <p className="text-sm text-gray-500">Landing Pages</p>
@@ -213,16 +218,16 @@ export default function SeoDashboard() {
 
       {/* Keyword Input Section - Collapsible */}
       {showKeywordInput && (
-        <div className="bg-white p-6 rounded-lg border border-sand-200">
+        <div className="bg-white p-6 rounded-xl border border-sand-200 shadow-sm mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="font-serif text-h4 text-ink">Bulk Generate</h2>
-              <p className="text-sm text-ink-light">One keyword per line • Duplicates auto-removed</p>
+              <h2 className="font-serif text-xl font-bold text-ink">Bulk Generate</h2>
+              <p className="text-sm text-ink-light mt-1">One keyword per line • Duplicates auto-removed</p>
             </div>
           </div>
           
           <textarea
-            className="w-full h-64 max-h-96 px-4 py-3 border border-sand-200 rounded-lg font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full h-64 max-h-96 px-4 py-3 border border-sand-200 rounded-lg font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary transition-all"
             placeholder="anxiety coloring pages
 mandala designs for stress
 easy patterns for kids
