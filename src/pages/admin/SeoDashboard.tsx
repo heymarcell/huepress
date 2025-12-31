@@ -7,6 +7,7 @@ import { Loader2, CheckCircle, XCircle, ExternalLink, Trash2, FileText, Sparkles
 export default function SeoDashboard() {
   const [keywords, setKeywords] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDiscovering, setIsDiscovering] = useState(false);
   const [showKeywordInput, setShowKeywordInput] = useState(false);
   const [logs, setLogs] = useState<{ keyword: string; status: 'pending' | 'success' | 'error'; message?: string; url?: string }[]>([]);
   
@@ -101,6 +102,9 @@ export default function SeoDashboard() {
   };
 
   const handleAutoGenerate = async () => {
+    if (isDiscovering) return; // Prevent multiple executions
+    
+    setIsDiscovering(true);
     try {
       toast.info("Discovering keywords...");
       const seeds = ['anxiety', 'adhd', 'bold', 'easy', 'mandala', 'geometric', 'floral', 'kids'];
@@ -119,6 +123,8 @@ export default function SeoDashboard() {
     } catch (error) {
       toast.error("Failed to discover keywords");
       console.error(error);
+    } finally {
+      setIsDiscovering(false);
     }
   };
 
@@ -140,10 +146,19 @@ export default function SeoDashboard() {
           <Button
             variant="primary"
             onClick={handleAutoGenerate}
-            disabled={isGenerating}
+            disabled={isDiscovering}
           >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Discover Keywords
+            {isDiscovering ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Discovering...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Discover Keywords
+              </>
+            )}
           </Button>
           <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer">
             <Button variant="outline">
