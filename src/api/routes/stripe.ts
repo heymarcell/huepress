@@ -525,7 +525,7 @@ app.post("/webhooks/stripe", async (c) => {
               Authorization: `Bearer ${c.env.CLERK_SECRET_KEY}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ public_metadata: { role: "free" } }),
+            body: JSON.stringify({ public_metadata: { subscriptionStatus: "free" } }),
           });
         }
         break;
