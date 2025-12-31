@@ -159,7 +159,13 @@ export default function SeoDashboard() {
           <h1 className="font-serif text-h2 text-ink">pSEO Pages</h1>
           <p className="text-gray-500">Manage auto-generated landing pages</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {!showKeywordInput && keywords.length === 0 && (
+            <p className="text-sm text-ink-light flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Start by discovering AI-powered keywords →
+            </p>
+          )}
           <Button
             variant="outline"
             onClick={() => setShowKeywordInput(!showKeywordInput)}
@@ -170,6 +176,7 @@ export default function SeoDashboard() {
             variant="primary"
             onClick={handleAutoGenerate}
             disabled={isDiscovering}
+            title="Discover ~200 AI-generated keywords from 8 popular topics"
           >
             {isDiscovering ? (
               <>
@@ -195,54 +202,86 @@ export default function SeoDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-              <FileText className="w-6 h-6 text-white" />
+          {isLoadingPages ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
-            <div>
-              <p className="text-3xl font-bold text-ink">{pages.length}</p>
-              <p className="text-sm text-gray-500">Landing Pages</p>
+          ) : pages.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="bg-sand-50 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-10 h-10 text-primary" />
+              </div>
+              <h3 className="font-serif text-h4 text-ink mb-2">Ready to Create Collections</h3>
+              <p className="text-ink-light max-w-md mx-auto mb-6">
+                Click <strong>"Discover Keywords"</strong> to generate 200+ SEO-optimized topics with AI + Reddit trends, then bulk generate your collection pages.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-sm text-ink-light">
+                <CheckCircle className="w-4 h-4 text-primary" />
+                <span>Dynamic assets • 24h edge cache • Duplicate protection</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-3xl font-bold text-ink">{pages.length}</p>
+                <p className="text-sm text-gray-500">Landing Pages</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Keyword Input Section - Collapsible */}
       {showKeywordInput && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="font-serif font-bold text-xl text-ink">Bulk Generate</h2>
-            <p className="text-sm text-gray-500 mt-1">One keyword per line</p>
-          </div>
-          <div className="p-6">
-            <textarea
-              className="w-full h-48 p-4 border border-gray-200 rounded-lg font-mono text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
-              placeholder="coloring pages for anxiety
-coloring pages for adhd
-easy mandala coloring pages"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              disabled={isGenerating}
-            />
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-xs text-gray-500">
-                {keywords.split('\n').filter(k => k.trim()).length} keywords ready
-              </p>
-              <Button
-                variant="primary"
-                onClick={handleBulkGenerate}
-                disabled={isGenerating || !keywords.trim()}
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  "Generate Pages"
-                )}
-              </Button>
+        <div className="bg-white p-6 rounded-lg border border-sand-200">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-serif text-h4 text-ink">Bulk Generate</h2>
+              <p className="text-sm text-ink-light">One keyword per line • Duplicates auto-removed</p>
             </div>
+          </div>
+          
+          <textarea
+            className="w-full h-64 max-h-96 px-4 py-3 border border-sand-200 rounded-lg font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="anxiety coloring pages
+mandala designs for stress
+easy patterns for kids
+
+Tip: Click 'Discover Keywords' to auto-fill with 200+ AI suggestions"
+            value={keywords}
+            onChange={(e) => setKeywords(e.target.value)}
+            disabled={isGenerating}
+          />
+          
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center gap-4">
+              <p className="text-sm font-medium text-ink">
+                {keywords.split("\n").filter(k => k.trim()).length} keywords to generate
+              </p>
+              {keywords.trim().length > 0 && (
+                <p className="text-xs text-ink-light">
+                  Each page checks DB for duplicates
+                </p>
+              )}
+            </div>
+            
+            <Button
+              variant="primary"
+              onClick={handleBulkGenerate}
+              disabled={isGenerating || keywords.trim().length === 0}
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                "Generate Pages"
+              )}
+            </Button>
           </div>
 
           {/* Logs */}
