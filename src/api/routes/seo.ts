@@ -123,35 +123,46 @@ app.get("/landing-pages/:slug", async (c) => {
     return c.json({ error: "Page not found" }, 404);
   }
 
-  // 2. Hydrate Assets
-  // The DB stores asset_ids as a JSON string array ["id1", "id2"]
-  let assetIds: string[] = [];
-  try {
-    assetIds = JSON.parse(page.asset_ids);
-  } catch (e) {
-    console.error("Failed to parse asset_ids", e);
-    assetIds = [];
+  // 2. Dynamically fetch matching assets based on target_keyword
+  // This allows new assets to appear automatically (cached for 24h)
+  const keyword = page.target_keyword;
+  const searchPattern = `%${keyword}%`;
+  
+  // Search for assets matching the keyword in title, description, or tags
+  const candidates = await c.env.DB.prepare(`
+    SELECT * FROM assets 
+    WHERE status = 'published' 
+    AND (title LIKE ? OR description LIKE ? OR tags LIKE ?)
+    LIMIT 30
+  `).bind(searchPattern, searchPattern, searchPattern).all<Asset>();
+
+  // Fallback: if too few results, broaden search
+  let assets = candidates.results || [];
+  
+  if (assets.length < 10) {
+    const stopWords = ["coloring", "page", "pages", "printable", "sheet", "sheets", "pdf", "book", "for", "kids", "adults", "free", "download"];
+    const tokens = keyword.toLowerCase().split(/\s+/).filter(w => !stopWords.includes(w) && w.length > 2);
+    
+    if (tokens.length > 0) {
+      const conditions = tokens.map(() => "(title LIKE ? OR description LIKE ? OR tags LIKE ?)").join(" OR ");
+      const bindings = tokens.flatMap(t => [`%${t}%`, `%${t}%`, `%${t}%`]);
+      
+      const broadCandidates = await c.env.DB.prepare(`
+        SELECT * FROM assets 
+        WHERE status = 'published' 
+        AND (${conditions})
+        LIMIT 50
+      `).bind(...bindings).all<Asset>();
+      
+      assets = broadCandidates.results || [];
+    }
   }
 
-  if (assetIds.length === 0) {
-     return c.json({
-       ...page,
-       assets: []
-     });
-  }
-
-  // 3. Fetch actual asset data
-  // We need to construct a query with enough placeholders
-  const placeholders = assetIds.map(() => "?").join(",");
-  const assetsResult = await c.env.DB.prepare(
-    `SELECT * FROM assets WHERE id IN (${placeholders}) AND status = 'published'`
-  ).bind(...assetIds).all<Asset>();
-
-  // 4. Transform assets to include image_url (like in /assets endpoint)
+  // 3. Transform assets to include image_url (like in /assets endpoint)
   const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
-  const assets = (assetsResult.results as unknown as Record<string, unknown>[])?.map((asset) => {
+  const transformedAssets = assets.map((asset) => {
     const r2Key = asset.r2_key_public;
-    let imageUrl: string | null = null;
+    let imageUrl = "";
     
     if (r2Key && typeof r2Key === 'string' && !r2Key.startsWith("__draft__")) {
       // If already a full URL, use as-is; otherwise prepend CDN
@@ -166,17 +177,20 @@ app.get("/landing-pages/:slug", async (c) => {
       tags: parsedTags,
       image_url: imageUrl,
     };
-  }) || [];
+  });
 
-  // 5. Fetch Related Collections (Internal Linking Mesh)
+  // 4. Fetch Related Collections (Internal Linking Mesh)
   // Simple strategy: Random 8 other pages.
   const related = await c.env.DB.prepare(
     "SELECT slug, title, target_keyword FROM landing_pages WHERE is_published = 1 AND id != ? ORDER BY RANDOM() LIMIT 8"
   ).bind(page.id).all<{ slug: string; title: string; target_keyword: string }>();
 
+  // 5. Set aggressive cache headers (24 hours)
+  c.header('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+  
   return c.json({
     ...page,
-    assets: assets,
+    assets: transformedAssets,
     related: related.results || []
   });
 });
