@@ -4,6 +4,7 @@ import { Env } from "../types";
 import { Asset } from "../types";
 import { discoverKeywords } from "../services/keywords";
 import { getAllSeeds, PRIORITY_SEEDS } from "../services/seed-library";
+import { notifyIndexNow } from "../../lib/indexnow";
 
 const app = new Hono<{ Bindings: Env }>();
 
