@@ -10,11 +10,17 @@ import { Button } from "@/components/ui/Button";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { FreeSampleCapture } from "@/components/features/FreeSampleCapture";
 
+interface ApiErrorResponse {
+  error?: string;
+}
+
 interface DownloadSectionProps {
   assetId: string;
   formattedAssetId: string;
   title: string;
 }
+
+
 
 export function DownloadSection({ assetId, formattedAssetId, title }: DownloadSectionProps) {
   const { isSubscriber, isLoaded, isSignedIn } = useSubscription();
@@ -44,15 +50,53 @@ export function DownloadSection({ assetId, formattedAssetId, title }: DownloadSe
       });
       
       if (!response.ok) {
-        if (response.status === 403 || response.status === 401) {
+        let errorData = {};
+        try {
+          errorData = await response.json();
+        } catch { /* ignore json parse error */ }
+        const errorMsg = (errorData as ApiErrorResponse).error || "";
+
+        // Handle Rate Limits (429) - Velocity
+        if (response.status === 429) {
           setAlertState({
             isOpen: true,
-            title: "Access Denied",
-            message: "Subscription required to download. Join The Club to unlock!",
+            title: "Downloading too fast",
+            message: errorMsg || "Please wait a few minutes before downloading more.",
             variant: "info"
           });
           return;
         }
+
+        // Handle Forbidden (403) - Subscription or Daily Limit
+        if (response.status === 403) {
+          if (errorMsg.toLowerCase().includes("limit")) {
+             setAlertState({
+              isOpen: true,
+              title: "Daily Limit Reached",
+              message: errorMsg,
+              variant: "info"
+            });
+          } else {
+            setAlertState({
+              isOpen: true,
+              title: "Access Denied",
+              message: "Subscription required to download. Join The Club to unlock!",
+              variant: "info"
+            });
+          }
+          return;
+        }
+
+        if (response.status === 401) {
+           setAlertState({
+            isOpen: true,
+            title: "Access Denied",
+            message: "Please log in to download.",
+            variant: "info"
+          });
+          return;
+        }
+
         throw new Error("Download failed");
       }
 
@@ -102,15 +146,53 @@ export function DownloadSection({ assetId, formattedAssetId, title }: DownloadSe
       });
       
       if (!response.ok) {
-        if (response.status === 403 || response.status === 401) {
+        let errorData = {};
+        try {
+          errorData = await response.json();
+        } catch { /* ignore json parse error */ }
+        const errorMsg = (errorData as ApiErrorResponse).error || "";
+
+        // Handle Rate Limits (429) - Velocity
+        if (response.status === 429) {
           setAlertState({
             isOpen: true,
-            title: "Access Denied",
-            message: "Subscription required to print. Join The Club to unlock!",
+            title: "Downloading too fast",
+            message: errorMsg || "Please wait a few minutes before downloading more.",
             variant: "info"
           });
           return;
         }
+
+        // Handle Forbidden (403) - Subscription or Daily Limit
+        if (response.status === 403) {
+          if (errorMsg.toLowerCase().includes("limit")) {
+            setAlertState({
+              isOpen: true,
+              title: "Daily Limit Reached",
+              message: errorMsg,
+              variant: "info"
+            });
+          } else {
+            setAlertState({
+              isOpen: true,
+              title: "Access Denied",
+              message: "Subscription required to print. Join The Club to unlock!",
+              variant: "info"
+            });
+          }
+          return;
+        }
+        
+        if (response.status === 401) {
+           setAlertState({
+            isOpen: true,
+            title: "Access Denied",
+            message: "Please log in to print.",
+            variant: "info"
+          });
+          return;
+        }
+
         throw new Error("Print failed");
       }
 

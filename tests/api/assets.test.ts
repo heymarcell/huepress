@@ -15,7 +15,10 @@ describe("Assets API", () => {
         mockAll = vi.fn();
         mockFirst = vi.fn();
         mockRun = vi.fn();
-        mockBatch = vi.fn().mockResolvedValue([]);
+        mockBatch = vi.fn().mockResolvedValue([
+            { results: [{ count: 0 }] }, // Velocity count
+            { results: [{ count: 0 }] }  // Daily count
+        ]);
         mockBind = vi.fn().mockReturnValue({ all: mockAll, first: mockFirst, run: mockRun });
         mockPrepare = vi.fn().mockReturnValue({ bind: mockBind });
         

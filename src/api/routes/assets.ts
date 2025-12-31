@@ -262,6 +262,42 @@ app.get("/download/:id", async (c) => {
     if (!user || user.subscription_status !== 'active') {
       return c.json({ error: "Active subscription required" }, 403);
     }
+
+    // [Fair Use Policy] Rate Limiting logic
+    // We run two counts in parallel to check behavior against the policy:
+    // 1. Velocity Limit: 15 downloads / 10 mins (Stops bots/scripts)
+    // 2. Daily Safety Cap: 100 downloads / 24 hours (Stops scraping)
+    try {
+      const [velocityResult, dailyResult] = await c.env.DB.batch([
+        c.env.DB.prepare(
+          "SELECT COUNT(*) as count FROM downloads WHERE user_id = ? AND downloaded_at > datetime('now', '-10 minutes')"
+        ).bind(user.id),
+        c.env.DB.prepare(
+          "SELECT COUNT(*) as count FROM downloads WHERE user_id = ? AND downloaded_at > datetime('now', '-1 day')"
+        ).bind(user.id)
+      ]);
+
+      const velocityCount = (velocityResult.results?.[0] as { count: number })?.count || 0;
+      const dailyCount = (dailyResult.results?.[0] as { count: number })?.count || 0;
+
+      // Strict Bot Protection
+      if (velocityCount >= 15) {
+        return c.json({ 
+          error: "Whoa, slow down! You are downloading too fast. Please wait a few minutes." 
+        }, 429);
+      }
+
+      // Universal Safety Cap (set to Annual limit of 100 for now to be safe)
+      // TODO: Differentiate Monthly (40) vs Annual (100) after adding plan_type to users table
+      if (dailyCount >= 100) {
+        return c.json({ 
+          error: "Daily download safety limit reached. Please come back tomorrow!" 
+        }, 403);
+      }
+    } catch (err) {
+      console.error("Rate limit check failed:", err);
+      // Fail open (allow download) if DB check fails, to prevent blocking valid users during outages
+    }
   }
 
   // Use internal UUID for watermarking (more secure than exposing Clerk ID)
