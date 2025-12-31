@@ -111,7 +111,6 @@ export default function SeoDashboard() {
       
       for (let i = 0; i < seeds.length; i++) {
         const seed = seeds[i];
-        toast.info(`Discovering keywords for "${seed}" (${i + 1}/${seeds.length})...`);
         
         const result = await apiClient.seo.research(seed);
         // Handle both {results: [...]} and {results: {results: [...]}}
@@ -121,11 +120,18 @@ export default function SeoDashboard() {
         
         const top5 = results.slice(0, 5).map((r: { keyword: string }) => r.keyword);
         allKeywords.push(...top5);
+        
+        // Update keywords in real-time so user sees progress
+        setKeywords(allKeywords.join("\n"));
+        toast.success(`✓ "${seed}" → ${top5.length} keywords | Total: ${allKeywords.length}/${seeds.length * 5}`, {
+          duration: 2000
+        });
       }
 
-      setKeywords(allKeywords.join("\n"));
       setShowKeywordInput(true);
-      toast.success(`Discovered ${allKeywords.length} keywords! Review and generate.`);
+      toast.success(`🎉 Discovered ${allKeywords.length} keywords from ${seeds.length} topics!`, {
+        duration: 4000
+      });
     } catch (error) {
       toast.error("Failed to discover keywords");
       console.error(error);
