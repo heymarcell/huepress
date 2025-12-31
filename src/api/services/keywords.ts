@@ -58,36 +58,73 @@ export async function discoverKeywords(seed: string): Promise<{ results: Keyword
     const baseSearch = "coloring pages";
     const suggestions = new Set<string>();
 
+    // Blacklist: Filter out non-coloring queries
+    const blacklist = [
+        // Non-English indicators
+        'farben', 'malen', 'zeichnen', 'ausmalen', 'bemalen', 'spielzeug', 'tagebuch', 'diagnose', 'dorosłych', 'muster',
+        // Therapy/medical (not coloring)
+        'therapy', 'therapist', 'diagnosis', 'medication', 'treatment', 'doctor', 'dr ', 'symptoms',
+        // Art supplies (not coloring pages)
+        'painting', 'paint', 'acrylic', 'canvas', 'leinwand', 'papier', 'paper', 'supplies', 
+        // Software/tools
+        'illustrator', 'photoshop', 'canva', 'app', 'software',
+        // Too generic
+        'buy', 'shop', 'amazon', 'etsy', 'pdf download free'
+    ];
+
+    // Helper: Check if keyword is relevant
+    const isRelevant = (kw: string): boolean => {
+        const lower = kw.toLowerCase();
+        
+        // Must contain coloring-related term
+        if (!lower.includes('coloring') && !lower.includes('colouring')) {
+            return false;
+        }
+        
+        // Must NOT contain blacklisted terms
+        if (blacklist.some(term => lower.includes(term))) {
+            return false;
+        }
+        
+        // English check: Reject if contains non-ASCII chars (except common ones)
+        if (/[äöüßąćęłńóśźżñ]/i.test(lower)) {
+            return false;
+        }
+        
+        return true;
+    };
+
     // A. Direct Google Search on Seed
-    // "bold coloring pages"
+    // Always include "coloring pages" to keep it focused
     const directSuggestions = await getGoogleSuggestions(`${seed} ${baseSearch}`);
-    directSuggestions.forEach(s => suggestions.add(s));
+    directSuggestions.filter(isRelevant).forEach(s => suggestions.add(s));
 
     // B. Contextual Expansion via Datamuse
-    // If seed="cozy", topics=["home", "cat"]
-    // Queries: "cozy home coloring pages", "cozy cat coloring pages"
     const topics = await getDatamuseRelated(seed);
     
-    // Limit to top 5 topics to avoid timeout
-    const topTopics = topics.slice(0, 5);
+    // Limit to top 3 topics (was 5) to reduce noise
+    const topTopics = topics.slice(0, 3);
     
     for (const topic of topTopics) {
-        // Construct natural phrases
-        // Case 1: Seed is adj, Topic is noun -> "cozy cat coloring pages"
-        const q1 = `${seed} ${topic} ${baseSearch}`;
-        const s1 = await getGoogleSuggestions(q1);
-        s1.slice(0, 3).forEach(s => suggestions.add(s)); // Top 3
+        // Always anchor with "coloring pages" or "coloring book"
+        const queries = [
+            `${seed} ${topic} coloring pages`,
+            `${topic} coloring pages`,
+        ];
 
-        // Case 2: Seed is noun, Topic is adj -> "red dragon coloring pages"
-        // Heuristic: swap order? Google is smart enough usually.
+        for (const q of queries) {
+            const results = await getGoogleSuggestions(q);
+            results.filter(isRelevant).slice(0, 2).forEach(s => suggestions.add(s));
+        }
     }
 
     // Convert to object
     const results = Array.from(suggestions).map(k => ({
         keyword: k,
         source: 'google' as const,
-        score: 1.0 // Placeholder
+        score: 1.0
     }));
 
     return { results };
 }
+
