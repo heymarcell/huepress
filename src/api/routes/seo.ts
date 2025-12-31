@@ -210,9 +210,9 @@ async function openAIChat(apiKey: string, messages: { role: "system" | "user" | 
 // POST /api/seo/generate
 // Admin logic to generate a landing page
 app.post("/generate", async (c) => {
-  const body = await c.req.json<{ keyword: string }>();
+  const body = await c.req.json<{ keyword: string; force?: boolean }>();
   const keyword = body.keyword;
-
+  
   if (!keyword) return c.json({ error: "Keyword required" }, 400);
 
   const apiKey = c.env.OPENAI_API_KEY;
@@ -403,17 +403,24 @@ app.post("/generate", async (c) => {
   // Check if page already exists
   const existingPage = await c.env.DB.prepare(
     "SELECT id FROM landing_pages WHERE slug = ? OR target_keyword = ?"
-  ).bind(slug, keyword).first();
+  ).bind(slug, keyword).first<{ id: string }>();
   
+  let landingPageId = crypto.randomUUID();
+
   if (existingPage) {
-    return c.json({ 
-      error: `Page already exists for keyword "${keyword}"`,
-      slug,
-      url: `/collection/${slug}`
-    }, 409); // 409 Conflict
+    if (body.force) {
+      // If force is true, reuse ID and delete old record to ensure clean state
+      landingPageId = existingPage.id as ReturnType<typeof crypto.randomUUID>;
+      await c.env.DB.prepare("DELETE FROM landing_pages WHERE id = ?").bind(existingPage.id).run();
+    } else {
+      return c.json({ 
+        error: `Page already exists for keyword "${keyword}"`,
+        slug,
+        url: `/collection/${slug}`
+      }, 409); // 409 Conflict
+    }
   }
   
-  const landingPageId = crypto.randomUUID();
   try {
       await c.env.DB.prepare(`
         INSERT INTO landing_pages (id, slug, target_keyword, title, meta_description, intro_content, asset_ids, is_published, created_at)
