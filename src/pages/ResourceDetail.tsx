@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import SEO from "@/components/SEO";
 import { apiClient } from "@/lib/api-client";
+import { analytics } from "@/lib/analytics";
 import { StructuredData } from "@/components/StructuredData";
 import { AboutDesign } from "@/components/features/AboutDesign";
 import { LikeButton } from "@/components/features/LikeButton";
@@ -137,6 +138,13 @@ export default function ResourceDetailPage() {
 
     fetchAsset();
   }, [id, slug, isSignedIn]);
+
+  // Track ViewItem event when asset loads
+  useEffect(() => {
+    if (asset?.id) {
+      analytics.viewItem(asset.asset_id || asset.id, asset.title, asset.category);
+    }
+  }, [asset?.id, asset?.asset_id, asset?.title, asset?.category]);
 
   if (isLoading) {
     return (
