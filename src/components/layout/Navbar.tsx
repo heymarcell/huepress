@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AuthButtons } from "@/lib/auth";
+import { analytics } from "@/lib/analytics";
 
 // Logo Component - uses SVG from public folder
 function Logo() {
@@ -108,6 +109,11 @@ export function Navbar() {
               <Link
                 key={link.to}
                 to={link.to}
+                onClick={() => {
+                   if (link.label === "Request a Design") {
+                     analytics.selectContent('page', 'request_design');
+                   }
+                }}
                 className={`font-medium transition-colors ${
                   // @ts-expect-error - isPrimary is a custom property not in the text link type
                   link.isPrimary 

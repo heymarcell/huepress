@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { Button } from "@/components/ui";
+import { analytics } from "@/lib/analytics";
 
 export function useSubscription() {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -36,12 +37,20 @@ export function AuthButtons() {
     <div className="flex items-center gap-4">
       <SignedOut>
         <SignInButton mode="modal">
-          <button className="text-ink/70 hover:text-primary font-medium transition-colors px-4">
+          <button 
+            onClick={() => analytics.login('nav_button')}
+            className="text-ink/70 hover:text-primary font-medium transition-colors px-4"
+          >
             Member Login
           </button>
         </SignInButton>
         <SignUpButton mode="modal">
-          <Button variant="primary" size="sm" className="font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 text-sm">
+          <Button 
+            variant="primary" 
+            size="sm" 
+            className="font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 text-sm"
+            onClick={() => analytics.selectContent('signup_modal', 'nav_button')}
+          >
             Join for $5/mo
           </Button>
         </SignUpButton>
