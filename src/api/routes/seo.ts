@@ -280,7 +280,14 @@ app.post("/generate", async (c) => {
     Target Keyword: "${keyword}"
     
     Candidates:
-    ${JSON.stringify(candidates.results.map(a => ({ id: a.id, title: a.title, tags: a.tags })))}
+    ${JSON.stringify(candidates.results.map(a => ({ 
+      id: a.id, 
+      title: a.title, 
+      category: a.category,
+      skill: a.skill,
+      description: a.description,
+      tags: a.tags 
+    })))}
     
     **STRICT RULES:**
     
@@ -289,11 +296,16 @@ app.post("/generate", async (c) => {
        - If keyword is "anxiety relief" → Select calming/abstract designs, NOT busy/complex scenes.
        - If keyword is "kids" → Select age-appropriate, simple designs.
     
-    2. **Quality Check**: Prefer assets with descriptive titles that explicitly mention the keyword concept.
+    2. **Metadata Matching**:
+       - **Skill Level**: If keyword implies "easy" or "kids", prioritize `skill: "beginner"`. If "intricate" or "adults", prioritize `skill: "intermediate"` or `skill: "advanced"`.
+       - **Category**: Ensure `category` aligns with the topic (e.g. "holidays" for Easter/Christmas).
+       - **Description**: Use the `description` to verify specific details (e.g. ensuring a "garden" scene actually contains flowers/plants).
+
+    3. **Quality Check**: Prefer assets with descriptive titles that explicitly mention the keyword concept.
     
-    3. **Reject Mismatches**: If a candidate is totally off-topic (even if tagged similarly), REJECT it.
+    4. **Reject Mismatches**: If a candidate is totally off-topic (even if tagged similarly), REJECT it.
     
-    4. **Minimum Standards**: Return AT LEAST 4 relevant assets. If you find fewer than 4 truly relevant matches, return what you can (even if <8).
+    5. **Minimum Standards**: Return AT LEAST 4 relevant assets. If you find fewer than 4 truly relevant matches, return what you can (even if <8).
     
     BAD Example:
     Keyword: "geometric patterns"
