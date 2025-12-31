@@ -298,17 +298,18 @@ app.post("/generate", async (c) => {
     
     2. **Metadata Matching**:
        - **Skill Level**: If keyword implies "easy" or "kids", prioritize 'skill: "beginner"'. If "intricate" or "adults", prioritize 'skill: "intermediate"' or 'skill: "advanced"'.
-       - **Category**: Ensure 'category' aligns with the topic.
-         - If keyword is Nature/Garden → REJECT 'Food', 'Vehicles', 'Space', 'Fantasy' (unless 'Fairy Garden').
-         - If keyword is Food/Cooking → REJECT 'Nature', 'Animals' (unless related).
+       - **Category**: STRONGLY PREFER category alignment.
+         - If keyword is Nature/Garden → Avoid 'Food', 'Vehicles', 'Space' unless the visual context is overwhelmingly relevant (e.g., a picnic in a garden is okay).
+         - If keyword is Food/Cooking → Avoid 'Nature', 'Animals' unless they are part of the cooking scene.
        - **Description**: Use the 'description' to verify specific details. 
 
     3. **Visual Relevance Check**: 
-       - Imagine the visualization. Does "Pizza" belong in "Garden Scenes"? No.
-       - Does "Snowplow" belong in "Geometric Patterns"? No.
-       - REJECT any asset that creates a "Wait, what is this doing here?" reaction.
+       - Imagine the visualization. Does the PRIMARY subject match?
+       - "Pizza" is NOT a Garden Scene (even if outdoors).
+       - "Snowplow" is NOT a Geometric Pattern.
+       - REJECT if the **main subject** conflicts with the keyword intent.
     
-    4. **Reject Mismatches**: If a candidate is totally off-topic (even if tagged similarly), REJECT it like a strict editor. Better to return fewer relevant results than garbage mixed in.
+    4. **Smart Selection**: If a candidate is on the fence, lean towards excluding it unless you have very few matches. Quality > Quantity.
     
     5. **Minimum Standards**: Return AT LEAST 4 relevant assets. If you find fewer than 4 truly relevant matches, return what you can (even if <8).
     
