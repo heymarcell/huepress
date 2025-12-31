@@ -46,12 +46,48 @@ export default function CollectionPage() {
     );
   }
 
+  // Determine OG Image (use first asset or standard fallback)
+  const ogImage = pageData?.assets?.[0]?.image_url || "/og-image.webp";
+
   return (
     <div className="min-h-screen bg-paper">
       <SEO 
         title={pageData.title}
         description={pageData.meta_description}
-        keywords={`coloring pages, ${pageData.target_keyword}, printable, pdf`}
+        image={ogImage}
+        keywords={`coloring pages, ${pageData.target_keyword}, printable, pdf, ${pageData.assets.slice(0, 3).map(a => a.tags[0]).join(', ')}`}
+      />
+      
+      {/* Schema.org for Collection */}
+      <StructuredData 
+        type="Article" // Using Article or CollectionPage if supported, but Article allows 'image'
+        data={{
+          headline: pageData.title,
+          image: [ogImage],
+          description: pageData.meta_description,
+          author: {
+            "@type": "Organization",
+            name: "HuePress"
+          },
+          mainEntityOfPage: {
+             "@type": "WebPage",
+             "@id": `https://huepress.co/collection/${slug}`
+          }
+        }}
+      />
+      <StructuredData
+         type="Product" // Or ItemList
+         data={{
+            name: pageData.title,
+            description: pageData.meta_description,
+            image: ogImage,
+            offers: {
+               "@type": "Offer",
+               price: "5.00",
+               priceCurrency: "USD",
+               availability: "https://schema.org/InStock"
+            }
+         }}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
