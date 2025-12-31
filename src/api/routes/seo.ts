@@ -309,9 +309,14 @@ app.post("/generate", async (c) => {
        - "Snowplow" is NOT a Geometric Pattern.
        - REJECT if the **main subject** conflicts with the keyword intent.
     
-    4. **Smart Selection**: If a candidate is on the fence, lean towards excluding it unless you have very few matches. Quality > Quantity.
+    4. **Smart Selection & Quantity**: 
+       - You MUST return at least 6-8 assets. 
+       - If you find fewer than 6 Perfect Strict matches, **FILL** the remaining slots with "Broadly Related" assets (e.g., generic flowers/nature for "garden"). 
+       - It is better to have "somewhat related" fillers than an empty grid.
     
-    5. **Minimum Standards**: Return AT LEAST 4 relevant assets. If you find fewer than 4 truly relevant matches, return what you can (even if <8).
+    5. **Minimum Standards**: Return 6-8 assets.
+       - Priority 1: Strict Match (Perfect intent)
+       - Priority 2: Broad Match (Same category but generic)
     
     BAD Example:
     Keyword: "geometric patterns"

@@ -122,7 +122,7 @@ export default function CollectionPage() {
         {/* Bottom CTA - More compact */}
         <div className="text-center bg-white rounded-2xl p-8 sm:p-10 border-2 border-primary/10 shadow-sm max-w-3xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold text-ink mb-3">
-            Unlock {pageData.assets.length} Designs + 500 More
+            Unlock All {pageData.assets.length} Garden Designs + 500 More
           </h2>
           <p className="text-gray-600 mb-6">
             Instant PDF downloads. Bold lines. Therapist-approved. Cancel anytime.
