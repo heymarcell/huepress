@@ -51,6 +51,7 @@ export function AdminLayout() {
     { path: "/admin/assets", label: "Assets", icon: Images },
     { path: "/admin/assets/new", label: "Add Asset", icon: Plus },
     { path: "/admin/blog", label: "Blog", icon: FileText },
+    { path: "/admin/seo", label: "Marketing", icon: Sparkles },
   ];
 
   return (

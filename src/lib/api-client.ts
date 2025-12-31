@@ -434,6 +434,25 @@ export const apiClient = {
   seo: {
     getLandingPage: async (slug: string) => {
        return fetchApi<{ title: string; meta_description: string; intro_content: string; target_keyword: string; assets: Asset[] }>(`/api/seo/landing-pages/${slug}`);
+    },
+    generate: async (keyword: string) => {
+       const token = await window.Clerk?.session?.getToken();
+       // Using POST /api/seo/generate
+       const cleanBase = API_URL.replace(/\/$/, "");
+       const response = await fetch(`${cleanBase}/api/seo/generate`, {
+          method: "POST",
+          headers: {
+             "Content-Type": "application/json",
+             "Authorization": `Bearer ${token}` 
+          },
+          body: JSON.stringify({ keyword })
+       });
+       
+       const data = await response.json() as { success: boolean; slug?: string; url?: string; error?: string };
+       if (!response.ok || data.error) {
+          throw new Error(data.error || "Generation failed");
+       }
+       return data;
     }
   }
 };

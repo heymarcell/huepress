@@ -26,6 +26,7 @@ const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const AdminDesignRequests = lazy(() => import("./pages/admin/DesignRequests"));
 const AdminBlogList = lazy(() => import("./pages/admin/BlogList"));
 const AdminBlogEditor = lazy(() => import("./pages/admin/BlogEditor"));
+const AdminSeoDashboard = lazy(() => import("./pages/admin/SeoDashboard"));
 const UserDashboard = lazy(() => import("./pages/UserDashboard"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
 
@@ -102,6 +103,7 @@ export default function App() {
         <Route path="blog" element={<AdminBlogList />} />
         <Route path="blog/new" element={<AdminBlogEditor />} />
         <Route path="blog/:id/edit" element={<AdminBlogEditor />} />
+        <Route path="seo" element={<AdminSeoDashboard />} />
         <Route path="settings" element={<AdminSettings />} />
       </Route>
       </Routes>
