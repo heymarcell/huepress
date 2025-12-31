@@ -136,7 +136,6 @@ export async function discoverKeywords(seed: string, env?: { OPENAI_API_KEY?: st
         return {
             results: rawKeywords.map(k => ({
                 keyword: k,
-                source: 'google' as const,
                 score: 1.0
             }))
         };
