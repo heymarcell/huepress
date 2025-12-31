@@ -1,20 +1,15 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useUser } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
-import { ResourceCard, ResourceCardSkeleton, Heading, Button } from "@/components/ui";
+import { ResourceCard, ResourceCardSkeleton, Button } from "@/components/ui";
 import SEO from "@/components/SEO";
 import Markdown from "react-markdown";
 
 export default function CollectionPage() {
-  const { slug } = useParams<{ slug: string }>();
-  // Sync scroll listener for sticky headers if needed
-  // useEffect(() => {
-  //   const handleScroll = () => {
-  //     setIsScrolled(window.scrollY > 150);
-  //   };
-  //   window.addEventListener("scroll", handleScroll);
-  //   return () => window.removeEventListener("scroll", handleScroll);
-  // }, []);
+  const { slug } = useParams<{ slug: string }>(); 
+  const { user } = useUser();
+  const isSubscriber = user?.publicMetadata?.role === "subscriber" || user?.publicMetadata?.subscriptionStatus === "active";
 
   const { data: pageData, isLoading, error } = useQuery({
     queryKey: ["collection", slug],
@@ -25,13 +20,15 @@ export default function CollectionPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="h-12 w-2/3 bg-gray-200 rounded-lg animate-pulse mb-6" />
-        <div className="h-4 w-full bg-gray-200 rounded animate-pulse mb-12 max-w-2xl" />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => (
-            <ResourceCardSkeleton key={i} />
-          ))}
+      <div className="min-h-screen bg-paper">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="h-12 w-2/3 bg-gray-200 rounded-lg animate-pulse mb-6 mx-auto" />
+          <div className="h-4 w-full bg-gray-200 rounded animate-pulse mb-12 max-w-2xl mx-auto" />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {[...Array(8)].map((_, i) => (
+              <ResourceCardSkeleton key={i} />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -39,7 +36,7 @@ export default function CollectionPage() {
 
   if (error || !pageData) {
     return (
-      <div className="min-h-[50vh] flex flex-col items-center justify-center text-center px-4">
+      <div className="min-h-screen bg-paper flex flex-col items-center justify-center text-center px-4">
         <h1 className="text-2xl font-bold text-ink mb-4">Collection Not Found</h1>
         <p className="text-gray-500 mb-6">We couldn't find the coloring pages you were looking for.</p>
         <Link to="/vault">
@@ -50,7 +47,7 @@ export default function CollectionPage() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="min-h-screen bg-paper">
       <SEO 
         title={pageData.title}
         description={pageData.meta_description}
@@ -59,24 +56,29 @@ export default function CollectionPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         
-        {/* Hero Section */}
-        <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16">
-           <Heading as="h1" variant="h1" className="mb-6">{pageData.title}</Heading> 
+        {/* Hero Section - Compact & Clean */}
+        <div className="max-w-4xl mx-auto mb-12">
+           <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-ink mb-4 text-center">
+             {pageData.title}
+           </h1>
            
            {/* AI Generated Intro Content */}
-           <div className="prose prose-lg prose-gray mx-auto text-gray-600">
+           <div className="prose prose-gray mx-auto text-gray-600 text-center max-w-3xl">
              <Markdown>{pageData.intro_content}</Markdown>
            </div>
         </div>
 
-        {/* The Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 gap-y-8">
-           {pageData.assets.map((asset) => {
+        {/* The Grid - Match Vault exactly */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 gap-y-6 sm:gap-y-8 mb-16">
+           {pageData.assets.map((asset, index) => {
              // Parse tags - they come as comma-separated string from DB
              const tags = asset.tags as unknown;
              const tagsArray = typeof tags === 'string' 
                ? tags.split(',').map((t: string) => t.trim()).filter(Boolean)
                : Array.isArray(tags) ? tags : [];
+
+             // Check if new (within last 7 days)
+             const isNew = asset.created_at && new Date(asset.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) ? true : false;
 
              return (
                <ResourceCard
@@ -85,47 +87,52 @@ export default function CollectionPage() {
                  title={asset.title}
                  imageUrl={asset.image_url}
                  tags={tagsArray}
-                 isLocked={false}
+                 isLocked={!isSubscriber}
+                 isNew={isNew}
+                 isSubscriber={isSubscriber}
                  slug={asset.slug}
                  assetId={asset.asset_id}
+                 priority={index < 4}
                />
              );
            })}
         </div>
 
-        {/* Related Collections (Internal Link Mesh) */}
+        {/* Related Collections */}
         {pageData.related && pageData.related.length > 0 && (
-           <div className="mt-16 mb-12">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Explore Related Collections</h3>
-              <div className="flex flex-wrap gap-3">
+           <div className="mb-16">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">More Collections You'll Love</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                  {pageData.related.map((link) => (
                     <Link 
                       key={link.slug} 
                       to={`/collection/${link.slug}`}
-                      className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-600 hover:text-primary hover:border-blue-200 hover:shadow-sm transition-all"
+                      className="group p-4 bg-white border-2 border-gray-100 rounded-xl hover:border-primary/30 hover:shadow-md transition-all"
                     >
-                      {link.target_keyword}
+                      <h3 className="font-medium text-ink group-hover:text-primary transition-colors line-clamp-2">
+                        {link.title || link.target_keyword}
+                      </h3>
+                      <p className="text-xs text-gray-400 mt-1">{link.target_keyword}</p>
                     </Link>
                  ))}
               </div>
            </div>
         )}
 
-        {/* Bottom CTA */}
-        <div className="mt-20 text-center bg-white rounded-2xl p-8 sm:p-12 border border-blue-100 shadow-sm max-w-4xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold text-ink mb-4">
-            Get these {pageData.assets.length} designs + 500 more
+        {/* Bottom CTA - More compact */}
+        <div className="text-center bg-white rounded-2xl p-8 sm:p-10 border-2 border-primary/10 shadow-sm max-w-3xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-ink mb-3">
+            Unlock {pageData.assets.length} Designs + 500 More
           </h2>
-          <p className="text-gray-600 mb-8 text-lg">
-            Join HuePress to unlock instant PDF downloads for every single coloring page in our vault.
-            Therapist-approved, bold lines, frustration-free.
+          <p className="text-gray-600 mb-6">
+            Instant PDF downloads. Bold lines. Therapist-approved. Cancel anytime.
           </p>
           <Link to="/pricing">
              <Button variant="primary" size="lg" className="w-full sm:w-auto px-12">
-               Unlock Full Access ($5/mo)
+               Join HuePress Club ($5/mo)
              </Button>
           </Link>
-          <p className="mt-4 text-sm text-gray-400">Cancel anytime. 7-day money-back guarantee.</p>
+          <p className="mt-4 text-sm text-gray-400">7-day money-back guarantee</p>
         </div>
 
       </div>
