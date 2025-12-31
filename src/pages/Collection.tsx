@@ -90,6 +90,24 @@ export default function CollectionPage() {
            ))}
         </div>
 
+        {/* Related Collections (Internal Link Mesh) */}
+        {pageData.related && pageData.related.length > 0 && (
+           <div className="mt-16 mb-12">
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Explore Related Collections</h3>
+              <div className="flex flex-wrap gap-3">
+                 {pageData.related.map((link: any) => (
+                    <Link 
+                      key={link.slug} 
+                      to={`/collection/${link.slug}`}
+                      className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-600 hover:text-primary hover:border-blue-200 hover:shadow-sm transition-all"
+                    >
+                      {link.target_keyword}
+                    </Link>
+                 ))}
+              </div>
+           </div>
+        )}
+
         {/* Bottom CTA */}
         <div className="mt-20 text-center bg-white rounded-2xl p-8 sm:p-12 border border-blue-100 shadow-sm max-w-4xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold text-ink mb-4">

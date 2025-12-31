@@ -41,9 +41,16 @@ app.get("/landing-pages/:slug", async (c) => {
     `SELECT * FROM assets WHERE id IN (${placeholders}) AND status = 'published'`
   ).bind(...assetIds).all<Asset>();
 
+  // 4. Fetch Related Collections (Internal Linking Mesh)
+  // Simple strategy: Random 8 other pages.
+  const related = await c.env.DB.prepare(
+    "SELECT slug, title, target_keyword FROM landing_pages WHERE status = 1 AND id != ? ORDER BY RANDOM() LIMIT 8"
+  ).bind(page.id).all<any>();
+
   return c.json({
     ...page,
-    assets: assets.results
+    assets: assets.results,
+    related: related.results || []
   });
 });
 

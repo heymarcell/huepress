@@ -433,7 +433,14 @@ export const apiClient = {
   },
   seo: {
     getLandingPage: async (slug: string) => {
-       return fetchApi<{ title: string; meta_description: string; intro_content: string; target_keyword: string; assets: Asset[] }>(`/api/seo/landing-pages/${slug}`);
+       return fetchApi<{ 
+         title: string; 
+         meta_description: string; 
+         intro_content: string; 
+         target_keyword: string; 
+         assets: Asset[];
+         related: { slug: string; title: string; target_keyword: string }[];
+       }>(`/api/seo/landing-pages/${slug}`);
     },
     generate: async (keyword: string) => {
        const token = await window.Clerk?.session?.getToken();
