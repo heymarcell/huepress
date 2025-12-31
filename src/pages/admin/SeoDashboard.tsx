@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button, AlertModal } from "@/components/ui";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
@@ -21,8 +21,8 @@ export default function SeoDashboard() {
   
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; pageId: string; pageTitle: string }>({ isOpen: false, pageId: '', pageTitle: '' });
 
-  // Fetch pages
-  const loadPages = async () => {
+  // Fetch pages - wrapped in useCallback to prevent infinite loops
+  const loadPages = useCallback(async () => {
     try {
       setIsLoadingPages(true);
       const offset = (currentPage - 1) * itemsPerPage;
@@ -39,11 +39,11 @@ export default function SeoDashboard() {
     } finally {
       setIsLoadingPages(false);
     }
-  };
+  }, [currentPage, searchQuery]);
 
   useEffect(() => {
     loadPages();
-  }, [currentPage, searchQuery]);
+  }, [loadPages]);
 
   // Reset to page 1 when search changes
   useEffect(() => {
