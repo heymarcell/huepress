@@ -55,7 +55,7 @@ export async function getGoogleSuggestions(query: string): Promise<string[]> {
 }
 
 // 3. Orchestrator
-export async function discoverKeywords(seed: string): Promise<{ results: KeywordSuggestion[] }> {
+export async function discoverKeywords(seed: string, env?: { OPENAI_API_KEY?: string }): Promise<{ results: KeywordSuggestion[] }> {
     const baseSearch = "coloring pages";
     const suggestions = new Set<string>();
 
@@ -129,7 +129,7 @@ export async function discoverKeywords(seed: string): Promise<{ results: Keyword
         const redditTrends = await getRedditTrends();
 
         // D. AI Expansion & Scoring with Reddit context
-        const enhancedResults = await expandAndScoreWithAI(seed, rawKeywords, redditTrends);
+        const enhancedResults = await expandAndScoreWithAI(seed, rawKeywords, redditTrends, env);
         return { results: enhancedResults };
     } catch (error) {
         console.error('AI expansion failed, returning basic keywords:', error);
@@ -191,9 +191,10 @@ async function getRedditTrends(): Promise<string[]> {
 async function expandAndScoreWithAI(
     seed: string, 
     discoveredKeywords: string[],
-    redditTrends: string[]
+    redditTrends: string[],
+    env?: { OPENAI_API_KEY?: string }
 ): Promise<KeywordSuggestion[]> {
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    const OPENAI_API_KEY = env?.OPENAI_API_KEY;
     
     if (!OPENAI_API_KEY) {
         console.warn('No OpenAI API key - skipping AI enhancement');

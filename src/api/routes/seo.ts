@@ -372,7 +372,7 @@ app.post("/research", async (c) => {
   const body = await c.req.json<{ seed: string }>();
   if (!body.seed) return c.json({ error: "Seed keyword required" }, 400);
 
-  const keywords = await discoverKeywords(body.seed);
+  const keywords = await discoverKeywords(body.seed, c.env);
   
   return c.json({ 
     success: true,
@@ -410,7 +410,7 @@ app.post("/bulk-auto-generate", async (c) => {
 
     try {
       // 1. Research keywords for this seed
-      const keywordsResponse = await discoverKeywords(seed);
+      const keywordsResponse = await discoverKeywords(seed, c.env);
       const keywords = keywordsResponse.results;
       seedResult.discovered = keywords.length;
 
