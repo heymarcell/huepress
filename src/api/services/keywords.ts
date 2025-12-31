@@ -1,8 +1,9 @@
 
+
 export interface KeywordSuggestion {
   keyword: string;
   source: 'google' | 'datamuse' | 'gpt';
-  score?: number;
+  score: number;
 }
 
 // 1. Datamuse: Get contextually related words
