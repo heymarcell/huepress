@@ -202,35 +202,12 @@ export default function SeoDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          {isLoadingPages ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-3xl font-bold text-ink">{isLoadingPages ? '...' : pages.length}</p>
+              <p className="text-sm text-gray-500">Landing Pages</p>
             </div>
-          ) : pages.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="bg-sand-50 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-10 h-10 text-primary" />
-              </div>
-              <h3 className="font-serif text-h4 text-ink mb-2">Ready to Create Collections</h3>
-              <p className="text-ink-light max-w-md mx-auto mb-6">
-                Click <strong>"Discover Keywords"</strong> to generate 200+ SEO-optimized topics with AI + Reddit trends, then bulk generate your collection pages.
-              </p>
-              <div className="flex items-center justify-center gap-2 text-sm text-ink-light">
-                <CheckCircle className="w-4 h-4 text-primary" />
-                <span>Dynamic assets • 24h edge cache • Duplicate protection</span>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-ink">{pages.length}</p>
-                <p className="text-sm text-gray-500">Landing Pages</p>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 
