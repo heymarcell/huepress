@@ -72,14 +72,10 @@ export async function discoverKeywords(seed: string): Promise<{ results: Keyword
         'buy', 'shop', 'amazon', 'etsy', 'pdf download free'
     ];
 
+
     // Helper: Check if keyword is relevant
     const isRelevant = (kw: string): boolean => {
         const lower = kw.toLowerCase();
-        
-        // Must contain coloring-related term
-        if (!lower.includes('coloring') && !lower.includes('colouring')) {
-            return false;
-        }
         
         // Must NOT contain blacklisted terms
         if (blacklist.some(term => lower.includes(term))) {
@@ -88,6 +84,12 @@ export async function discoverKeywords(seed: string): Promise<{ results: Keyword
         
         // English check: Reject if contains non-ASCII chars (except common ones)
         if (/[äöüßąćęłńóśźżñ]/i.test(lower)) {
+            return false;
+        }
+        
+        // Minimum quality check: Should be at least 3 words (avoids too generic)
+        const wordCount = lower.trim().split(/\s+/).length;
+        if (wordCount < 2) {
             return false;
         }
         
