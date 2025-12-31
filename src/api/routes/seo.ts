@@ -441,7 +441,7 @@ app.post("/generate", async (c) => {
     }
   }
   
-import { notifyIndexNow } from "../../lib/indexnow";
+
 
 // ... inside POST handler ...
 
@@ -462,7 +462,7 @@ import { notifyIndexNow } from "../../lib/indexnow";
       // SOTA: Instant Indexing via IndexNow
       // Fire-and-forget to avoid slowing down response
       const pageUrl = `https://huepress.co/collection/${slug}`;
-      notifyIndexNow(pageUrl).catch(e => console.error("IndexNow failed", e));
+      notifyIndexNow(pageUrl).catch((e: unknown) => console.error("IndexNow failed", e));
 
   } catch (e) {
       console.error("DB Insert failed", e);
