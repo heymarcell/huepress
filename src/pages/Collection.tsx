@@ -4,6 +4,7 @@ import { useUser } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
 import { ResourceCard, ResourceCardSkeleton, Button } from "@/components/ui";
 import SEO from "@/components/SEO";
+import { StructuredData } from "@/components/StructuredData";
 import Markdown from "react-markdown";
 
 export default function CollectionPage() {
