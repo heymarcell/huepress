@@ -442,7 +442,7 @@ export const apiClient = {
          related: { slug: string; title: string; target_keyword: string }[];
        }>(`/api/seo/landing-pages/${slug}`);
     },
-    generate: async (keyword: string) => {
+    generate: async (keyword: string, force: boolean = false) => {
        const token = await window.Clerk?.session?.getToken();
        // Using POST /api/seo/generate
        const cleanBase = API_URL.replace(/\/$/, "");
@@ -452,7 +452,7 @@ export const apiClient = {
              "Content-Type": "application/json",
              "Authorization": `Bearer ${token}` 
           },
-          body: JSON.stringify({ keyword })
+          body: JSON.stringify({ keyword, force })
        });
        
        const data = await response.json() as { success: boolean; slug?: string; url?: string; error?: string };

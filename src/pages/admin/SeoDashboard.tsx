@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button, AlertModal } from "@/components/ui";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, XCircle, ExternalLink, Trash2, FileText, Sparkles, Search, ChevronLeft, ChevronRight, Globe } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, ExternalLink, Trash2, FileText, Sparkles, Search, ChevronLeft, ChevronRight, Globe, RefreshCw } from "lucide-react";
 
 export default function SeoDashboard() {
   const [keywords, setKeywords] = useState("");
@@ -63,6 +63,27 @@ export default function SeoDashboard() {
     } catch (error) {
       toast.error("Failed to delete page");
       console.error(error);
+    }
+  };
+  // Map of page IDs that are currently regenerating
+  const [isRegenerating, setIsRegenerating] = useState<Set<string>>(new Set());
+
+  const handleRegenerate = async (pageId: string, keyword: string) => {
+    setIsRegenerating(prev => new Set(prev).add(pageId));
+    try {
+      await apiClient.seo.generate(keyword, true);
+      toast.success("Page regenerated successfully!");
+      // We don't need to full reload, but it's good to ensure data is fresh
+      loadPages();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to regenerate page");
+    } finally {
+      setIsRegenerating(prev => {
+        const next = new Set(prev);
+        next.delete(pageId);
+        return next;
+      });
     }
   };
 
@@ -352,6 +373,14 @@ Tip: Click 'Discover Keywords' to auto-fill with 200+ AI suggestions"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
+                      <button
+                        onClick={() => handleRegenerate(page.id, page.target_keyword)}
+                        disabled={isRegenerating.has(page.id)}
+                        className="p-2 text-gray-400 hover:text-secondary rounded-lg hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Regenerate Page Content (will re-run AI)"
+                      >
+                         <RefreshCw className={`w-4 h-4 ${isRegenerating.has(page.id) ? 'animate-spin' : ''}`} />
+                      </button>
                       <button
                         onClick={() => handleDelete(page.id, page.title)}
                         className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-100 transition-all"
