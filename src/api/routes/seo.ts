@@ -298,12 +298,17 @@ app.post("/generate", async (c) => {
     
     2. **Metadata Matching**:
        - **Skill Level**: If keyword implies "easy" or "kids", prioritize 'skill: "beginner"'. If "intricate" or "adults", prioritize 'skill: "intermediate"' or 'skill: "advanced"'.
-       - **Category**: Ensure 'category' aligns with the topic (e.g. "holidays" for Easter/Christmas).
-       - **Description**: Use the 'description' to verify specific details (e.g. ensuring a "garden" scene actually contains flowers/plants).
+       - **Category**: Ensure 'category' aligns with the topic.
+         - If keyword is Nature/Garden → REJECT 'Food', 'Vehicles', 'Space', 'Fantasy' (unless 'Fairy Garden').
+         - If keyword is Food/Cooking → REJECT 'Nature', 'Animals' (unless related).
+       - **Description**: Use the 'description' to verify specific details. 
 
-    3. **Quality Check**: Prefer assets with descriptive titles that explicitly mention the keyword concept.
+    3. **Visual Relevance Check**: 
+       - Imagine the visualization. Does "Pizza" belong in "Garden Scenes"? No.
+       - Does "Snowplow" belong in "Geometric Patterns"? No.
+       - REJECT any asset that creates a "Wait, what is this doing here?" reaction.
     
-    4. **Reject Mismatches**: If a candidate is totally off-topic (even if tagged similarly), REJECT it.
+    4. **Reject Mismatches**: If a candidate is totally off-topic (even if tagged similarly), REJECT it like a strict editor. Better to return fewer relevant results than garbage mixed in.
     
     5. **Minimum Standards**: Return AT LEAST 4 relevant assets. If you find fewer than 4 truly relevant matches, return what you can (even if <8).
     
@@ -312,6 +317,11 @@ app.post("/generate", async (c) => {
     Selected: ["Snowplow Morning Street Scene", "Space Explorer Astronaut"]
     → These are SCENES, not PATTERNS. Wrong intent!
     
+    BAD Example 2:
+    Keyword: "garden coloring pages"
+    Selected: ["Build Your Own Pizza Night"]
+    → Pizza is FOOD, not a Garden Scene. Even if it happens outdoors, it's not the primary subject. REJECT.
+
     GOOD Example:
     Keyword: "geometric patterns"
     Selected: ["Ocean Wave Chevron Mosaic", "China Slice Tile Pattern", "Mandala Circle Design"]
