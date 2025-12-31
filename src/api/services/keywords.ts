@@ -121,14 +121,27 @@ export async function discoverKeywords(seed: string): Promise<{ results: Keyword
         }
     }
 
-    // C. Fetch Reddit Trends
-    const redditTrends = await getRedditTrends();
-
-    // D. AI Expansion & Scoring with Reddit context
     const rawKeywords = Array.from(suggestions);
-    const enhancedResults = await expandAndScoreWithAI(seed, rawKeywords, redditTrends);
 
-    return { results: enhancedResults };
+    // Try enhanced AI discovery, fallback to basic if it fails
+    try {
+        // C. Fetch Reddit Trends
+        const redditTrends = await getRedditTrends();
+
+        // D. AI Expansion & Scoring with Reddit context
+        const enhancedResults = await expandAndScoreWithAI(seed, rawKeywords, redditTrends);
+        return { results: enhancedResults };
+    } catch (error) {
+        console.error('AI expansion failed, returning basic keywords:', error);
+        // Fallback: return discovered keywords without AI enhancement
+        return {
+            results: rawKeywords.map(k => ({
+                keyword: k,
+                source: 'google' as const,
+                score: 1.0
+            }))
+        };
+    }
 }
 
 // Fetch trending topics from Reddit coloring communities
