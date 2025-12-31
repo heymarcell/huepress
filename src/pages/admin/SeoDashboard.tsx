@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Heading, Button, AlertModal } from "@/components/ui";
+import { Button, AlertModal } from "@/components/ui";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, XCircle, Globe, ExternalLink, Trash2 } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Globe, ExternalLink, Trash2, FileText, Sparkles, ArrowUpRight } from "lucide-react";
 
 export default function SeoDashboard() {
   const [keywords, setKeywords] = useState("");
@@ -65,22 +65,13 @@ export default function SeoDashboard() {
          
          setLogs(prev => {
             const newLogs = [...prev];
-            newLogs[i] = { 
-                keyword, 
-                status: 'success', 
-                message: res.slug, 
-                url: res.url 
-            };
+            newLogs[i] = { keyword, status: 'success', url: `/collection/${res.slug}` };
             return newLogs;
          });
        } catch (error) {
          setLogs(prev => {
             const newLogs = [...prev];
-            newLogs[i] = { 
-                keyword, 
-                status: 'error', 
-                message: error instanceof Error ? error.message : "Failed" 
-            };
+            newLogs[i] = { keyword, status: 'error', message: error instanceof Error ? error.message : 'Unknown error' };
             return newLogs;
          });
        }
@@ -88,6 +79,7 @@ export default function SeoDashboard() {
 
     setIsGenerating(false);
     toast.success("Batch generation complete");
+    loadPages(); // Refresh list
   };
 
   const handleAutoGenerate = async () => {
@@ -115,158 +107,197 @@ export default function SeoDashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-         <div>
-           <Heading>pSEO Keyword Engine</Heading>
-           <p className="text-gray-500">Turn keywords into traffic. 1 keyword = 1 landing page.</p>
-         </div>
-         <div className="flex gap-2">
-            <Button 
-              variant="primary" 
-              onClick={handleAutoGenerate}
-              disabled={isGenerating}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Discovering...
-                </>
-              ) : (
-                "Discover Keywords"
-              )}
-            </Button>
-            <Button variant="outline" onClick={() => window.open("/sitemap.xml", "_blank")}>
-               <Globe className="w-4 h-4 mr-2" />
-               View Sitemap
-            </Button>
-         </div>
+    <div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="font-serif text-h2 text-ink mb-2">pSEO Engine</h1>
+        <p className="text-gray-500">Automated keyword research and landing page generation</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-         {/* Input Section */}
-         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Target Keywords (One per line)
-            </label>
-            <textarea 
-              className="w-full h-96 p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none"
-              placeholder={`coloring pages for anxiety
+      {/* Stats & Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Stat Card */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-primary/20 transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-lg">
+              <FileText className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-ink mb-1">{existingPages.length}</p>
+          <p className="text-sm font-medium text-gray-500">Landing Pages</p>
+        </div>
+
+        {/* Quick Action: Discover Keywords */}
+        <button
+          onClick={handleAutoGenerate}
+          disabled={isGenerating}
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-primary/30 hover:shadow-md transition-all group text-left disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary group-hover:scale-110 transition-all">
+              <Sparkles className="w-6 h-6 text-primary group-hover:text-white transition-colors" />
+            </div>
+          </div>
+          <p className="font-semibold text-ink group-hover:text-primary transition-colors mb-1">Discover Keywords</p>
+          <p className="text-xs text-gray-500">Auto-fill 40 keyword suggestions</p>
+        </button>
+
+        {/* Quick Action: View Sitemap */}
+        <a
+          href="/sitemap.xml"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-primary/30 hover:shadow-md transition-all group text-left"
+        >
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-12 h-12 bg-ink/10 rounded-xl flex items-center justify-center group-hover:bg-ink group-hover:scale-110 transition-all">
+              <Globe className="w-6 h-6 text-ink group-hover:text-white transition-colors" />
+            </div>
+          </div>
+          <p className="font-semibold text-ink group-hover:text-primary transition-colors mb-1 flex items-center gap-2">
+            View Sitemap
+            <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </p>
+          <p className="text-xs text-gray-500">Check indexed pages</p>
+        </a>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Input Section - 2 columns */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Keyword Input Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="font-serif font-bold text-xl text-ink">Target Keywords</h2>
+              <p className="text-sm text-gray-500 mt-1">One keyword per line - each becomes a unique landing page</p>
+            </div>
+            <div className="p-6">
+              <textarea
+                className="w-full h-64 p-4 border border-gray-200 rounded-lg font-mono text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                placeholder="coloring pages for anxiety
 coloring pages for adhd
 cute dragon coloring pages
-easy mandala coloring pages`}
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              disabled={isGenerating}
-            />
-            
-            <div className="mt-4 flex justify-end">
-               <Button 
-                 variant="primary" 
-                 size="lg" 
-                 onClick={handleBulkGenerate} 
-                 disabled={isGenerating || !keywords.trim()}
-                 className="w-full sm:w-auto"
-               >
-                 {isGenerating ? (
-                   <>
-                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                     Generating...
-                   </>
-                 ) : (
-                   "Generate Pages"
-                 )}
-               </Button>
+easy mandala coloring pages"
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                disabled={isGenerating}
+              />
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-xs text-gray-500">
+                  {keywords.split('\n').filter(k => k.trim()).length} keywords ready
+                </p>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={handleBulkGenerate}
+                  disabled={isGenerating || !keywords.trim()}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate Pages"
+                  )}
+                </Button>
+              </div>
             </div>
-         </div>
+          </div>
 
-         {/* Logs Section */}
-         <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 h-[30rem] overflow-y-auto">
-            <h3 className="font-medium text-gray-900 mb-4 sticky top-0 bg-gray-50 pb-2 border-b">
-               Execution Log
-            </h3>
-            
-            {logs.length === 0 ? (
-               <div className="text-center text-gray-400 py-20">
-                  Waiting for input...
-               </div>
-            ) : (
-               <div className="space-y-3">
+          {/* Execution Log Card */}
+          {logs.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-6 border-b border-gray-100">
+                <h2 className="font-serif font-bold text-xl text-ink">Generation Log</h2>
+              </div>
+              <div className="p-4 max-h-96 overflow-y-auto">
+                <div className="space-y-2">
                   {logs.map((log, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-                       <div className="flex items-center gap-3">
-                          {log.status === 'pending' && <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />}
-                          {log.status === 'success' && <CheckCircle className="w-4 h-4 text-green-500" />}
-                          {log.status === 'error' && <XCircle className="w-4 h-4 text-red-500" />}
-                          
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{log.keyword}</p>
-                            {log.message && <p className="text-xs text-gray-500 truncate max-w-[200px]">{log.message}</p>}
-                          </div>
-                       </div>
-                       
-                       {log.url && (
-                         <a href={log.url} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-400 hover:text-primary transition-colors">
-                            <ExternalLink className="w-4 h-4" />
-                         </a>
-                       )}
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {log.status === 'pending' && <Loader2 className="w-4 h-4 text-blue-500 animate-spin flex-shrink-0" />}
+                        {log.status === 'success' && <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />}
+                        {log.status === 'error' && <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-ink truncate">{log.keyword}</p>
+                          {log.message && (
+                            <p className="text-xs text-gray-500 truncate">{log.message}</p>
+                          )}
+                        </div>
+                      </div>
+                      {log.url && (
+                        <a href={log.url} target="_blank" rel="noopener noreferrer" className="ml-2 p-2 text-gray-400 hover:text-primary transition-colors flex-shrink-0">
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
                     </div>
                   ))}
-               </div>
-             )}
-          </div>
-       </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
-       {/* Existing Pages List */}
-       <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-             <h3 className="font-medium text-gray-900">Existing pSEO Pages ({existingPages.length})</h3>
-             <Button variant="outline" size="sm" onClick={loadPages} disabled={isLoadingPages}>
-                {isLoadingPages ? <Loader2 className="w-4 h-4 animate-spin" /> : "Refresh"}
-             </Button>
+        {/* Existing Pages Sidebar - 1 column */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-fit sticky top-6">
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="font-serif font-bold text-xl text-ink">Generated Pages</h2>
+            <button
+              onClick={loadPages}
+              disabled={isLoadingPages}
+              className="text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+            >
+              {isLoadingPages ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <span className="text-sm font-medium">Refresh</span>
+              )}
+            </button>
           </div>
 
           {isLoadingPages ? (
-             <div className="text-center text-gray-400 py-8">
-                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                Loading pages...
-             </div>
+            <div className="p-8 text-center">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-gray-400" />
+              <p className="text-sm text-gray-500">Loading...</p>
+            </div>
           ) : existingPages.length === 0 ? (
-             <div className="text-center text-gray-400 py-8">
-                No pages created yet. Generate some above!
-             </div>
+            <div className="p-8 text-center">
+              <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+              <p className="text-sm font-medium text-gray-500">No pages yet</p>
+              <p className="text-xs text-gray-400 mt-1">Generate keywords above to start</p>
+            </div>
           ) : (
-             <div className="space-y-2 max-h-96 overflow-y-auto">
-                {existingPages.map((page) => (
-                   <div key={page.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex-1 min-w-0">
-                         <h4 className="font-medium text-sm text-gray-900 truncate">{page.title}</h4>
-                         <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-gray-500">{page.target_keyword}</span>
-                            <span className="text-xs text-gray-400">•</span>
-                            <a 
-                               href={`/collection/${page.slug}`} 
-                               target="_blank" 
-                               rel="noopener noreferrer"
-                               className="text-xs text-primary hover:underline"
-                            >
-                               View page
-                            </a>
-                         </div>
-                      </div>
-                      <Button 
-                         variant="outline" 
-                         size="sm" 
-                         onClick={() => handleDelete(page.id, page.title)}
-                         className="ml-4 text-red-600 hover:text-red-700 hover:bg-red-50"
+            <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
+              {existingPages.map((page) => (
+                <div key={page.id} className="p-4 hover:bg-gray-50 transition-colors group">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm text-ink truncate mb-1">{page.title}</h3>
+                      <p className="text-xs text-gray-500 truncate mb-2">{page.target_keyword}</p>
+                      <a
+                        href={`/collection/${page.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline flex items-center gap-1"
                       >
-                         <Trash2 className="w-4 h-4" />
-                      </Button>
-                   </div>
-                ))}
-             </div>
+                        View page <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(page.id, page.title)}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
-       </div>
+        </div>
+      </div>
 
       {/* Delete Confirmation Modal */}
       <AlertModal
@@ -278,6 +309,6 @@ easy mandala coloring pages`}
         confirmText="Delete"
         onConfirm={confirmDelete}
       />
-     </div>
-   );
+    </div>
+  );
 }
