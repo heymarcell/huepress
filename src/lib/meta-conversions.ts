@@ -267,12 +267,20 @@ export async function trackLead(
   data: {
     email: string;
     externalId?: string;
+    clientIpAddress?: string;
+    clientUserAgent?: string;
+    fbp?: string;
+    fbc?: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
   return sendMetaEvent(accessToken, pixelId, {
     eventName: 'Lead',
     email: data.email,
     externalId: data.externalId,
+    clientIpAddress: data.clientIpAddress,
+    clientUserAgent: data.clientUserAgent,
+    fbp: data.fbp,
+    fbc: data.fbc,
     eventSourceUrl: `${siteUrl}/vault`,
   });
 }

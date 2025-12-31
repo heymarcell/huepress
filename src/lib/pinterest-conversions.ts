@@ -231,12 +231,16 @@ export async function trackPinterestLead(
   data: {
     email: string;
     externalId?: string;
+    clientIpAddress?: string;
+    clientUserAgent?: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
   return sendPinterestEvent(accessToken, adAccountId, {
     eventName: 'lead',
     email: data.email,
     externalId: data.externalId,
+    clientIpAddress: data.clientIpAddress,
+    clientUserAgent: data.clientUserAgent,
     eventSourceUrl: `${siteUrl}/vault`,
   });
 }
