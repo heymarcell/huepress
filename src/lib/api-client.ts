@@ -468,17 +468,23 @@ export const apiClient = {
           body: JSON.stringify({ seed })
        });
     },
-    list: async () => {
+    list: async (params?: { limit?: number; offset?: number; search?: string }) => {
        const token = await window.Clerk?.session?.getToken();
        const cleanBase = API_URL.replace(/\/$/, "");
-       const response = await fetch(`${cleanBase}/api/seo/landing-pages`, {
+       const queryParams = new URLSearchParams();
+       if (params?.limit) queryParams.set('limit', params.limit.toString());
+       if (params?.offset) queryParams.set('offset', params.offset.toString());
+       if (params?.search) queryParams.set('search', params.search);
+       const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+       
+       const response = await fetch(`${cleanBase}/api/seo/landing-pages${queryString}`, {
           headers: { "Authorization": `Bearer ${token}` }
        });
-       const data = await response.json() as { pages: { id: string; slug: string; target_keyword: string; title: string; is_published: number; created_at: string }[]; error?: string };
+       const data = await response.json() as { pages: { id: string; slug: string; target_keyword: string; title: string; is_published: number; created_at: string }[]; total: number; limit: number; offset: number; error?: string };
        if (!response.ok || data.error) {
           throw new Error(data.error || "Failed to list pages");
        }
-       return data.pages;
+       return data;
     },
     deletePage: async (id: string) => {
        const token = await window.Clerk?.session?.getToken();

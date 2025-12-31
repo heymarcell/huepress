@@ -45,11 +45,40 @@ app.get("/landing-pages", async (c) => {
   }
 
   try {
-    const pages = await c.env.DB.prepare(
-      "SELECT id, slug, target_keyword, title, is_published, created_at FROM landing_pages ORDER BY created_at DESC"
-    ).all<LandingPageRecord>();
+    // Pagination params
+    const limit = parseInt(c.req.query("limit") || "50");
+    const offset = parseInt(c.req.query("offset") || "0");
+    const search = c.req.query("search")?.trim();
 
-    return c.json({ pages: pages.results || [] });
+    // Build WHERE clause for search
+    let whereClause = "";
+    const params: string[] = [];
+    
+    if (search) {
+      whereClause = "WHERE title LIKE ? OR target_keyword LIKE ? OR slug LIKE ?";
+      const searchPattern = `%${search}%`;
+      params.push(searchPattern, searchPattern, searchPattern);
+    }
+
+    // Get total count
+    const countResult = await c.env.DB.prepare(
+      `SELECT COUNT(*) as total FROM landing_pages ${whereClause}`
+    ).bind(...params).first<{ total: number }>();
+
+    // Get paginated results
+    const pages = await c.env.DB.prepare(
+      `SELECT id, slug, target_keyword, title, is_published, created_at 
+       FROM landing_pages ${whereClause}
+       ORDER BY created_at DESC 
+       LIMIT ? OFFSET ?`
+    ).bind(...params, limit.toString(), offset.toString()).all<LandingPageRecord>();
+
+    return c.json({ 
+      pages: pages.results || [],
+      total: countResult?.total || 0,
+      limit,
+      offset
+    });
   } catch (error) {
     console.error("Failed to list pages:", error);
     return c.json({ error: "Failed to list pages" }, 500);
