@@ -19,6 +19,12 @@ interface Post {
   updated_at?: string;
 }
 
+interface LandingPage {
+  slug: string;
+  updated_at?: string;
+  created_at?: string;
+}
+
 export const onRequest = async (context: { env: Env }) => {
   const { env } = context;
   const baseUrl = "https://huepress.co";
@@ -74,6 +80,18 @@ export const onRequest = async (context: { env: Env }) => {
       console.error("Failed to fetch posts for sitemap:", err);
     }
 
+    // Fetch landing pages via API
+    let landingPages: LandingPage[] = [];
+    try {
+      const res = await fetch(`${apiUrl}/api/seo/sitemap`);
+      if (res.ok) {
+        const data = await res.json() as { pages?: LandingPage[] };
+        landingPages = data.pages || [];
+      }
+    } catch (err) {
+       console.error("Failed to fetch landing pages for sitemap:", err);
+    }
+
     // Generate XML
     let xmlEntries = "";
 
@@ -112,6 +130,19 @@ export const onRequest = async (context: { env: Env }) => {
     <lastmod>${lastMod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+  </url>`;
+    }
+
+    // Landing Pages (pSEO)
+    for (const page of landingPages) {
+      const url = `${baseUrl}/collection/${page.slug}`;
+      const lastMod = formatDate(page.updated_at || page.created_at);
+      xmlEntries += `
+  <url>
+    <loc>${url}</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>`;
     }
 

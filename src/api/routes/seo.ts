@@ -193,4 +193,16 @@ app.post("/generate", async (c) => {
   });
 });
 
+// GET /api/seo/sitemap
+// Returns all published landing page slugs for sitemap generation
+app.get("/sitemap", async (c) => {
+  const pages = await c.env.DB.prepare(
+    "SELECT slug, updated_at, created_at FROM landing_pages WHERE is_published = 1"
+  ).all<any>();
+
+  return c.json({ 
+    pages: pages.results 
+  });
+});
+
 export default app;
