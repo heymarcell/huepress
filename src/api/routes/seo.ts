@@ -321,13 +321,24 @@ app.post("/generate", async (c) => {
 
   // 4. Save to DB
   const slug = keyword.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  // Ensure uniqueness? We might overwrite or fail. Migration said UNIQUE on slug.
-  // Use INSERT OR REPLACE
+  
+  // Check if page already exists
+  const existingPage = await c.env.DB.prepare(
+    "SELECT id FROM landing_pages WHERE slug = ? OR target_keyword = ?"
+  ).bind(slug, keyword).first();
+  
+  if (existingPage) {
+    return c.json({ 
+      error: `Page already exists for keyword "${keyword}"`,
+      slug,
+      url: `/collection/${slug}`
+    }, 409); // 409 Conflict
+  }
   
   const landingPageId = crypto.randomUUID();
   try {
       await c.env.DB.prepare(`
-        INSERT OR REPLACE INTO landing_pages (id, slug, target_keyword, title, meta_description, intro_content, asset_ids, is_published, created_at)
+        INSERT INTO landing_pages (id, slug, target_keyword, title, meta_description, intro_content, asset_ids, is_published, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))
       `).bind(
           landingPageId, 
