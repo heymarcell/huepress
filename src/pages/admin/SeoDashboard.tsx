@@ -117,9 +117,9 @@ export default function SeoDashboard() {
         // Handle both {results: [...]} and {results: {results: [...]}}
         const results = Array.isArray(result.results) 
           ? result.results 
-          : (result.results?.results || []);
+          : (Array.isArray((result.results as any)?.results) ? (result.results as any).results : []);
         
-        const top5 = results.slice(0, 5).map((r: any) => r.keyword);
+        const top5 = results.slice(0, 5).map((r: { keyword: string }) => r.keyword);
         allKeywords.push(...top5);
       }
 
