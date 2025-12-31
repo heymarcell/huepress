@@ -63,11 +63,32 @@ app.get("/landing-pages/:slug", async (c) => {
   // 3. Fetch actual asset data
   // We need to construct a query with enough placeholders
   const placeholders = assetIds.map(() => "?").join(",");
-  const assets = await c.env.DB.prepare(
+  const assetsResult = await c.env.DB.prepare(
     `SELECT * FROM assets WHERE id IN (${placeholders}) AND status = 'published'`
   ).bind(...assetIds).all<Asset>();
 
-  // 4. Fetch Related Collections (Internal Linking Mesh)
+  // 4. Transform assets to include image_url (like in /assets endpoint)
+  const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
+  const assets = (assetsResult.results as unknown as Record<string, unknown>[])?.map((asset) => {
+    const r2Key = asset.r2_key_public;
+    let imageUrl: string | null = null;
+    
+    if (r2Key && typeof r2Key === 'string' && !r2Key.startsWith("__draft__")) {
+      // If already a full URL, use as-is; otherwise prepend CDN
+      imageUrl = r2Key.startsWith("http") ? r2Key : `${cdnUrl}/${r2Key}`;
+    }
+    
+    const tags = asset.tags;
+    const parsedTags = typeof tags === 'string' ? JSON.parse(tags) : [];
+    
+    return {
+      ...asset,
+      tags: parsedTags,
+      image_url: imageUrl,
+    };
+  }) || [];
+
+  // 5. Fetch Related Collections (Internal Linking Mesh)
   // Simple strategy: Random 8 other pages.
   const related = await c.env.DB.prepare(
     "SELECT slug, title, target_keyword FROM landing_pages WHERE is_published = 1 AND id != ? ORDER BY RANDOM() LIMIT 8"
@@ -75,7 +96,7 @@ app.get("/landing-pages/:slug", async (c) => {
 
   return c.json({
     ...page,
-    assets: assets.results,
+    assets: assets,
     related: related.results || []
   });
 });
