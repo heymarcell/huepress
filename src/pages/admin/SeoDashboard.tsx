@@ -154,55 +154,43 @@ export default function SeoDashboard() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="font-serif text-h2 text-ink">pSEO Pages</h1>
-            <p className="text-gray-500">Manage auto-generated landing pages</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowKeywordInput(!showKeywordInput)}
-            >
-              {showKeywordInput ? "Hide" : "Show"} Keyword Input
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleAutoGenerate}
-              disabled={isDiscovering}
-              title="Discover ~200 AI-generated keywords from 8 popular topics"
-            >
-              {isDiscovering ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Discovering...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Discover Keywords
-                </>
-              )}
-            </Button>
-            <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline">
-                <Globe className="w-4 h-4 mr-2" />
-                Sitemap
-              </Button>
-            </a>
-          </div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="font-serif text-h2 text-ink">pSEO Pages</h1>
+          <p className="text-gray-500">Manage auto-generated landing pages</p>
         </div>
-        
-        {/* Onboarding Hint */}
-        {!showKeywordInput && keywords.length === 0 && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 rounded-lg border border-primary/20 w-fit">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <p className="text-sm text-primary font-medium">
-              Start by discovering AI-powered keywords →
-            </p>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowKeywordInput(!showKeywordInput)}
+          >
+            {showKeywordInput ? "Hide" : "Show"} Keyword Input
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleAutoGenerate}
+            disabled={isDiscovering}
+            title="Discover ~200 AI-generated keywords from 8 popular topics"
+          >
+            {isDiscovering ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Discovering...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Discover Keywords
+              </>
+            )}
+          </Button>
+          <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer">
+            <Button variant="outline">
+              <Globe className="w-4 h-4 mr-2" />
+              Sitemap
+            </Button>
+          </a>
+        </div>
       </div>
 
       {/* Stats */}
