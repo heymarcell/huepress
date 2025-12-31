@@ -115,8 +115,10 @@ app.post("/generate", async (c) => {
   }
 
   // 1. Search Logic: Find candidates
-  // We look for assets that match the keyword text broadly.
-  // Using simple LIKE for now as FTS requires specific setup, but title/tags usually suffice.
+  // Strategy: 
+  // A. Strict Match (Exact phrase)
+  // B. Broad Match (Any of the non-stopword tokens)
+  
   const searchPattern = `%${keyword}%`;
   const candidates = await c.env.DB.prepare(`
     SELECT id, title, description, tags, category 
@@ -126,8 +128,40 @@ app.post("/generate", async (c) => {
     LIMIT 30
   `).bind(searchPattern, searchPattern, searchPattern).all<Asset>();
 
+  // Fallback: Broad Match if strict returned too few
+  if (!candidates.results || candidates.results.length < 10) {
+      const stopWords = ["coloring", "page", "pages", "printable", "sheet", "sheets", "pdf", "book", "for", "kids", "adults", "free", "download"];
+      const tokens = keyword.toLowerCase().split(/\s+/).filter(w => !stopWords.includes(w) && w.length > 2);
+      
+      if (tokens.length > 0) {
+          // Construct OR query for tokens
+          // "SELECT ... WHERE ... AND ( (title LIKE %t1% OR ...) )"
+          const conditions = tokens.map(() => "(title LIKE ? OR description LIKE ? OR tags LIKE ?)").join(" OR ");
+          const bindings = tokens.flatMap(t => [`%${t}%`, `%${t}%`, `%${t}%`]);
+          
+          const broadCandidates = await c.env.DB.prepare(`
+            SELECT id, title, description, tags, category 
+            FROM assets 
+            WHERE status = 'published' 
+            AND (${conditions})
+            LIMIT 50
+          `).bind(...bindings).all<Asset>(); // Use spread for bindings
+
+          // Merge results, removing duplicates
+          const existingIds = new Set(candidates.results?.map(a => a.id) || []);
+          const newItems = broadCandidates.results?.filter(a => !existingIds.has(a.id)) || [];
+          
+          candidates.results = [...(candidates.results || []), ...newItems];
+      }
+  }
+
+  // Final fallback: If still < 4, maybe the database is just empty or assets are untagged?
+  // We strictly require 4 to make a decent page.
   if (!candidates.results || candidates.results.length < 4) {
-      return c.json({ error: "Not enough assets found to generate a collection. Need at least 4." }, 400);
+      return c.json({ 
+        error: `Found only ${candidates.results?.length || 0} assets. Need at least 4. Try a broader keyword or add more assets.`,
+        debug_tokens: keyword.split(/\s+/)
+      }, 400);
   }
 
   // 2. AI Curation: "Pick the best 8"
