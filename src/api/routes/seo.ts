@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { getAuth } from "@hono/clerk-auth";
 import { Env } from "../types";
 import { Asset } from "../types";
 import { discoverKeywords } from "../services/keywords";
@@ -29,6 +30,56 @@ interface OpenAIResponse {
     message: string;
   };
 }
+
+// GET /api/seo/landing-pages - List all landing pages (admin only)
+app.get("/landing-pages", async (c) => {
+  const auth = getAuth(c);
+  if (!auth?.userId) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  // Check admin
+  const sessionClaims = auth.sessionClaims as { publicMetadata?: { role?: string } } | undefined;
+  if (sessionClaims?.publicMetadata?.role !== 'admin') {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+
+  try {
+    const pages = await c.env.DB.prepare(
+      "SELECT id, slug, target_keyword, title, is_published, created_at FROM landing_pages ORDER BY created_at DESC"
+    ).all<LandingPageRecord>();
+
+    return c.json({ pages: pages.results || [] });
+  } catch (error) {
+    console.error("Failed to list pages:", error);
+    return c.json({ error: "Failed to list pages" }, 500);
+  }
+});
+
+// DELETE /api/seo/landing-pages/:id - Delete a landing page (admin only)
+app.delete("/landing-pages/:id", async (c) => {
+  const id = c.req.param("id");
+  const auth = getAuth(c);
+  
+  if (!auth?.userId) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  // Check admin
+  const sessionClaims = auth.sessionClaims as { publicMetadata?: { role?: string } } | undefined;
+  if (sessionClaims?.publicMetadata?.role !== 'admin') {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+
+  try {
+    await c.env.DB.prepare("DELETE FROM landing_pages WHERE id = ?").bind(id).run();
+    return c.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete page:", error);
+    return c.json({ error: "Failed to delete page" }, 500);
+  }
+});
+
 
 // GET /api/seo/landing-pages/:slug
 app.get("/landing-pages/:slug", async (c) => {

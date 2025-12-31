@@ -1,13 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heading, Button } from "@/components/ui";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, XCircle, Globe, ExternalLink } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Globe, ExternalLink, Trash2 } from "lucide-react";
 
 export default function SeoDashboard() {
   const [keywords, setKeywords] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [logs, setLogs] = useState<{ keyword: string; status: 'pending' | 'success' | 'error'; message?: string; url?: string }[]>([]);
+  const [existingPages, setExistingPages] = useState<{ id: string; slug: string; target_keyword: string; title: string; is_published: number; created_at: string }[]>([]);
+  const [isLoadingPages, setIsLoadingPages] = useState(true);
+
+  // Fetch existing pages on load
+  useEffect(() => {
+    loadPages();
+  }, []);
+
+  const loadPages = async () => {
+    try {
+      setIsLoadingPages(true);
+      const pages = await apiClient.seo.list();
+      setExistingPages(pages);
+    } catch (error) {
+      console.error("Failed to load pages:", error);
+      toast.error("Failed to load existing pages");
+    } finally {
+      setIsLoadingPages(false);
+    }
+  };
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Delete "${title}"?`)) return;
+
+    try {
+      await apiClient.seo.deletePage(id);
+      toast.success("Page deleted");
+      loadPages(); // Refresh list
+    } catch (error) {
+      toast.error("Failed to delete page");
+      console.error(error);
+    }
+  };
 
   const handleBulkGenerate = async () => {
     const lines = keywords.split("\n").map(k => k.trim()).filter(k => k.length > 0);
@@ -54,31 +87,25 @@ export default function SeoDashboard() {
   };
 
   const handleAutoGenerate = async () => {
-    setIsGenerating(true);
-    setLogs([{ keyword: "Initializing...", status: 'pending' }]);
-
     try {
-      const result = await apiClient.seo.bulkAutoGenerate('priority', 50);
+      // Fetch keyword suggestions from the research endpoint
+      toast.info("Discovering keywords...");
+      const seeds = ['anxiety', 'adhd', 'bold', 'easy', 'mandala', 'geometric', 'floral', 'kids'];
+      const allKeywords: string[] = [];
       
-      // Transform results into log format
-      const generatedLogs: { keyword: string; status: 'pending' | 'success' | 'error'; message?: string; url?: string }[] = [];
-      
-      result.results.forEach(r => {
-        if (r.generated > 0) {
-          generatedLogs.push({ keyword: `${r.seed}: ${r.generated} pages created`, status: 'success', message: `Discovered: ${r.discovered}` });
-        } else if (r.errors.length > 0) {
-          r.errors.forEach(err => generatedLogs.push({ keyword: err, status: 'error' }));
-        }
-      });
+      for (const seed of seeds) {
+        const result = await apiClient.seo.research(seed);
+        const top5 = result.results.slice(0, 5).map(r => r.keyword);
+        allKeywords.push(...top5);
+      }
 
-      setLogs(generatedLogs);
-      toast.success(`Auto-generated ${result.totalGenerated} pages!`);
+      // Populate the textarea
+      setKeywords(allKeywords.join("\n"));
+      toast.success(`Discovered ${allKeywords.length} keywords! Review and click Generate.`);
     } catch (error) {
-      setLogs([{ keyword: "Auto-generation failed", status: 'error', message: error instanceof Error ? error.message : 'Unknown error' }]);
-      toast.error("Auto-generation failed");
+      toast.error("Failed to discover keywords");
+      console.error(error);
     }
-
-    setIsGenerating(false);
   };
 
   return (
@@ -97,10 +124,10 @@ export default function SeoDashboard() {
               {isGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Auto-Generating...
+                  Discovering...
                 </>
               ) : (
-                "🤖 Auto-Generate 50 Pages"
+                "Discover Keywords"
               )}
             </Button>
             <Button variant="outline" onClick={() => window.open("/sitemap.xml", "_blank")}>
@@ -180,9 +207,60 @@ easy mandala coloring pages`}
                     </div>
                   ))}
                </div>
-            )}
-         </div>
-      </div>
-    </div>
-  );
+             )}
+          </div>
+       </div>
+
+       {/* Existing Pages List */}
+       <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+             <h3 className="font-medium text-gray-900">Existing pSEO Pages ({existingPages.length})</h3>
+             <Button variant="outline" size="sm" onClick={loadPages} disabled={isLoadingPages}>
+                {isLoadingPages ? <Loader2 className="w-4 h-4 animate-spin" /> : "Refresh"}
+             </Button>
+          </div>
+
+          {isLoadingPages ? (
+             <div className="text-center text-gray-400 py-8">
+                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                Loading pages...
+             </div>
+          ) : existingPages.length === 0 ? (
+             <div className="text-center text-gray-400 py-8">
+                No pages created yet. Generate some above!
+             </div>
+          ) : (
+             <div className="space-y-2 max-h-96 overflow-y-auto">
+                {existingPages.map((page) => (
+                   <div key={page.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex-1 min-w-0">
+                         <h4 className="font-medium text-sm text-gray-900 truncate">{page.title}</h4>
+                         <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-gray-500">{page.target_keyword}</span>
+                            <span className="text-xs text-gray-400">•</span>
+                            <a 
+                               href={`/collection/${page.slug}`} 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               className="text-xs text-primary hover:underline"
+                            >
+                               View page
+                            </a>
+                         </div>
+                      </div>
+                      <Button 
+                         variant="outline" 
+                         size="sm" 
+                         onClick={() => handleDelete(page.id, page.title)}
+                         className="ml-4 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                         <Trash2 className="w-4 h-4" />
+                      </Button>
+                   </div>
+                ))}
+             </div>
+          )}
+       </div>
+     </div>
+   );
 }

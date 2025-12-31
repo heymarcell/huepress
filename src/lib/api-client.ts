@@ -468,6 +468,31 @@ export const apiClient = {
           body: JSON.stringify({ seed })
        });
     },
+    list: async () => {
+       const token = await window.Clerk?.session?.getToken();
+       const cleanBase = API_URL.replace(/\/$/, "");
+       const response = await fetch(`${cleanBase}/api/seo/landing-pages`, {
+          headers: { "Authorization": `Bearer ${token}` }
+       });
+       const data = await response.json() as { pages: { id: string; slug: string; target_keyword: string; title: string; is_published: number; created_at: string }[]; error?: string };
+       if (!response.ok || data.error) {
+          throw new Error(data.error || "Failed to list pages");
+       }
+       return data.pages;
+    },
+    deletePage: async (id: string) => {
+       const token = await window.Clerk?.session?.getToken();
+       const cleanBase = API_URL.replace(/\/$/, "");
+       const response = await fetch(`${cleanBase}/api/seo/landing-pages/${id}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+       });
+       const data = await response.json() as { success: boolean; error?: string };
+       if (!response.ok || !data.success) {
+          throw new Error(data.error || "Failed to delete page");
+       }
+       return data;
+    },
     bulkAutoGenerate: async (mode: 'priority' | 'full' = 'priority', limit: number = 50) => {
        const token = await window.Clerk?.session?.getToken();
        const cleanBase = API_URL.replace(/\/$/, "");
