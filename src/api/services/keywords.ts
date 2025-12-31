@@ -121,17 +121,64 @@ export async function discoverKeywords(seed: string): Promise<{ results: Keyword
         }
     }
 
-    // C. AI Expansion & Scoring (New!)
+    // C. Fetch Reddit Trends
+    const redditTrends = await getRedditTrends();
+
+    // D. AI Expansion & Scoring with Reddit context
     const rawKeywords = Array.from(suggestions);
-    const enhancedResults = await expandAndScoreWithAI(seed, rawKeywords);
+    const enhancedResults = await expandAndScoreWithAI(seed, rawKeywords, redditTrends);
 
     return { results: enhancedResults };
+}
+
+// Fetch trending topics from Reddit coloring communities
+async function getRedditTrends(): Promise<string[]> {
+    try {
+        const subreddits = ['Coloring', 'adultcoloring', 'coloringbooks'];
+        const trends: string[] = [];
+
+        for (const subreddit of subreddits) {
+            const response = await fetch(`https://www.reddit.com/r/${subreddit}/hot.json?limit=10`, {
+                headers: {
+                    'User-Agent': 'HuePress/1.0'
+                }
+            });
+
+            if (!response.ok) continue;
+
+            const data = await response.json() as {
+                data: {
+                    children: Array<{
+                        data: {
+                            title: string;
+                            selftext?: string;
+                        }
+                    }>
+                }
+            };
+
+            // Extract titles and clean them
+            data.data.children.forEach(post => {
+                const title = post.data.title.toLowerCase();
+                // Look for coloring-related terms
+                if (title.includes('coloring') || title.includes('colouring')) {
+                    trends.push(post.data.title);
+                }
+            });
+        }
+
+        return trends.slice(0, 15); // Return top 15 trending posts
+    } catch (error) {
+        console.error('Reddit fetch failed:', error);
+        return [];
+    }
 }
 
 // AI-Powered Keyword Expansion & Scoring
 async function expandAndScoreWithAI(
     seed: string, 
-    discoveredKeywords: string[]
+    discoveredKeywords: string[],
+    redditTrends: string[]
 ): Promise<KeywordSuggestion[]> {
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     
@@ -150,6 +197,12 @@ async function expandAndScoreWithAI(
 Seed topic: "${seed}"
 Discovered keywords: ${discoveredKeywords.slice(0, 20).join(', ')}
 
+${redditTrends.length > 0 ? `Current Reddit trends from r/Coloring communities:
+${redditTrends.slice(0, 10).map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+Use these trends to inform your keyword suggestions - they represent real current interest.
+` : ''}
+
 Task:
 1. Score each discovered keyword (0-10) for coloring pages relevance and search potential
 2. Generate 30 NEW related keyword variations that would make great coloring page landing pages
@@ -157,6 +210,7 @@ Task:
 Requirements for new keywords:
 - Must be specific and descriptive (3-6 words ideal)
 - Focus on themes, occasions, styles, age groups, difficulty levels
+- Consider Reddit trends if they align with the seed topic
 - Examples: "easy floral mandala coloring pages", "dinosaur coloring pages for toddlers"
 - Avoid generic terms, therapy/medical, art supplies, or software
 
