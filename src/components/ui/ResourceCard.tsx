@@ -7,7 +7,8 @@ export interface ResourceCardProps {
   assetId?: string; // HP-ANM-0001
   slug?: string;
   title: string;
-  imageUrl?: string;
+  imageUrl: string;
+  description?: string; // Short description for SEO
   tags?: string[];
   isLocked?: boolean;
   isNew?: boolean;
@@ -22,6 +23,7 @@ export function ResourceCard({
   slug,
   title,
   imageUrl,
+  description,
   tags = [],
   isLocked = true,
   isNew = false,
@@ -110,6 +112,14 @@ export function ResourceCard({
                 </span>
               )}
             </div>
+            
+            {/* Description - SEO rich content */}
+            {description && (
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-1 line-clamp-2">
+                {description}
+              </p>
+            )}
+            
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-1 sm:mt-1.5">
                 {tags.slice(0, 2).map((tag) => (
