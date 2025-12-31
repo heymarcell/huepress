@@ -53,6 +53,34 @@ export default function SeoDashboard() {
     toast.success("Batch generation complete");
   };
 
+  const handleAutoGenerate = async () => {
+    setIsGenerating(true);
+    setLogs([{ keyword: "Initializing...", status: 'pending' }]);
+
+    try {
+      const result = await apiClient.seo.bulkAutoGenerate('priority', 50);
+      
+      // Transform results into log format
+      const generatedLogs: { keyword: string; status: 'pending' | 'success' | 'error'; message?: string; url?: string }[] = [];
+      
+      result.results.forEach(r => {
+        if (r.generated > 0) {
+          generatedLogs.push({ keyword: `${r.seed}: ${r.generated} pages created`, status: 'success', message: `Discovered: ${r.discovered}` });
+        } else if (r.errors.length > 0) {
+          r.errors.forEach(err => generatedLogs.push({ keyword: err, status: 'error' }));
+        }
+      });
+
+      setLogs(generatedLogs);
+      toast.success(`Auto-generated ${result.totalGenerated} pages!`);
+    } catch (error) {
+      setLogs([{ keyword: "Auto-generation failed", status: 'error', message: error instanceof Error ? error.message : 'Unknown error' }]);
+      toast.error("Auto-generation failed");
+    }
+
+    setIsGenerating(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -60,10 +88,26 @@ export default function SeoDashboard() {
            <Heading>pSEO Keyword Engine</Heading>
            <p className="text-gray-500">Turn keywords into traffic. 1 keyword = 1 landing page.</p>
          </div>
-         <Button variant="outline" onClick={() => window.open("/sitemap.xml", "_blank")}>
-            <Globe className="w-4 h-4 mr-2" />
-            View Sitemap
-         </Button>
+         <div className="flex gap-2">
+            <Button 
+              variant="primary" 
+              onClick={handleAutoGenerate}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Auto-Generating...
+                </>
+              ) : (
+                "🤖 Auto-Generate 50 Pages"
+              )}
+            </Button>
+            <Button variant="outline" onClick={() => window.open("/sitemap.xml", "_blank")}>
+               <Globe className="w-4 h-4 mr-2" />
+               View Sitemap
+            </Button>
+         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

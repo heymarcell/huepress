@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { Env } from "../types";
 import { Asset } from "../types";
+import { discoverKeywords } from "../services/keywords";
+import { getAllSeeds, PRIORITY_SEEDS } from "../services/seed-library";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -260,6 +262,174 @@ app.get("/sitemap", async (c) => {
 
   return c.json({ 
     pages: pages.results 
+  });
+});
+
+// POST /api/seo/research
+// Smart Keyword Discovery
+app.post("/research", async (c) => {
+  const body = await c.req.json<{ seed: string }>();
+  if (!body.seed) return c.json({ error: "Seed keyword required" }, 400);
+
+  const keywords = await discoverKeywords(body.seed);
+  
+  return c.json({ 
+    success: true,
+    results: keywords
+  });
+});
+
+// POST /api/seo/bulk-auto-generate
+// Fully Automated: Research + Generate for all seed words
+app.post("/bulk-auto-generate", async (c) => {
+  const body = await c.req.json<{ mode?: 'priority' | 'full'; limit?: number }>();
+  const mode = body.mode || 'priority';
+  const limit = body.limit || 50;
+  
+  const apiKey = c.env.OPENAI_API_KEY;
+  if (!apiKey) {
+      return c.json({ error: "OPENAI_API_KEY not configured" }, 500);
+  }
+
+  // Choose seeds based on mode
+  const seeds = mode === 'priority' ? PRIORITY_SEEDS : getAllSeeds();
+  
+  const results: { seed: string; discovered: number; generated: number; errors: string[] }[] = [];
+  let totalGenerated = 0;
+
+  for (const seed of seeds) {
+    if (totalGenerated >= limit) break;
+
+    const seedResult = {
+      seed,
+      discovered: 0,
+      generated: 0,
+      errors: [] as string[]
+    };
+
+    try {
+      // 1. Research keywords for this seed
+      const keywordsResponse = await discoverKeywords(seed);
+      const keywords = keywordsResponse.results;
+      seedResult.discovered = keywords.length;
+
+      // 2. Generate pages for top keywords (limit to 5 per seed to avoid overwhelming)
+      const topKeywords = keywords.slice(0, 5);
+
+      for (const kw of topKeywords) {
+        if (totalGenerated >= limit) break;
+
+        try {
+          // Check if slug already exists (deduplication)
+          const slug = kw.keyword.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+          const existing = await c.env.DB.prepare(
+            "SELECT id FROM landing_pages WHERE slug = ?"
+          ).bind(slug).first();
+
+          if (existing) {
+            seedResult.errors.push(`${kw.keyword}: Already exists`);
+            continue;
+          }
+
+          // Generate the page (reuse logic from POST /generate)
+          // For brevity, I'll call the generation inline
+          // In production, you might extract this to a shared function
+
+          const searchPattern = `%${kw.keyword}%`;
+          const candidates = await c.env.DB.prepare(`
+            SELECT id, title, description, tags, category 
+            FROM assets 
+            WHERE status = 'published' 
+            AND (title LIKE ? OR description LIKE ? OR tags LIKE ?)
+            LIMIT 30
+          `).bind(searchPattern, searchPattern, searchPattern).all<Asset>();
+
+          // Fallback broad search
+          if (!candidates.results || candidates.results.length < 10) {
+              const stopWords = ["coloring", "page", "pages", "printable", "sheet", "sheets", "pdf", "book", "for", "kids", "adults", "free", "download"];
+              const tokens = kw.keyword.toLowerCase().split(/\s+/).filter((w: string) => !stopWords.includes(w) && w.length > 2);
+              
+              if (tokens.length > 0) {
+                  const conditions = tokens.map(() => "(title LIKE ? OR description LIKE ? OR tags LIKE ?)").join(" OR ");
+                  const bindings = tokens.flatMap((t: string) => [`%${t}%`, `%${t}%`, `%${t}%`]);
+                  
+                  const broadCandidates = await c.env.DB.prepare(`
+                    SELECT id, title, description, tags, category 
+                    FROM assets 
+                    WHERE status = 'published' 
+                    AND (${conditions})
+                    LIMIT 50
+                  `).bind(...bindings).all<Asset>();
+
+                  const existingIds = new Set(candidates.results?.map(a => a.id) || []);
+                  const newItems = broadCandidates.results?.filter(a => !existingIds.has(a.id)) || [];
+                  
+                  candidates.results = [...(candidates.results || []), ...newItems];
+              }
+          }
+
+          if (!candidates.results || candidates.results.length < 4) {
+              seedResult.errors.push(`${kw.keyword}: Not enough assets (<4)`);
+              continue;
+          }
+
+          // AI Curation (simplified - top 8)
+          const selectedIds = candidates.results.slice(0, 8).map(a => a.id);
+
+          // AI Writing
+          const writingPrompt = `
+            You are an SEO expert for a coloring page website "HuePress".
+            Write the content for a landing page targeting the keyword: "${kw.keyword}".
+            
+            Requirements:
+            - Title: Catchy, includes keyword, mentions "Printable PDF". Max 60 chars.
+            - Meta Description: Click-worthy summary. Max 160 chars.
+            - Intro Content: A helpful, warm, 250-word introduction in Markdown.
+              - Explain why these coloring pages are great for this topic.
+              - Mention benefits (motor skills, relaxation).
+              - Do NOT mention "free" unless you are sure. Use "printable", "downloadable".
+            
+            Return valid JSON: { "title": "...", "meta_description": "...", "intro_content": "..." }
+          `;
+
+          const rawJson = await openAIChat(apiKey, [{ role: "user", content: writingPrompt }], true);
+          const content = JSON.parse(rawJson);
+
+          // Save to DB
+          const landingPageId = crypto.randomUUID();
+          await c.env.DB.prepare(`
+            INSERT OR REPLACE INTO landing_pages (id, slug, target_keyword, title, meta_description, intro_content, asset_ids, is_published, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))
+          `).bind(
+              landingPageId, 
+              slug, 
+              kw.keyword, 
+              content.title, 
+              content.meta_description, 
+              content.intro_content, 
+              JSON.stringify(selectedIds)
+          ).run();
+
+          seedResult.generated++;
+          totalGenerated++;
+
+        } catch (e) {
+          seedResult.errors.push(`${kw.keyword}: ${e instanceof Error ? e.message : 'Unknown error'}`);
+        }
+      }
+
+    } catch (e) {
+      seedResult.errors.push(`Research failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    }
+
+    results.push(seedResult);
+  }
+
+  return c.json({
+    success: true,
+    mode,
+    totalGenerated,
+    results
   });
 });
 

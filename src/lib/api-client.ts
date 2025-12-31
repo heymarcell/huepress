@@ -460,6 +460,31 @@ export const apiClient = {
           throw new Error(data.error || "Generation failed");
        }
        return data;
+    },
+    research: async (seed: string) => {
+       return fetchApi<{ success: true; results: { keyword: string; source: string; score?: number }[] }>(`/api/seo/research`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ seed })
+       });
+    },
+    bulkAutoGenerate: async (mode: 'priority' | 'full' = 'priority', limit: number = 50) => {
+       const token = await window.Clerk?.session?.getToken();
+       const cleanBase = API_URL.replace(/\/$/, "");
+       const response = await fetch(`${cleanBase}/api/seo/bulk-auto-generate`, {
+          method: "POST",
+          headers: {
+             "Content-Type": "application/json",
+             "Authorization": `Bearer ${token}` 
+          },
+          body: JSON.stringify({ mode, limit })
+       });
+       
+       const data = await response.json() as { success: boolean; mode: string; totalGenerated: number; results: { seed: string; discovered: number; generated: number; errors: string[] }[]; error?: string };
+       if (!response.ok || data.error) {
+          throw new Error(data.error || "Bulk generation failed");
+       }
+       return data;
     }
   }
 };
