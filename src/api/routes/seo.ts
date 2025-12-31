@@ -441,6 +441,10 @@ app.post("/generate", async (c) => {
     }
   }
   
+import { notifyIndexNow } from "../../lib/indexnow";
+
+// ... inside POST handler ...
+
   try {
       await c.env.DB.prepare(`
         INSERT INTO landing_pages (id, slug, target_keyword, title, meta_description, intro_content, asset_ids, is_published, created_at)
@@ -454,6 +458,12 @@ app.post("/generate", async (c) => {
           content.intro_content, 
           JSON.stringify(selectedIds)
       ).run();
+
+      // SOTA: Instant Indexing via IndexNow
+      // Fire-and-forget to avoid slowing down response
+      const pageUrl = `https://huepress.co/collection/${slug}`;
+      notifyIndexNow(pageUrl).catch(e => console.error("IndexNow failed", e));
+
   } catch (e) {
       console.error("DB Insert failed", e);
       return c.json({ error: "Failed to save page to database" }, 500);
