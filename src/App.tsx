@@ -9,6 +9,7 @@ import HomePage from "./pages/Home";
 // Lazy load all other pages for code splitting
 const VaultPage = lazy(() => import("./pages/Vault"));
 const ResourceDetailPage = lazy(() => import("./pages/ResourceDetail"));
+const CollectionPage = lazy(() => import("./pages/Collection"));
 const PricingPage = lazy(() => import("./pages/Pricing"));
 const AboutPage = lazy(() => import("./pages/About"));
 const NotFoundPage = lazy(() => import("./pages/NotFound"));
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="vault" element={<VaultPage />} />
         <Route path="vault/:id" element={<ResourceDetailPage />} />
         <Route path="coloring-pages/:slug" element={<ResourceDetailPage />} />
+        <Route path="collection/:slug" element={<CollectionPage />} />
         <Route path="pricing" element={<PricingPage />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="request-design" element={<RequestDesignPage />} />

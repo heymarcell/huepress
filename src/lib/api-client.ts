@@ -430,5 +430,10 @@ export const apiClient = {
       // Matches the endpoint used in ReviewList.tsx
       return fetchApi<{ reviews: { id: string; rating: number; comment?: string; created_at: string; user_email?: string }[]; averageRating: number | null; totalReviews: number }>(`/api/reviews/${assetId}`); 
     }
+  },
+  seo: {
+    getLandingPage: async (slug: string) => {
+       return fetchApi<{ title: string; meta_description: string; intro_content: string; target_keyword: string; assets: Asset[] }>(`/api/seo/landing-pages/${slug}`);
+    }
   }
 };

@@ -13,6 +13,7 @@ import tagsRoute from "./routes/tags";
 import internalRoute from "./routes/internal";
 import userRoute from "./routes/user";
 import blogRoute from "./routes/blog";
+import seoRoute from "./routes/seo";
 // import requestsRoute from "./routes/requests";
 
 // [F-003] Zod validation for request submissions
@@ -75,6 +76,7 @@ app.route("/api/tags", tagsRoute);   // /api/tags
 app.route("/api/internal", internalRoute); // /api/internal/upload-pdf
 app.route("/api/user", userRoute);     // /api/user/likes, /api/user/history
 app.route("/api", blogRoute);          // /api/posts, /api/admin/posts
+app.route("/api/seo", seoRoute);       // /api/seo/landing-pages/:slug, /api/seo/generate
 // app.route("/api/requests", requestsRoute); // Moved to inline for debugging
 
 import { getAuth } from "@hono/clerk-auth";
