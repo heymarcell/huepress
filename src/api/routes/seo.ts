@@ -376,7 +376,7 @@ app.post("/research", async (c) => {
   
   return c.json({ 
     success: true,
-    results: keywords
+    ...keywords  // Spread to avoid nested results.results
   });
 });
 

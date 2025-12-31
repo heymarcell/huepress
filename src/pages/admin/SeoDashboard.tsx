@@ -106,14 +106,20 @@ export default function SeoDashboard() {
     
     setIsDiscovering(true);
     try {
-      toast.info("Discovering keywords...");
       const seeds = ['anxiety', 'adhd', 'bold', 'easy', 'mandala', 'geometric', 'floral', 'kids'];
       const allKeywords: string[] = [];
       
-      for (const seed of seeds) {
+      for (let i = 0; i < seeds.length; i++) {
+        const seed = seeds[i];
+        toast.info(`Discovering keywords for "${seed}" (${i + 1}/${seeds.length})...`);
+        
         const result = await apiClient.seo.research(seed);
-        const results = Array.isArray(result.results) ? result.results : [];
-        const top5 = results.slice(0, 5).map(r => r.keyword);
+        // Handle both {results: [...]} and {results: {results: [...]}}
+        const results = Array.isArray(result.results) 
+          ? result.results 
+          : (result.results?.results || []);
+        
+        const top5 = results.slice(0, 5).map((r: any) => r.keyword);
         allKeywords.push(...top5);
       }
 

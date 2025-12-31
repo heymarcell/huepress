@@ -278,7 +278,7 @@ Return ONLY valid JSON (no markdown):
             // AI-generated keywords (default score 0.9)
             ...result.generated.map(k => ({
                 keyword: k,
-                source: 'google' as const,
+                source: 'gpt' as const,
                 score: 0.9
             }))
         ];
