@@ -161,7 +161,7 @@ app.get("/landing-pages/:slug", async (c) => {
   // 3. Transform assets to include image_url (like in /assets endpoint)
   const cdnUrl = c.env.ASSETS_CDN_URL || "https://assets.huepress.co";
   const transformedAssets = assets.map((asset) => {
-    const r2Key = asset.r2_key_public;
+    const r2Key = (asset as any).r2_key_public;
     let imageUrl = "";
     
     if (r2Key && typeof r2Key === 'string' && !r2Key.startsWith("__draft__")) {
