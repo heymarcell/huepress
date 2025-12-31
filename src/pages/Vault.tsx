@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useSubscription } from "@/lib/auth";
 import { apiClient } from "@/lib/api-client";
+import { analytics } from "@/lib/analytics";
 import { ResourceCard, ResourceCardSkeleton, SearchBar, Button, Heading, Combobox, Pagination } from "@/components/ui";
 import { ArrowUpDown, Filter, Search, X } from "lucide-react";
 import SEO from "@/components/SEO";
@@ -128,6 +129,22 @@ export default function VaultPage() {
     }),
     placeholderData: keepPreviousData,
   });
+
+  // Track Search & Zero Results
+  React.useEffect(() => {
+    // Only track if there is a search query and data has loaded
+    if (debouncedSearch && !isLoading && assetsData) {
+       const resultCount = assetsData.total || 0;
+       
+       // Standard Search Event
+       analytics.search(debouncedSearch);
+       
+       // Zero Results Event (Custom)
+       if (resultCount === 0) {
+          analytics.selectContent('zero_results', debouncedSearch); // Re-using selectContent for custom 'zero_results' type
+       }
+    }
+  }, [debouncedSearch, isLoading, assetsData]);
 
   const totalAssets = assetsData?.total || 0;
   const totalPages = Math.ceil(totalAssets / PAGE_SIZE);

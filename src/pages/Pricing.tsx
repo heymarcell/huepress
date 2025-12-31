@@ -62,6 +62,7 @@ import { useAuth, useClerk } from "@clerk/clerk-react";
 import { useSubscription } from "@/lib/auth";
 import { EUWaiverModal } from "@/components/checkout/EUWaiverModal";
 import { AlertModal } from "@/components/ui/AlertModal";
+import { analytics } from "@/lib/analytics";
 
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null);
@@ -96,6 +97,7 @@ export default function PricingPage() {
 
     setSelectedPriceId(priceId);
     setModalOpen(true);
+    analytics.selectContent('pricing_plan', priceId);
   };
 
   const handleConfirmSubscribe = async () => {

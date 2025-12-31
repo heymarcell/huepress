@@ -1,9 +1,15 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { analytics } from "@/lib/analytics";
 
 export default function NotFound() {
+  useEffect(() => {
+    analytics.viewItem('error_404', 'Page Not Found');
+  }, []);
+
   return (
     <>
       <Helmet>
