@@ -281,16 +281,42 @@ app.post("/generate", async (c) => {
       }, 400);
   }
 
-  // 2. AI Curation: "Pick the best 8"
+  //2. AI Curation: "Pick the best 8"
   // We feed the candidates to GPT-4o-mini
   const curationPrompt = `
     You are an expert curator for coloring pages.
-    Goal: Select the best 8 assets for the keyword: "${keyword}".
+    
+    CRITICAL: Your job is to ensure INTENT MATCH. Users searching for specific keywords expect specific types of designs.
+    
+    Target Keyword: "${keyword}"
+    
     Candidates:
     ${JSON.stringify(candidates.results.map(a => ({ id: a.id, title: a.title, tags: a.tags })))}
-
-    Return valid JSON with a single key "selected_ids" containing the array of 8 IDs. 
-    Strictly prefer assets that are actually relevant. If fewer than 8 are relevant, return fewer.
+    
+    **STRICT RULES:**
+    
+    1. **Relevance First**: ONLY select assets that DIRECTLY match the keyword intent.
+       - If keyword is "geometric patterns" → ONLY select patterns (mandalas, tessellations, chevrons), NOT scenes (snowplows, astronauts).
+       - If keyword is "anxiety relief" → Select calming/abstract designs, NOT busy/complex scenes.
+       - If keyword is "kids" → Select age-appropriate, simple designs.
+    
+    2. **Quality Check**: Prefer assets with descriptive titles that explicitly mention the keyword concept.
+    
+    3. **Reject Mismatches**: If a candidate is totally off-topic (even if tagged similarly), REJECT it.
+    
+    4. **Minimum Standards**: Return AT LEAST 4 relevant assets. If you find fewer than 4 truly relevant matches, return what you can (even if <8).
+    
+    BAD Example:
+    Keyword: "geometric patterns"
+    Selected: ["Snowplow Morning Street Scene", "Space Explorer Astronaut"]
+    → These are SCENES, not PATTERNS. Wrong intent!
+    
+    GOOD Example:
+    Keyword: "geometric patterns"
+    Selected: ["Ocean Wave Chevron Mosaic", "China Slice Tile Pattern", "Mandala Circle Design"]
+    → These are ACTUAL patterns. Correct intent!
+    
+    Return valid JSON with a single key "selected_ids" containing the array of IDs (4-8 items).
   `;
 
   let selectedIds: string[] = [];
