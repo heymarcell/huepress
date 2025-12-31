@@ -28,25 +28,20 @@ export function UserMenu() {
   if (!user) return null;
 
   return (
-    <div className="w-full lg:w-auto" ref={menuRef}>
+    <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 p-1 pl-4 pr-2 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 w-full lg:w-auto"
+        className="flex items-center gap-2 py-1.5 px-2 rounded-full border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
       >
         <img
           src={user.imageUrl}
           alt={user.fullName || "User avatar"}
-          className="w-8 h-8 rounded-full border border-gray-100 object-cover"
+          className="w-7 h-7 rounded-full object-cover"
         />
-        <div className="flex-1 text-left lg:text-right">
-          <p className="text-sm font-bold text-ink leading-none">
-            {user.firstName || user.username}
-          </p>
-          <p className="text-xs text-gray-500 lg:hidden">
-            {user.primaryEmailAddress?.emailAddress}
-          </p>
-        </div>
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <span className="text-sm font-medium text-ink hidden sm:inline max-w-[100px] truncate">
+          {user.firstName || user.username}
+        </span>
+        <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Menu - Inline on mobile, absolute on desktop */}
