@@ -310,18 +310,55 @@ app.post("/generate", async (c) => {
 
   // 3. AI Writing: Title, Meta, Intro
   const writingPrompt = `
-    You are an SEO expert for a coloring page website "HuePress".
-    Write the content for a landing page targeting the keyword: "${keyword}".
+    You are an SEO expert for HuePress, a premium coloring pages website.
+    Create ENGAGING, human-first content for: "${keyword}"
+    
+    CRITICAL RULES:
+    1. Write for HUMANS first, bots second
+    2. NO keyword stuffing - vary your language naturally
+    3. Keep intro SHORT and scannable - users want to see images, not read essays
     
     Requirements:
-    - Title: Catchy, includes keyword, mentions "Printable PDF". Max 60 chars.
-    - Meta Description: Click-worthy summary. Max 160 chars.
-    - Intro Content: A helpful, warm, 250-word introduction in Markdown.
-      - Explain why these coloring pages are great for this topic.
-      - Mention benefits (motor skills, relaxation).
-      - Do NOT mention "free" unless you are sure. Use "printable", "downloadable".
     
-    Return valid JSON: { "title": "...", "meta_description": "...", "intro_content": "..." }
+    **Title** (Max 60 chars):
+    - Include keyword naturally
+    - Mention "Printable PDF" or "Coloring Pages"
+    - Make it compelling, not robotic
+    - Example: "Mandala Coloring Pages: 20+ Printable PDF Designs"
+    
+    **Meta Description** (Max 160 chars):
+    - Click-worthy benefit statement
+    - Mention HOW MANY designs (e.g., "Browse 15+ printable...")
+    - Include ONE secondary keyword (stress relief, adults, kids, etc.)
+    - NO keyword repetition from title
+    
+    **Intro Content** (EXACTLY 2-3 SHORT paragraphs in Markdown):
+    
+    STRUCTURE (Non-negotiable):
+    - **Paragraph 1** (2-3 sentences): Hook with a benefit or problem solved. Be warm and conversational.
+    - **Paragraph 2** (3-4 sentences): Explain what makes these designs special (style, difficulty, use case).
+    - **STOP THERE** - Users want to browse images, not read a blog post.
+    
+    STYLE RULES:
+    - Use second person ("you," "your") - talk TO the reader
+    - Vary sentence length for rhythm
+    - ONE emoji MAX (optional, only if natural)
+    - Break up text with line breaks - no walls of text
+    - Mention 1-2 specific benefits (motor skills, mindfulness, creativity)
+    - NEVER repeat the exact keyword more than twice total
+    
+    BAD Example (Keyword Stuffing):
+    "Art Therapy Coloring Pages for Relaxation\\n\\nDiscover our art therapy coloring pages for relaxation. These art therapy pages help with relaxation..."
+    
+    GOOD Example (Natural):
+    "Looking for a creative way to unwind? These intricate mandala designs offer the perfect escape from daily stress.\\n\\nEach page features hand-curated patterns ranging from beginner-friendly to complex geometrics..."
+    
+    Return ONLY valid JSON:
+    {
+      "title": "...",
+      "meta_description": "...",
+      "intro_content": "..." 
+    }
   `;
 
   let content = { title: "", meta_description: "", intro_content: "" };
