@@ -141,44 +141,123 @@ export default function AdminAssets() {
     variant: 'success'
   });
 
-  // ... (existing mutations code handles the rest)
-
-  // Use statsData for dashboard top cards
-  // Fallback to zeros while loading
-  const metrics = {
-    total: statsData?.totalAssets || 0,
-    published: 0, // Stats endpoint doesn't return count by status yet? Let's check type.
-                  // It returns { totalAssets, totalDownloads, totalSubscribers, newAssetsThisWeek }
-                  // We might lose 'published'/'draft' split unless we update stats API or just show Total/Downloads/Subs
-                  // Let's stick to what we have or accept a slight UI change or update stats.
-                  // For now, let's just map what we have.
-    draft: 0, 
-    downloads: statsData?.totalDownloads || 0
-  };
-
-  // Wait, the UI expected published/draft counts.
-  // If we really want those, we should Update admin.getStats.
-  // For this fix, let's proceed with minimal changes:
-  // We'll trust totalAssets.
-  // We can't easily get published/draft without a separate count query or updating stats endpoint.
-  // Let's leave them as 0 or '-' for a moment and focus on the table working.
-  // Actually, users might complain.
-  // Let's update `getStats` in admin.ts quickly if we can?
-  // No, let's just use what we have in `statsData` and mapped fields.
-  
-  // Update: We can use `totalAssets` for "Total".
-  // downloads is `metrics.downloads`.
-  
-  // Selection Logic Update
-  const toggleSelectAll = () => {
-    if (selectedIds.size === assets.length) { // assets is now the current page only
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(assets.map(a => a.id)));
+  // Mutations
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'published' | 'draft' }) => {
+      const token = await getToken();
+      if (!token) throw new Error("No token");
+      return apiClient.admin.updateStatus(id, status, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'assets'] });
+    },
+    onError: (error) => {
+      console.error("Failed to update status:", error);
     }
+  });
+
+  const bulkStatusMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[]; status: 'published' | 'draft' }) => {
+      const token = await getToken();
+      if (!token) throw new Error("No token");
+      return apiClient.admin.bulkUpdateStatus(ids, status, token);
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'assets'] });
+      setNotificationModal({
+        isOpen: true,
+        title: variables.status === 'published' ? 'Assets Published' : 'Assets Unpublished',
+        message: `${data.updatedCount} asset(s) updated.`,
+        variant: 'success'
+      });
+      setSelectedIds(new Set());
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async ({ id, isBulk, ids }: { id?: string; isBulk: boolean; ids?: string[] }) => {
+      const token = await getToken();
+      if (!token) throw new Error("No token");
+      
+      if (isBulk && ids) {
+        return apiClient.admin.bulkDeleteAssets(ids, token);
+      } else if (id) {
+        return apiClient.admin.deleteAsset(id, token);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'assets'] });
+      setDeleteModal({ isOpen: false, assetId: null, isBulk: false });
+      setSelectedIds(new Set());
+    }
+  });
+  
+  const regenerateMutation = useMutation({
+     mutationFn: async (ids: string[]) => {
+       const token = await getToken();
+       return apiClient.admin.bulkRegenerateAssets(ids, token!);
+     },
+     onSuccess: (data) => {
+        setNotificationModal({
+          isOpen: true,
+          title: 'Regeneration Queued',
+          message: `${data.queuedCount} asset(s) queued.`,
+          variant: 'success'
+        });
+        setSelectedIds(new Set());
+     }
+  });
+
+  const toggleStatus = (id: string) => {
+    const asset = assets.find(a => a.id === id);
+    if (!asset) return;
+    const newStatus = asset.status === "published" ? "draft" : "published";
+    statusMutation.mutate({ id, status: newStatus });
   };
 
-  // ... (rest of mutations/handlers)
+  const handleDeleteConfirm = async () => {
+      if (deleteModal.isBulk) {
+        deleteMutation.mutate({ isBulk: true, ids: Array.from(selectedIds) });
+      } else if (deleteModal.assetId) {
+        deleteMutation.mutate({ isBulk: false, id: deleteModal.assetId });
+      }
+  };
+
+  const isDeleting = deleteMutation.isPending;
+  const isUpdatingStatus = statusMutation.isPending || bulkStatusMutation.isPending;
+  const isRegenerating = regenerateMutation.isPending;
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const confirmDelete = (id: string) => {
+    setDeleteModal({ isOpen: true, assetId: id, isBulk: false });
+  };
+
+  const confirmBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    setDeleteModal({ isOpen: true, assetId: null, isBulk: true });
+  };
+  
+  const handleBulkRegenerate = () => {
+    if (selectedIds.size === 0) return;
+    regenerateMutation.mutate(Array.from(selectedIds));
+  };
+
+  const handleBulkStatus = (status: 'published' | 'draft') => {
+    if (selectedIds.size === 0) return;
+    bulkStatusMutation.mutate({ ids: Array.from(selectedIds), status });
+  };
+
+  // Thumbnail URL helper
+  const getThumbnailUrl = (assetId: string) => 
+    `https://assets.huepress.co/thumbnails/${assetId}.webp`;
 
       {/* Metrics Dashboard */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
