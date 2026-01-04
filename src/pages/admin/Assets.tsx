@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw, Search, Layers, Download, ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw, Search, Layers, Download, ImageIcon, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/lib/api-client";
@@ -9,12 +9,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface AdminAsset {
   id: string;
+  asset_id?: string;
   title: string;
   category: string;
   skill: string;
   status: 'published' | 'draft';
   download_count?: number;
   createdAt?: string;
+  created_at?: string;
 }
 
 // Metrics Card Component
@@ -56,6 +58,8 @@ export default function AdminAssets() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<"created_at" | "title" | "asset_id" | "updated_at">("created_at");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const itemsPerPage = 15;
 
   // Debounce search input
@@ -90,7 +94,7 @@ export default function AdminAssets() {
 
   // Fetch Assets with server-side pagination
   const { data: assetsData, isLoading: loading } = useQuery({
-    queryKey: ['admin', 'assets', currentPage, filter, debouncedSearch],
+    queryKey: ['admin', 'assets', currentPage, filter, debouncedSearch, sortBy, sortOrder],
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("No token");
@@ -99,7 +103,9 @@ export default function AdminAssets() {
         limit: itemsPerPage,
         offset,
         search: debouncedSearch || undefined,
-        status: filter
+        status: filter,
+        sortBy,
+        sortOrder
       });
     },
     enabled: !!user,
@@ -388,6 +394,28 @@ export default function AdminAssets() {
             </button>
           ))}
         </div>
+
+        {/* Sort Dropdown */}
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className="w-4 h-4 text-gray-400" />
+          <select
+            value={`${sortBy}-${sortOrder}`}
+            onChange={(e) => {
+              const [field, order] = e.target.value.split('-') as [typeof sortBy, typeof sortOrder];
+              setSortBy(field);
+              setSortOrder(order);
+            }}
+            className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+          >
+            <option value="created_at-desc">Newest First</option>
+            <option value="created_at-asc">Oldest First</option>
+            <option value="title-asc">Name A-Z</option>
+            <option value="title-desc">Name Z-A</option>
+            <option value="asset_id-desc">ID Newest</option>
+            <option value="asset_id-asc">ID Oldest</option>
+            <option value="updated_at-desc">Recently Updated</option>
+          </select>
+        </div>
       </div>
 
       {/* Assets Table */}
@@ -403,6 +431,7 @@ export default function AdminAssets() {
                   className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                 />
               </th>
+              <th className="text-left px-4 py-3 w-20 text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
               <th className="text-left px-4 py-3 w-16 text-xs font-medium text-gray-500 uppercase tracking-wider">Preview</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
@@ -431,6 +460,9 @@ export default function AdminAssets() {
                     onChange={() => toggleSelect(asset.id)}
                     className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
+                </td>
+                <td className="px-4 py-3">
+                  <span className="font-mono text-sm text-gray-600">{asset.asset_id || '—'}</span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200 flex items-center justify-center">

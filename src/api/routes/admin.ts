@@ -124,6 +124,14 @@ app.get("/assets", async (c) => {
   const offset = parseInt(c.req.query("offset") || "0");
   const search = c.req.query("q") || "";
   const status = c.req.query("status") || "";
+  const sortBy = c.req.query("sortBy") || "created_at";
+  const sortOrder = c.req.query("sortOrder") || "desc";
+
+  // Validate sort parameters
+  const validSortFields = ["title", "asset_id", "created_at", "updated_at"];
+  const validSortOrders = ["asc", "desc"];
+  const safeSortBy = validSortFields.includes(sortBy) ? sortBy : "created_at";
+  const safeSortOrder = validSortOrders.includes(sortOrder.toLowerCase()) ? sortOrder.toLowerCase() : "desc";
 
   try {
     let query = "SELECT * FROM assets";
@@ -151,7 +159,7 @@ app.get("/assets", async (c) => {
       countQuery += whereClause;
     }
 
-    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+    query += ` ORDER BY ${safeSortBy} ${safeSortOrder.toUpperCase()} LIMIT ? OFFSET ?`;
     params.push(limit, offset);
 
     const [assetsResult, countResult] = await Promise.all([

@@ -112,12 +112,14 @@ export const apiClient = {
     }
   },
   admin: {
-    listAssets: async (token: string, options?: { limit?: number; offset?: number; search?: string; status?: string }) => {
+    listAssets: async (token: string, options?: { limit?: number; offset?: number; search?: string; status?: string; sortBy?: string; sortOrder?: string }) => {
       const searchParams = new URLSearchParams();
       if (options?.limit) searchParams.set("limit", options.limit.toString());
       if (options?.offset) searchParams.set("offset", options.offset.toString());
       if (options?.search) searchParams.set("q", options.search);
       if (options?.status && options.status !== 'all') searchParams.set("status", options.status);
+      if (options?.sortBy) searchParams.set("sortBy", options.sortBy);
+      if (options?.sortOrder) searchParams.set("sortOrder", options.sortOrder);
       
       const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
       return fetchApi<{ assets: Asset[], total: number }>(`/api/admin/assets${query}`, {
