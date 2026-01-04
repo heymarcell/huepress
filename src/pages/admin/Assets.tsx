@@ -360,7 +360,7 @@ export default function AdminAssets() {
         )}
 
         {/* Empty State */}
-        {filteredAssets.length === 0 && (
+        {assets.length === 0 && (
           <div className="py-12 text-center text-gray-500">
             <ImageIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
             <p className="font-medium">No assets found</p>
