@@ -50,11 +50,11 @@ mode = "smart"
 [observability]
 enabled = true
 
-# Cloudflare Container for resource-intensive processing (Temporarily disabled for deploy)
-# [[containers]]
-# class_name = "ProcessingContainer"
-# image = "./container/Dockerfile"
-# max_instances = 3
+# Cloudflare Container for resource-intensive processing (Re-enabled)
+[[containers]]
+class_name = "ProcessingContainer"
+image = "./container/Dockerfile"
+max_instances = 3
 
 # Container Durable Object binding
 [[durable_objects.bindings]]

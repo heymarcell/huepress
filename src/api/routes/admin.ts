@@ -279,17 +279,7 @@ app.post("/assets", async (c) => {
     }
     
     // Category Code Map and Slugify
-    const CATEGORY_CODES: Record<string, string> = {
-      "Animals": "ANM",
-      "Nature": "NAT",
-      "Vehicles": "VEH",
-      "Fantasy": "FAN",
-      "Holidays": "HOL",
-      "Educational": "EDU",
-      "Mandalas": "MAN",
-      "Characters": "CHR",
-      "Food": "FOD"
-    };
+
 
     // Extract fields
     const title = body["title"] as string;
@@ -334,25 +324,26 @@ app.post("/assets", async (c) => {
     }
 
     // 1. Generate SEO ID and Slug
-    const code = CATEGORY_CODES[category] || "GEN";
-    const prefix = `HP-${code}-`;
+    // Formerly used category prefixes (HP-GEN-), now simplified to pure numeric sequence
+    const prefix = "";
 
     let assetId = providedAssetId; 
     
     // If not provided, calculate it (fallback)
+    // If not provided, calculate it (fallback)
     if (!assetId) {
-      // Find last sequence for this category
-      const lastAsset = await c.env.DB.prepare(
-        "SELECT asset_id FROM assets WHERE asset_id LIKE ? ORDER BY asset_id DESC LIMIT 1"
-      ).bind(`${prefix}%`).first<{ asset_id: string }>();
-
-      let sequence = 1;
-      if (lastAsset?.asset_id) {
-        const parts = lastAsset.asset_id.split("-");
-        const lastSeq = parseInt(parts[parts.length - 1]);
-        if (!isNaN(lastSeq)) sequence = lastSeq + 1;
-      }
-      assetId = `${prefix}${sequence.toString().padStart(4, '0')}`;
+      // Use Atomic Global Sequence
+      // This ensures strictly increasing IDs across ALL categories and prevents race conditions/resets
+      await c.env.DB.prepare(
+        "INSERT OR IGNORE INTO sequences (name, value) VALUES ('asset_id', 0)"
+      ).run();
+      
+      const result = await c.env.DB.prepare(
+        "UPDATE sequences SET value = value + 1 WHERE name = 'asset_id' RETURNING value"
+      ).first<{ value: number }>();
+      
+      const sequence = result?.value || 1;
+      assetId = `${prefix}${sequence.toString().padStart(5, '0')}`;
     }
 
     const slug = slugify(title);
@@ -390,7 +381,7 @@ app.post("/assets", async (c) => {
           extended_description, fun_facts, suggested_activities, 
           coloring_tips, therapeutic_benefits, meta_keywords,
           created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_upload', ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `).bind(
         id, assetId, slug, title, description, category, skill,
         "__pending__", "__pending__", null, null, tagsJson,
@@ -1173,6 +1164,52 @@ app.post("/queue/cleanup", async (c) => {
   } catch (err) {
     console.error("Queue cleanup error:", err);
     return c.json({ error: "Failed to cleanup queue" }, 500);
+  }
+});
+
+// ADMIN: Fix Asset ID Sequence (Manual Trigger)
+// Scans all assets to find the true maximum ID and updates the sequence counter.
+// Use this if the counter "resets" or gets desynchronized.
+app.post("/fix-asset-ids", async (c) => {
+  const isAdminUser = await verifyAdmin(c);
+  if (!isAdminUser) return c.json({ error: "Unauthorized" }, 401);
+
+  try {
+    // 1. Fetch all asset IDs
+    const result = await c.env.DB.prepare("SELECT asset_id FROM assets").all<{ asset_id: string }>();
+    if (!result.results) return c.json({ error: "No assets found" });
+
+    let maxId = 0;
+
+    // 2. Parse and find max
+    for (const row of result.results) {
+      if (!row.asset_id) continue;
+      
+      // Extract numbers from end of string: "HP-GEN-0050" -> 50, "00005" -> 5
+      const match = row.asset_id.match(/(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxId) {
+          maxId = num;
+        }
+      }
+    }
+
+    // 3. Update Sequence
+    await c.env.DB.prepare(
+      "INSERT OR IGNORE INTO sequences (name, value) VALUES ('asset_id', 0)"
+    ).run();
+
+    await c.env.DB.prepare(
+      "UPDATE sequences SET value = ? WHERE name = 'asset_id'"
+    ).bind(maxId).run();
+
+    console.log(`[Fix Sequence] Updated asset_id sequence to ${maxId}`);
+
+    return c.json({ success: true, maxId, scanned: result.results.length });
+  } catch (err) {
+    console.error("Fix sequence error:", err);
+    return c.json({ error: "Failed to fix sequence" }, 500);
   }
 });
 

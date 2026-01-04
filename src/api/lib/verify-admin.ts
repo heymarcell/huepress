@@ -11,6 +11,13 @@ import { Bindings } from "../types";
  * 3. Validates against ADMIN_EMAILS allowlist if configured
  */
 export async function verifyAdmin(c: Context<{ Bindings: Bindings }>): Promise<boolean> {
+  // Try 0: Check for API Key (Machine-to-Machine) first
+  // This allows the Desktop App to authenticate without a user session
+  const apiKeyHeader = c.req.header("X-Admin-Key");
+  if (apiKeyHeader && c.env.ADMIN_API_KEY && apiKeyHeader === c.env.ADMIN_API_KEY) {
+    return true;
+  }
+
   const auth = getAuth(c);
   if (!auth?.userId) return false;
 
@@ -90,12 +97,5 @@ export async function verifyAdmin(c: Context<{ Bindings: Bindings }>): Promise<b
     }
   }
   
-  // Try 3: Check for API Key (Machine-to-Machine)
-  // This allows the Desktop App to authenticate without a user session
-  const apiKeyHeader = c.req.header("X-Admin-Key");
-  if (apiKeyHeader && c.env.ADMIN_API_KEY && apiKeyHeader === c.env.ADMIN_API_KEY) {
-    return true;
-  }
-
   return isAdminRole;
 }
