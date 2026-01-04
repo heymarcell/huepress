@@ -25,6 +25,7 @@ export type Bindings = {
   CONTAINER_AUTH_SECRET?: string; // [F-001] Shared secret for container authentication
   ADMIN_EMAILS?: string; // [F-002] Comma-separated list of admin emails for server-side verification
   OPENAI_API_KEY?: string; // [NEW] For pSEO
+  ADMIN_API_KEY?: string; // [NEW] For Desktop App / automated uploads
 };
 
 export type Env = Bindings;
