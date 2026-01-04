@@ -8,10 +8,13 @@ import SEO from "@/components/SEO";
 import { StructuredData } from "@/components/StructuredData";
 import Markdown from "react-markdown";
 
+import { useAssetCount } from "@/hooks/useAssetCount";
+
 export default function CollectionPage() {
   const { slug } = useParams<{ slug: string }>(); 
   const { user } = useUser();
   const isSubscriber = user?.publicMetadata?.role === "subscriber" || user?.publicMetadata?.subscriptionStatus === "active";
+  const count = useAssetCount();
 
   const { data: pageData, isLoading, error } = useQuery({
     queryKey: ["collection", slug],
@@ -189,7 +192,7 @@ export default function CollectionPage() {
         {/* Bottom CTA - More compact */}
         <div className="text-center bg-white rounded-2xl p-8 sm:p-10 border-2 border-primary/10 shadow-sm max-w-3xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold text-ink mb-3">
-            Unlock All {pageData.assets.length} Garden Designs + 500 More
+            Unlock All {pageData.assets.length} Designs + {count} More
           </h2>
           <p className="text-gray-600 mb-6">
             Instant PDF downloads. Bold lines. Therapist-approved. Cancel anytime.

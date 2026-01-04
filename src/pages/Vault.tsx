@@ -10,6 +10,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 
 import { FreeSampleBanner } from "@/components/features/FreeSampleBanner";
+import { useAssetCount } from "@/hooks/useAssetCount";
 
 const PAGE_SIZE = 24;
 
@@ -17,6 +18,7 @@ export default function VaultPage() {
   const { isSubscriber } = useSubscription();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const count = useAssetCount();
   
   // Filter States - Initialize from URL query params
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "");
@@ -193,8 +195,8 @@ export default function VaultPage() {
   return (
     <div className="bg-gray-50 min-h-screen">
       <SEO 
-        title="The Vault | 500+ Coloring Pages | HuePress"
-        description="Browse our curated collection of 500+ therapy-grade coloring pages. Bold lines, trending themes, instant PDF downloads."
+        title={`The Vault | ${count} Coloring Pages | HuePress`}
+        description={`Browse our curated collection of ${count} therapy-grade coloring pages. Bold lines, trending themes, instant PDF downloads.`}
         keywords="coloring pages, bold lines, therapy grade, printable pdf, autism friendly, adhd friendly"
       />
       
@@ -202,7 +204,7 @@ export default function VaultPage() {
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <Heading as="h1" variant="h1" className="mb-1 sm:mb-2">The Vault</Heading>
-          <p className="text-gray-500 text-sm sm:text-base">{totalAssets > 0 ? `${totalAssets} fridge-worthy designs, ready to print` : '500+ fridge-worthy designs, ready to print'}</p>
+          <p className="text-gray-500 text-sm sm:text-base">{totalAssets > 0 ? `${totalAssets} fridge-worthy designs, ready to print` : `${count} fridge-worthy designs, ready to print`}</p>
         </div>
 
         {/* Search Bar - Centered with max width */}

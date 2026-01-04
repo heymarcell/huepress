@@ -1,5 +1,6 @@
 import { useUser, useClerk } from "@clerk/clerk-react";
 import { useSubscription } from "@/lib/auth";
+import { useAssetCount } from "@/hooks/useAssetCount";
 import { Button } from "@/components/ui/Button";
 import { createPortalSession } from "@/lib/stripe";
 import { useState } from "react";
@@ -11,6 +12,7 @@ export default function Settings() {
   const { user, isLoaded, isSignedIn } = useUser();
   const { signOut } = useClerk();
   const { isSubscriber } = useSubscription();
+  const count = useAssetCount();
   
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
@@ -94,7 +96,7 @@ export default function Settings() {
               <p className="text-sm text-gray-500 mt-1">
                 {isSubscriber 
                   ? "You have full access to all designs and features." 
-                  : "Upgrade to unlock all 500+ designs and features."}
+                  : `Upgrade to unlock all ${count} designs and features.`}
               </p>
             </div>
             

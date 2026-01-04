@@ -87,7 +87,8 @@ export default function AdminAssets() {
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("No token");
-      return apiClient.admin.listAssets(token);
+      // Fetch high limit to enable client-side search/filter/metrics
+      return apiClient.admin.listAssets(token, { limit: 5000 });
     },
     enabled: !!user,
   });

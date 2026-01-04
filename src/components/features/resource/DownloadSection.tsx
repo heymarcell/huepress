@@ -4,6 +4,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Download, Printer, Unlock, Sparkles, Gift } from "lucide-react";
 import { useSubscription } from "@/lib/auth";
+import { useAssetCount } from "@/hooks/useAssetCount";
 import { apiClient } from "@/lib/api-client";
 import { analytics } from "@/lib/analytics";
 import { Button } from "@/components/ui/Button";
@@ -25,6 +26,7 @@ interface DownloadSectionProps {
 export function DownloadSection({ assetId, formattedAssetId, title }: DownloadSectionProps) {
   const { isSubscriber, isLoaded, isSignedIn } = useSubscription();
   const { getToken } = useAuth();
+  const count = useAssetCount();
   const queryClient = useQueryClient();
   const [showEmailCapture, setShowEmailCapture] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -294,7 +296,7 @@ export function DownloadSection({ assetId, formattedAssetId, title }: DownloadSe
       {/* Value Prop */}
       <div className="flex items-center justify-center gap-1.5 mt-2 mb-1">
         <Sparkles className="w-3.5 h-3.5 text-primary" />
-        <span className="text-sm font-medium text-ink">Instant access to 500+ therapy-grade designs</span>
+        <span className="text-sm font-medium text-ink">Instant access to {count} therapy-grade designs</span>
       </div>
       
       {/* Social Proof - NEW */}

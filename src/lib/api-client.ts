@@ -112,8 +112,13 @@ export const apiClient = {
     }
   },
   admin: {
-    listAssets: async (token: string) => {
-      return fetchApi<{ assets: Asset[] }>("/api/admin/assets", {
+    listAssets: async (token: string, options?: { limit?: number; offset?: number }) => {
+      const searchParams = new URLSearchParams();
+      if (options?.limit) searchParams.set("limit", options.limit.toString());
+      if (options?.offset) searchParams.set("offset", options.offset.toString());
+      
+      const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+      return fetchApi<{ assets: Asset[] }>(`/api/admin/assets${query}`, {
         token
       });
     },

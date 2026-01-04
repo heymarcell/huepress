@@ -20,7 +20,7 @@ const plans = [
     price: "$5",
     period: "/month",
     description: "Perfect for trying us out",
-    features: ["Unlimited downloads", "500+ bold designs", "New drops every Sunday", "High-res vector PDFs", "No watermarks", "Cancel anytime"],
+    features: ["Unlimited downloads", `${count} bold designs`, "New drops every Sunday", "High-res vector PDFs", "No watermarks", "Cancel anytime"],
     priceId: "price_1Sh99kRzWblq3ch1ACXHv20y",
     popular: false,
     cta: "Join for $5/mo",
@@ -63,6 +63,7 @@ import { useSubscription } from "@/lib/auth";
 import { EUWaiverModal } from "@/components/checkout/EUWaiverModal";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { analytics } from "@/lib/analytics";
+import { useAssetCount } from "@/hooks/useAssetCount";
 
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null);
@@ -78,6 +79,7 @@ export default function PricingPage() {
   const { getToken, isSignedIn } = useAuth();
   const { openSignUp, user } = useClerk();
   const { isSubscriber } = useSubscription();
+  const count = useAssetCount();
 
   const handleSubscribeClick = (priceId: string) => {
     if (!isSignedIn) {
@@ -127,7 +129,7 @@ export default function PricingPage() {
     <>
       <SEO 
         title="Pricing | $5/mo Unlimited Downloads | HuePress"
-        description="Join The Club for $5/month. Unlimited access to 500+ therapy-grade coloring pages. Cancel anytime, no questions asked."
+        description={`Join The Club for $5/month. Unlimited access to ${count} therapy-grade coloring pages. Cancel anytime, no questions asked.`}
       />
       {/* Hero */}
       <Section background="accent" className="text-center" size="md">
@@ -297,7 +299,7 @@ export default function PricingPage() {
       <Section background="brand" className="bg-primary text-white" size="md">
         <div className="text-center">
           <Heading as="h2" variant="h1" className="text-white mb-4">Ready to Start Coloring?</Heading>
-          <Text className="text-white/80 mb-8">Join The Club today and access 500+ fridge-worthy designs.</Text>
+          <Text className="text-white/80 mb-8">Join The Club today and access {count} fridge-worthy designs.</Text>
           <Button variant="secondary" size="lg" onClick={() => handleSubscribeClick(plans[1].priceId)}>
             Join for $5/mo
           </Button>

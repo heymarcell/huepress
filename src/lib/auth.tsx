@@ -5,6 +5,7 @@ import { useState } from "react";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { Button } from "@/components/ui";
 import { analytics } from "@/lib/analytics";
+import { useAssetCount } from "@/hooks/useAssetCount";
 
 export function useSubscription() {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -82,11 +83,12 @@ export function SubscriptionGate({
 }
 
 function SubscribePrompt() {
+  const count = useAssetCount();
   return (
     <div className="text-center p-8 bg-accent rounded-xl">
       <h3 className="font-serif text-h3 text-ink mb-4">Unlock This Design</h3>
       <p className="text-center text-sm text-gray-500 mb-4">
-        Subscribe for $5/mo to download this and 500+ more designs.
+        Subscribe for $5/mo to download this and {count} more designs.
       </p>
       <Link to="/pricing" className="btn-primary inline-block">
         View Pricing
