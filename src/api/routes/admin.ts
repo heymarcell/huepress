@@ -1245,5 +1245,76 @@ app.post("/fix-asset-ids", async (c) => {
   }
 });
 
+// ADMIN: Cleanup JSON Array Fields
+// Fixes fields that were incorrectly stored as JSON arrays (e.g., '["text"]') 
+// and converts them to plain strings by extracting the first element.
+app.post("/cleanup-array-fields", async (c) => {
+  const isAdminUser = await verifyAdmin(c);
+  if (!isAdminUser) return c.json({ error: "Unauthorized" }, 401);
+
+  try {
+    // Fields that may have been stored incorrectly as JSON arrays
+    const fieldsToClean = [
+      'coloring_tips',
+      'therapeutic_benefits', 
+      'meta_keywords',
+      'fun_facts',
+      'activities'
+    ];
+
+    let totalUpdated = 0;
+    const updates: { field: string; count: number }[] = [];
+
+    for (const field of fieldsToClean) {
+      // Find assets where the field looks like a JSON array
+      const assets = await c.env.DB.prepare(
+        `SELECT id, ${field} FROM assets WHERE ${field} LIKE '["%' OR ${field} LIKE '["'`
+      ).all<{ id: string; [key: string]: string }>();
+
+      let fieldCount = 0;
+
+      for (const asset of assets.results || []) {
+        const value = asset[field];
+        if (!value) continue;
+
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) {
+            // Join array elements with newlines for multi-item arrays, or just take first for single
+            const cleanValue = Array.isArray(parsed) 
+              ? parsed.join('\n') 
+              : String(parsed);
+
+            await c.env.DB.prepare(
+              `UPDATE assets SET ${field} = ? WHERE id = ?`
+            ).bind(cleanValue, asset.id).run();
+
+            fieldCount++;
+          }
+        } catch {
+          // Not valid JSON, skip
+          continue;
+        }
+      }
+
+      if (fieldCount > 0) {
+        updates.push({ field, count: fieldCount });
+        totalUpdated += fieldCount;
+      }
+    }
+
+    console.log(`[Cleanup] Fixed ${totalUpdated} records across ${updates.length} fields`);
+
+    return c.json({ 
+      success: true, 
+      totalUpdated,
+      details: updates
+    });
+  } catch (err) {
+    console.error("Cleanup error:", err);
+    return c.json({ error: "Failed to cleanup fields" }, 500);
+  }
+});
+
 export default app;
 
