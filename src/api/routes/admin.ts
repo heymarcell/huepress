@@ -1257,9 +1257,8 @@ app.post("/cleanup-array-fields", async (c) => {
     const fieldsToClean = [
       'coloring_tips',
       'therapeutic_benefits', 
-      'meta_keywords',
-      'fun_facts',
-      'activities'
+      'meta_keywords'
+      // Note: fun_facts and suggested_activities are SUPPOSED to be arrays
     ];
 
     let totalUpdated = 0;
