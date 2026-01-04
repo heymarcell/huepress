@@ -123,20 +123,32 @@ app.get("/assets", async (c) => {
   const limit = parseInt(c.req.query("limit") || "50");
   const offset = parseInt(c.req.query("offset") || "0");
   const search = c.req.query("q") || "";
+  const status = c.req.query("status") || "";
 
   try {
     let query = "SELECT * FROM assets";
     let countQuery = "SELECT COUNT(*) as total FROM assets";
     const params: unknown[] = [];
     const countParams: unknown[] = [];
+    const conditions: string[] = [];
 
     if (search) {
       const term = `%${search}%`;
-      const whereClause = " WHERE title LIKE ? OR asset_id LIKE ?";
-      query += whereClause;
-      countQuery += whereClause;
+      conditions.push("(title LIKE ? OR asset_id LIKE ?)");
       params.push(term, term);
       countParams.push(term, term);
+    }
+
+    if (status && ['published', 'draft'].includes(status)) {
+      conditions.push("status = ?");
+      params.push(status);
+      countParams.push(status);
+    }
+
+    if (conditions.length > 0) {
+      const whereClause = ` WHERE ${conditions.join(" AND ")}`;
+      query += whereClause;
+      countQuery += whereClause;
     }
 
     query += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
