@@ -17,10 +17,7 @@ import SEO from "@/components/SEO";
 import { 
   Sparkles, 
   Leaf, 
-import {
-  Sparkles,
-  Leaf,
-  Zap,
+  Zap, 
   Palette,
   Ban,
   Frown,
@@ -31,12 +28,8 @@ import {
   Star,
   Check,
   PartyPopper,
-  Unlock,
-  ArrowRight,
-  ShieldCheck,
-  Download
+  Unlock
 } from "lucide-react";
-import { useAssetCount } from "@/hooks/useAssetCount";
 
 // Featured items with real thumbnails
 
@@ -87,9 +80,10 @@ const painPoints = [
 export default function HomePage() {
   const [featuredItems, setFeaturedItems] = useState<Asset[]>([]);
   const { isSubscriber } = useSubscription();
-  const count = useAssetCount();
-  
+
   useEffect(() => {
+    let cancelled = false;
+
     const fetchFeatured = async () => {
       try {
         performance.mark('assets-fetch-start');
@@ -274,7 +268,7 @@ export default function HomePage() {
       <Section>
           <div className="text-center mb-12">
             <Heading as="h2" variant="h1" className="mb-4">Peek Inside The Vault</Heading>
-            <Text variant="large" className="max-w-2xl mx-auto">Over {count} bold, curated designs across trending themes. New drops every Sunday.</Text>
+            <Text variant="large" className="max-w-2xl mx-auto">Over 500 bold, curated designs across trending themes. New drops every Sunday.</Text>
           </div>
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
              {featuredItems.length > 0 ? (
@@ -319,7 +313,7 @@ export default function HomePage() {
                    </Link>
                    <div className="flex items-center justify-center gap-2 text-sm mt-3">
                    <Unlock className="w-4 h-4 text-gray-400" />
-                   <Text variant="muted">All {count} designs unlocked for you</Text>
+                   <Text variant="muted">All 500+ designs unlocked for you</Text>
                 </div>
                  </>
                ) : (
@@ -335,7 +329,7 @@ export default function HomePage() {
                    </div>
                    <div className="flex items-center justify-center gap-2 text-sm mt-3">
                    <Sparkles className="w-4 h-4 text-gray-400" />
-                   <Text variant="muted">Instant access to {count} designs</Text>
+                   <Text variant="muted">Instant access to 500+ designs</Text>
                 </div>
                  </>
                )}
@@ -561,7 +555,7 @@ export default function HomePage() {
                <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:divide-x md:divide-white/20">
                   <div className="flex-1 text-center md:text-right px-4">
                      <p className="text-lg font-medium opacity-90">Instant Access</p>
-                     <p className="text-3xl font-bold">{count} Designs</p>
+                     <p className="text-3xl font-bold">500+ Designs</p>
                   </div>
                    <div className="flex-1 text-center md:text-left px-4">
                      <p className="text-lg font-medium opacity-90">Fresh Drops</p>
