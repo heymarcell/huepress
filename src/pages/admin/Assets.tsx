@@ -54,8 +54,15 @@ export default function AdminAssets() {
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
   
   // Delete confirmation modal state
   const [deleteModal, setDeleteModal] = useState<{ 
@@ -81,57 +88,57 @@ export default function AdminAssets() {
     variant: 'success'
   });
 
-  // Fetch Assets
+  // Fetch Assets with server-side pagination
   const { data: assetsData, isLoading: loading } = useQuery({
-    queryKey: ['admin', 'assets'],
+    queryKey: ['admin', 'assets', currentPage, filter, debouncedSearch],
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("No token");
-      return apiClient.admin.listAssets(token);
+      const offset = (currentPage - 1) * itemsPerPage;
+      return apiClient.admin.listAssets(token, {
+        limit: itemsPerPage,
+        offset,
+        search: debouncedSearch || undefined,
+        status: filter
+      });
+    },
+    enabled: !!user,
+    placeholderData: (prev) => prev, // Keep previous data while loading
+  });
+
+  // Fetch stats for metrics (separate query for global counts)
+  const { data: statsData } = useQuery({
+    queryKey: ['admin', 'stats'],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) throw new Error("No token");
+      return apiClient.admin.getStats(token);
     },
     enabled: !!user,
   });
 
-  const assets = useMemo(() => 
+  // Assets from current page
+  const paginatedAssets = useMemo(() => 
     (assetsData?.assets || []) as AdminAsset[], 
     [assetsData?.assets]
   );
 
-  // Calculate metrics
+  // Server-side total for pagination
+  const totalAssets = assetsData?.total || 0;
+  const totalPages = Math.ceil(totalAssets / itemsPerPage);
+
+  // Metrics from stats API
   const metrics = useMemo(() => ({
-    total: assets.length,
-    published: assets.filter(a => a.status === "published").length,
-    draft: assets.filter(a => a.status === "draft").length,
-    downloads: assets.reduce((sum, a) => sum + (a.download_count || 0), 0),
-  }), [assets]);
-
-  // Filter by status
-  const filteredByStatus = useMemo(() => {
-    if (filter === "all") return assets;
-    return assets.filter(a => a.status === filter);
-  }, [assets, filter]);
-
-  // Filter by search query
-  const filteredAssets = useMemo(() => {
-    if (!searchQuery.trim()) return filteredByStatus;
-    const q = searchQuery.toLowerCase();
-    return filteredByStatus.filter(a => 
-      a.title.toLowerCase().includes(q) ||
-      a.category.toLowerCase().includes(q)
-    );
-  }, [filteredByStatus, searchQuery]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredAssets.length / itemsPerPage);
-  const paginatedAssets = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredAssets.slice(start, start + itemsPerPage);
-  }, [filteredAssets, currentPage, itemsPerPage]);
+    total: statsData?.totalAssets || 0,
+    published: 0, // Stats API doesn't break down by status yet
+    draft: 0,
+    downloads: statsData?.totalDownloads || 0,
+  }), [statsData]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter, searchQuery]);
+  }, [filter, debouncedSearch]);
 
   // Mutations
   const statusMutation = useMutation({
@@ -201,7 +208,7 @@ export default function AdminAssets() {
   });
 
   const toggleStatus = (id: string) => {
-    const asset = assets.find(a => a.id === id);
+    const asset = paginatedAssets.find((a: AdminAsset) => a.id === id);
     if (!asset) return;
     const newStatus = asset.status === "published" ? "draft" : "published";
     statusMutation.mutate({ id, status: newStatus });
@@ -488,14 +495,14 @@ export default function AdminAssets() {
         </table>
         
         {/* Pagination Footer */}
-        {filteredAssets.length > 0 && (
+        {totalAssets > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50">
             <p className="text-sm text-gray-500">
               Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>
               {" - "}
-              <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredAssets.length)}</span>
+              <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalAssets)}</span>
               {" of "}
-              <span className="font-medium">{filteredAssets.length}</span> assets
+              <span className="font-medium">{totalAssets}</span> assets
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -520,7 +527,7 @@ export default function AdminAssets() {
         )}
 
         {/* Empty State */}
-        {filteredAssets.length === 0 && (
+        {paginatedAssets.length === 0 && !loading && (
           <div className="py-12 text-center text-gray-500">
             <ImageIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
             <p className="font-medium">No assets found</p>
