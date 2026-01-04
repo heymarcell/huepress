@@ -145,6 +145,8 @@ export const apiClient = {
         totalDownloads: number;
         totalSubscribers: number;
         newAssetsThisWeek: number;
+        publishedAssets: number;
+        draftAssets: number;
       }>("/api/admin/stats", {
         token
       });

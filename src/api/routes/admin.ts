@@ -605,11 +605,23 @@ app.get("/stats", async (c) => {
       WHERE subscription_status = 'active'
     `).first<{ count: number }>();
 
+    // 5. Published Assets Count
+    const publishedCount = await c.env.DB.prepare(
+      "SELECT COUNT(*) as count FROM assets WHERE status = 'published'"
+    ).first<{ count: number }>();
+
+    // 6. Draft Assets Count
+    const draftCount = await c.env.DB.prepare(
+      "SELECT COUNT(*) as count FROM assets WHERE status = 'draft'"
+    ).first<{ count: number }>();
+
     return c.json({
       totalAssets: assetsCount?.count || 0,
       totalDownloads: downloadsCount?.count || 0,
       totalSubscribers: subscribersCount?.count || 0,
-      newAssetsThisWeek: newAssetsCount?.count || 0
+      newAssetsThisWeek: newAssetsCount?.count || 0,
+      publishedAssets: publishedCount?.count || 0,
+      draftAssets: draftCount?.count || 0
     });
   } catch (error) {
     console.error("Stats error:", error);

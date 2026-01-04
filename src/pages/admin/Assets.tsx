@@ -130,8 +130,8 @@ export default function AdminAssets() {
   // Metrics from stats API
   const metrics = useMemo(() => ({
     total: statsData?.totalAssets || 0,
-    published: 0, // Stats API doesn't break down by status yet
-    draft: 0,
+    published: statsData?.publishedAssets || 0,
+    draft: statsData?.draftAssets || 0,
     downloads: statsData?.totalDownloads || 0,
   }), [statsData]);
 
