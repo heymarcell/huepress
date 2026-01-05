@@ -5,6 +5,9 @@ const fs = require('fs');
 const path = require('path');
 const { sanitizeSvgContent, escapeXml } = require('./utils');
 
+// Disable Sharp cache to prevent memory bloat in long-running container
+sharp.cache(false);
+
 // Helper: Generate thumbnail buffer with Banner (Watermark)
 async function generateThumbnailBuffer(svgContent, assetId, size = 600) {
   const thumbSize = size;

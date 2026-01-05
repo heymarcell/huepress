@@ -37,7 +37,7 @@ async function initQueues() {
   ogQueue = new PQueue({ concurrency: 1 });
   pdfQueue = new PQueue({ concurrency: 1 });
   
-  console.log('[Queue] Processing queues initialized (concurrency: 1 each)');
+  console.log('[Queue] Processing queues initialized (concurrency: 1 each - Manual batching uses concurrency: 2)');
   
   // Monitor
   setInterval(() => {
