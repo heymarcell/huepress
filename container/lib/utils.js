@@ -25,11 +25,20 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
   let lastError;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const response = await fetch(url, options);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timeoutId);
+      
       return response;
     } catch (err) {
       lastError = err;
-      console.warn(`[Fetch] Attempt ${attempt}/${maxRetries} failed for ${url}: ${err.message}`);
+      if (err.name === 'AbortError') {
+          console.warn(`[Fetch] Attempt ${attempt}/${maxRetries} timed out for ${url}`);
+      } else {
+          console.warn(`[Fetch] Attempt ${attempt}/${maxRetries} failed for ${url}: ${err.message}`);
+      }
       if (attempt < maxRetries) {
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // 1s, 2s, 4s max 5s
         console.log(`[Fetch] Retrying in ${delay}ms...`);

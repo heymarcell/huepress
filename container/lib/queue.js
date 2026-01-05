@@ -3,6 +3,7 @@ const { generateThumbnailBuffer, generateOgBuffer, generatePdfBuffer } = require
 
 let thumbnailQueue, ogQueue, pdfQueue;
 let isProcessingQueue = false;
+const JOB_TIMEOUT = 5 * 60 * 1000; // 5 minutes timeout per job
 
 // Helper: Upload file via Signed URL (no token needed, signature is in URL)
 // Helper: Upload file via Signed URL (no token needed, signature is in URL)
@@ -16,7 +17,8 @@ async function uploadFile(uploadUrl, buffer, contentType, authToken = null) {
     method: 'PUT',
     headers: {
       'X-Content-Type': contentType,
-      ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+      // NOTE: Do NOT send Authorization header for signed URLs as it conflicts with Clerk middleware
+      // and the signature is sufficient for auth.
     },
     body: buffer
   });
@@ -85,15 +87,24 @@ async function processQueue() {
         return;
     }
     
-    const { jobs } = await jobsRes.json();
-    console.log(`[Queue] Found ${jobs?.length || 0} pending jobs`);
+    const { jobs: rawJobs } = await jobsRes.json();
+    // Randomize job order to prevent race conditions (409s)
+    const jobs = (rawJobs || []).sort(() => Math.random() - 0.5);
+    console.log(`[Queue] Found ${jobs.length} pending jobs`);
     
     // Ensure queues are ready
     if (!thumbnailQueue) await initQueues();
 
-    for (const job of (jobs || [])) {
+    // Use a local queue for this batch to limit concurrency
+    const PQueue = (await import('p-queue')).default;
+    const jobBatchQueue = new PQueue({ concurrency: 2 });
+
+    const processJob = async (job) => {
       try {
-        console.log(`[Queue] Processing job ${job.id} for asset ${job.asset_id}`);
+        const memUsage = process.memoryUsage();
+        const rss = (memUsage.rss / 1024 / 1024).toFixed(2);
+        const heap = (memUsage.heapUsed / 1024 / 1024).toFixed(2);
+        console.log(`[Queue] Processing job ${job.id} for asset ${job.asset_id} (RSS: ${rss}MB, Heap: ${heap}MB)`);
         
         // Refresh token in case it rotated during processing
         internalToken = process.env.INTERNAL_API_TOKEN;
@@ -132,25 +143,34 @@ async function processQueue() {
             throw new Error('No signed upload URLs provided');
         }
 
-        console.log(`[Queue] Generating files for ${asset.asset_id}...`);
-        
-        // 1. Thumbnail
-        if (thumbUrl) {
-            const thumbnailBuffer = await generateThumbnailBuffer(svgContent, asset.asset_id);
-            await uploadFile(thumbUrl, thumbnailBuffer, 'image/webp', uploadToken);
-        }
-        
-        // 2. OG
-        if (ogUrl) {
-            const ogBuffer = await generateOgBuffer(svgContent, asset.title);
-            await uploadFile(ogUrl, ogBuffer, 'image/webp', uploadToken);
-        }
-        
-        // 3. PDF
-        if (pdfUrl) {
-            const pdfBuffer = await generatePdfBuffer(svgContent, asset);
-            await uploadFile(pdfUrl, pdfBuffer, 'application/pdf', uploadToken);
-        }
+        // Wrapp processing in timeout
+        const processPromise = async () => {
+            console.log(`[Queue] Generating files for ${asset.asset_id}...`);
+            
+            // 1. Thumbnail
+            if (thumbUrl) {
+                const thumbnailBuffer = await generateThumbnailBuffer(svgContent, asset.asset_id);
+                await uploadFile(thumbUrl, thumbnailBuffer, 'image/webp', uploadToken);
+            }
+            
+            // 2. OG
+            if (ogUrl) {
+                const ogBuffer = await generateOgBuffer(svgContent, asset.title);
+                await uploadFile(ogUrl, ogBuffer, 'image/webp', uploadToken);
+            }
+            
+            // 3. PDF
+            if (pdfUrl) {
+                const pdfBuffer = await generatePdfBuffer(svgContent, asset);
+                await uploadFile(pdfUrl, pdfBuffer, 'application/pdf', uploadToken);
+            }
+        };
+
+        // Execute with timeout race
+        await Promise.race([
+            processPromise(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Job timed out (> 5m)")), JOB_TIMEOUT))
+        ]);
         
         // Complete
         const completeRes = await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}`, {
@@ -172,7 +192,14 @@ async function processQueue() {
            body: JSON.stringify({ status: newStatus, error: err.message })
         }).catch(() => {});
       }
-    }
+    };
+
+    // Add all jobs to queue
+    const promises = (jobs || []).map(job => jobBatchQueue.add(() => processJob(job)));
+    
+    // Wait for all to finish
+    await Promise.all(promises);
+
   } catch (err) {
       console.error('[Queue] Global Error:', err);
   } finally {

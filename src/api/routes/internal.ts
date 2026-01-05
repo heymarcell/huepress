@@ -88,7 +88,7 @@ app.get("/queue/pending", auth, async (c) => {
                 OR completed_at IS NULL 
                 OR completed_at < datetime('now', '-5 minutes')
               )
-            ORDER BY created_at ASC
+            ORDER BY RANDOM()
             LIMIT ?
         `).bind(limit).all();
         
@@ -147,14 +147,23 @@ app.patch("/queue/:id", auth, async (c) => {
             query = "UPDATE processing_queue SET status = ?, started_at = datetime('now'), attempts = attempts + 1 WHERE id = ?";
             params = [status, id];
         } else if (status === 'completed') {
-            query = "UPDATE processing_queue SET status = ?, completed_at = datetime('now'), error_message = NULL WHERE id = ?";
+            // [Optimistic Lock] Only allow completion if currently processing
+            query = "UPDATE processing_queue SET status = ?, completed_at = datetime('now'), error_message = NULL WHERE id = ? AND status = 'processing'";
             params = [status, id];
         } else {
-             query = "UPDATE processing_queue SET status = ?, error_message = ?, completed_at = datetime('now') WHERE id = ?";
+             // [Optimistic Lock] Only allow failure if currently processing
+             query = "UPDATE processing_queue SET status = ?, error_message = ?, completed_at = datetime('now') WHERE id = ? AND status = 'processing'";
              params = [status, error_message || 'Unknown error', id];
         }
         
-        await c.env.DB.prepare(query).bind(...params).run();
+        const result = await c.env.DB.prepare(query).bind(...params).run();
+
+        // If trying to complete/fail but no rows updated, it means the job was reset (e.g. by zombie cleanup)
+        if (status !== 'processing' && result.meta.changes === 0) {
+            console.warn(`[Internal API] Optimistic lock failed for job ${id} (status: ${status})`);
+            return c.json({ error: "Conflict: Job is no longer in processing state" }, 409);
+        }
+        
         return c.json({ success: true });
     } catch (err) {
         console.error(`[Internal API] Queue update error:`, err);
