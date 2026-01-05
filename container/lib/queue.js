@@ -5,7 +5,8 @@ let thumbnailQueue, ogQueue, pdfQueue;
 let isProcessingQueue = false;
 
 // Helper: Upload file via Signed URL (no token needed, signature is in URL)
-async function uploadFile(uploadUrl, buffer, contentType) {
+// Helper: Upload file via Signed URL (no token needed, signature is in URL)
+async function uploadFile(uploadUrl, buffer, contentType, authToken = null) {
   if (!uploadUrl) {
       throw new Error("Missing upload URL");
   }
@@ -14,7 +15,8 @@ async function uploadFile(uploadUrl, buffer, contentType) {
   const res = await fetchWithRetry(uploadUrl, {
     method: 'PUT',
     headers: {
-      'X-Content-Type': contentType
+      'X-Content-Type': contentType,
+      ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
     },
     body: buffer
   });
@@ -65,7 +67,8 @@ async function processQueue() {
   
   try {
     const apiUrl = process.env.API_URL || 'https://api.huepress.co';
-    const internalToken = process.env.INTERNAL_API_TOKEN;
+    // Get token for fetching pending jobs
+    let internalToken = process.env.INTERNAL_API_TOKEN;
     
     if (!internalToken) {
       console.error('[Queue] INTERNAL_API_TOKEN not set');
@@ -92,6 +95,9 @@ async function processQueue() {
       try {
         console.log(`[Queue] Processing job ${job.id} for asset ${job.asset_id}`);
         
+        // Refresh token in case it rotated during processing
+        internalToken = process.env.INTERNAL_API_TOKEN;
+
         // Mark Processing
         const statusRes = await fetchWithRetry(`${apiUrl}/api/internal/queue/${job.id}`, {
           method: 'PATCH',
@@ -115,7 +121,9 @@ async function processQueue() {
         if (!svgContent) throw new Error('No SVG content found');
         
         // Extract Signed Upload URLs from job payload
+        // Also extract upload token if present (it should be in the job payload for secure uploads)
         const { thumbnail: thumbUrl, og: ogUrl, pdf: pdfUrl } = job.upload_urls || {};
+        const uploadToken = job.upload_token || internalToken; // Fallback to internal token if specific upload token missing
         
         if (!thumbUrl && !ogUrl && !pdfUrl) {
             console.warn('[Queue] No upload URLs provided in job. Legacy mode or error?');
@@ -129,19 +137,19 @@ async function processQueue() {
         // 1. Thumbnail
         if (thumbUrl) {
             const thumbnailBuffer = await generateThumbnailBuffer(svgContent, asset.asset_id);
-            await uploadFile(thumbUrl, thumbnailBuffer, 'image/webp');
+            await uploadFile(thumbUrl, thumbnailBuffer, 'image/webp', uploadToken);
         }
         
         // 2. OG
         if (ogUrl) {
             const ogBuffer = await generateOgBuffer(svgContent, asset.title);
-            await uploadFile(ogUrl, ogBuffer, 'image/webp');
+            await uploadFile(ogUrl, ogBuffer, 'image/webp', uploadToken);
         }
         
         // 3. PDF
         if (pdfUrl) {
             const pdfBuffer = await generatePdfBuffer(svgContent, asset);
-            await uploadFile(pdfUrl, pdfBuffer, 'application/pdf');
+            await uploadFile(pdfUrl, pdfBuffer, 'application/pdf', uploadToken);
         }
         
         // Complete

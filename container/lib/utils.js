@@ -57,6 +57,14 @@ function validateAuthSecret(req, res, next) {
   }
   
   const providedSecret = req.headers['x-internal-secret'];
+  
+  // Allow the configuration update itself to pass validation if it provides the correct new secret
+  // This is critical for the /wakeup loop where the secret is set but the client hasn't updated its auth header yet
+  const settingSecret = req.headers['x-set-auth-secret'];
+  if (settingSecret && settingSecret === currentSecret) {
+      return next();
+  }
+
   if (providedSecret !== currentSecret) {
     console.error('[Security] Unauthorized request - invalid or missing X-Internal-Secret');
     return res.status(401).json({ error: 'Unauthorized: Invalid or missing X-Internal-Secret' });
