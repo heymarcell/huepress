@@ -23,6 +23,28 @@ export default function CollectionPage() {
     retry: false,
   });
 
+  // CRITICAL: useEffect must be called unconditionally (before any early returns)
+  // This fires GA4 view_item_list event when collection data is loaded
+  useEffect(() => {
+    if (pageData && window.dataLayer) {
+      window.dataLayer.push({
+        event: "view_item_list",
+        ecommerce: {
+          item_list_id: `collection_${slug}`,
+          item_list_name: pageData.title,
+          items: pageData.assets.map((asset, index) => ({
+            item_id: asset.asset_id, // Use stable SKU/ID
+            item_name: asset.title,
+            index: index,
+            item_category: "Coloring Page",
+            item_category2: pageData.target_keyword,
+            price: 0 // Free preview
+          }))
+        }
+      });
+    }
+  }, [pageData, slug]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-paper">
@@ -50,35 +72,6 @@ export default function CollectionPage() {
       </div>
     );
   }
-
-  // SOTA Tracking: Fire GA4 view_item_list event
-  // Pushed inside render or effect to ensure data is available
-  if (!isLoading && pageData?.assets) {
-     // We use a small check to avoid duplicate events if strict mode reruns
-     // ideally use useEffect, but for simplicity/safety inserting inline before render logic logic
-  }
-  
-  // Use Effect for clean Tracking
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => {
-    if (pageData && window.dataLayer) {
-      window.dataLayer.push({
-        event: "view_item_list",
-        ecommerce: {
-          item_list_id: `collection_${slug}`,
-          item_list_name: pageData.title,
-          items: pageData.assets.map((asset, index) => ({
-            item_id: asset.asset_id, // Use stable SKU/ID
-            item_name: asset.title,
-            index: index,
-            item_category: "Coloring Page",
-            item_category2: pageData.target_keyword,
-            price: 0 // Free preview
-          }))
-        }
-      });
-    }
-  }, [pageData, slug]);
 
   // Determine OG Image (use first asset or standard fallback)
   const ogImage = pageData?.assets?.[0]?.image_url || "/og-image.webp";
