@@ -1,9 +1,18 @@
 // Cloudflare Pages Middleware for Bot Detection and SEO
 // This middleware detects search engine bots and serves them HTML with visible navigation
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Env {
-  ASSETS: Fetcher;
+  ASSETS: unknown;
 }
+
+type PagesFunction<T = unknown> = (context: {
+  request: Request;
+  env: T;
+  params: Record<string, string>;
+  next: () => Promise<Response>;
+  waitUntil: (promise: Promise<unknown>) => void;
+}) => Response | Promise<Response>;
 
 // List of known SEO bot user agents
 const SEO_BOTS = [
@@ -97,10 +106,21 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     return response;
   }
   
-  // If it's a bot, inject static navigation
+  // If it's a bot, inject static navigation and enhanced meta tags
   if (isBot(userAgent)) {
     try {
       let html = await response.text();
+      
+      // Inject bot-friendly meta tags in head
+      if (html.includes('<head>')) {
+        const botMetaTags = `
+    <!-- Bot-friendly meta tags -->
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="robots" content="index, follow">`;
+        
+        html = html.replace('<head>', `<head>${botMetaTags}`);
+      }
       
       // Inject the static footer just before closing body tag
       // This gives bots visible links to crawl
