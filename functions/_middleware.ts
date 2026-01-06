@@ -345,6 +345,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         
         html = html.replace('<head>', `<head>${botMetaTags}`);
         
+        // Inject schemas for homepage bots
+        if (new URL(request.url).pathname === "/") {
+          html = html.replace("</head>", `${ORGANIZATION_SCHEMA}\n${WEBSITE_SCHEMA}\n</head>`);
+        }
+        
         // Replace the static title and description with page-specific ones
         html = html.replace(/<title>.*?<\/title>/, `<title>${pageTitle}</title>`);
         html = html.replace(/<meta name="description" content=".*?"/, `<meta name="description" content="${pageDescription}"`);
