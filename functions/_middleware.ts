@@ -24,7 +24,8 @@ const SEO_BOTS = [
   'baiduspider',
   'yandexbot',
   'sogou',
-  'ia_archiver', // Alexa
+  'exabot',
+  'facebot',
   'facebookexternalhit',
   'twitterbot',
   'rogerbot', // Moz
@@ -41,6 +42,11 @@ const SEO_BOTS = [
   'semrushbot',
   'dotbot',
   'screaming frog', // Screaming Frog SEO Spider
+  'applebot', // Apple Siri/Spotlight
+  'amazonbot', // Alexa/Amazon
+  'bingpreview', // Bing Page Preview
+  'google-inspectiontool', // GSC Live Test
+  'adsbot-google', // Google Ads
 ];
 
 // Schema.org structured data for homepage (injected for bots)
@@ -582,6 +588,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       // Return modified response
       const headers = new Headers(response.headers);
       headers.set('Vary', 'User-Agent');
+      // Force bots to see fresh content (bust cache)
+      headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 
       return new Response(html, {
         status: response.status,
