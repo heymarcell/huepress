@@ -566,7 +566,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       // Inject bot grid for /vault and /collection pages (hybrid SSR)
       const url = new URL(request.url);
       if (url.pathname === '/vault' || url.pathname.startsWith('/collection/')) {
-        const botGrid = await generateBotGrid(env.DB);
+        const botGrid = await generateBotGrid();
         if (botGrid && html.includes('</body>')) {
           html = html.replace('</body>', `${botGrid}\n${SEO_CONTENT_BLOCK}\n${STATIC_FOOTER_HTML}</body>`);
         } else if (html.includes('</body>')) {

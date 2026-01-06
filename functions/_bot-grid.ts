@@ -1,25 +1,24 @@
-/// <reference types="@cloudflare/workers-types" />
-
 // Generate bot-friendly grid for /vault and /collection pages
-export async function generateBotGrid(db: D1Database | undefined): Promise<string> {
-  if (!db) return ''; // No database access
-  
+// Uses API endpoint since Pages Functions don't have direct D1 access
+export async function generateBotGrid(): Promise<string> {
   try {
-    const result = await db.prepare(`
-      SELECT id, asset_id, slug, title, image_url 
-      FROM assets 
-      WHERE status = 'published' 
-      ORDER BY created_at DESC 
-      LIMIT 100
-    `).all();
+    // Fetch from API endpoint (which has D1 access)
+    const response = await fetch('https://api.huepress.co/v1/assets?status=published&limit=100&sort=created_at&order=desc');
+    
+    if (!response.ok) {
+      console.error('API fetch failed:', response.status);
+      return '';
+    }
 
-    const assets = result.results as Array<{
+    const data = await response.json() as { assets: Array<{
       id: string;
       asset_id: string;
       slug: string;
       title: string;
       image_url: string;
-    }>;
+    }> };
+
+    const assets = data.assets;
 
     if (!assets || assets.length === 0) {
       return '';
