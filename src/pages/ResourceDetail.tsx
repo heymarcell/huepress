@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { optimizeColoringPageTitle } from "@/utils/seo";
 import { Asset } from "@/api/types";
 import { Button, ResourceCard } from "@/components/ui";
 import { useSubscription } from "@/lib/auth";
@@ -185,7 +186,7 @@ export default function ResourceDetailPage() {
   return (
     <div className="bg-gray-50 min-h-screen">
       <SEO  
-        title={`${asset.title} - Coloring Page | HuePress`}
+        title={optimizeColoringPageTitle(asset.title)}
         description={asset.description}
         image={asset.image_url}
         canonical={canonicalUrl}
