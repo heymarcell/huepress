@@ -59,9 +59,9 @@ export function Footer() {
 
           {/* Product Links */}
           <div>
-            <h4 className="font-sans font-bold text-sm uppercase tracking-wider mb-4">
+            <p className="font-sans font-bold text-sm uppercase tracking-wider mb-4">
               Product
-            </h4>
+            </p>
             <ul className="space-y-2">
               {footerLinks.product.map((link) => (
                 <li key={link.to}>
@@ -78,9 +78,9 @@ export function Footer() {
 
           {/* Legal Links */}
           <div>
-            <h4 className="font-sans font-bold text-sm uppercase tracking-wider mb-4">
+            <p className="font-sans font-bold text-sm uppercase tracking-wider mb-4">
               Legal
-            </h4>
+            </p>
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
                 <li key={link.to}>

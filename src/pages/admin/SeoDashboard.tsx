@@ -142,10 +142,7 @@ export default function SeoDashboard() {
         const seed = seeds[i];
         
         const result = await apiClient.seo.research(seed);
-        // Handle both {results: [...]} and {results: {results: [...]}}
-        const results = Array.isArray(result.results) 
-          ? result.results 
-          : (Array.isArray((result.results as any)?.results) ? (result.results as any).results : []);
+
         
         
         const top5 = results.map((r: { keyword: string }) => r.keyword);
