@@ -143,9 +143,8 @@ export default function SeoDashboard() {
         
         const result = await apiClient.seo.research(seed);
 
-        
-        
-        const top5 = results.map((r: { keyword: string }) => r.keyword);
+        const keywords = result.results || [];
+        const top5 = keywords.slice(0, 5).map((r: { keyword: string }) => r.keyword);
         allKeywords.push(...top5);
         
         // Update keywords in real-time so user sees progress

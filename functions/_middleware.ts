@@ -219,11 +219,6 @@ function generateProductSchema(slug: string): string {
     "priceCurrency": "USD",
     "availability": "https://schema.org/InStock",
     "url": "https://huepress.co/coloring-pages/${slug}"
-  },
-  "aggregateRating": {
-    "@type": "AggregateRating",
-    "ratingValue": "4.8",
-    "reviewCount": "127"
   }
 }
 </script>`;

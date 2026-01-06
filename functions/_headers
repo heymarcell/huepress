@@ -4,7 +4,8 @@
 # Static pages - cache for 1 hour at edge, 2 hours at CDN
 /
   Cache-Control: public, max-age=3600, s-maxage=7200
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.clerk.dev https://www.googletagmanager.com https://js.stripe.com https://connect.facebook.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.huepress.co https://clerk.huepress.co https://api.stripe.com https://*.googletagman​ager.com; frame-src https://js.stripe.com https://accounts.clerk.dev; worker-src 'self' blob:
+  Vary: User-Agent
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.clerk.dev https://www.googletagmanager.com https://js.stripe.com https://connect.facebook.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.huepress.co https://clerk.huepress.co https://api.stripe.com https://*.googletagmanager.com; frame-src https://js.stripe.com https://accounts.clerk.dev; worker-src 'self' blob:
   Cross-Origin-Opener-Policy: same-origin-allow-popups
   Cross-Origin-Embedder-Policy: credentialless
   Permissions-Policy: camera=(), microphone=(), geolocation=()

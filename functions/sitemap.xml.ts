@@ -1,8 +1,9 @@
 // Cloudflare Pages Function for sitemap generation
-// Uses API endpoints instead of direct D1 access
+// Direct D1 access for better performance and reliability
+/// <reference types="@cloudflare/workers-types" />
 
 interface Env {
-  API_URL?: string;
+  DB: D1Database;
 }
 
 interface Asset {
@@ -30,7 +31,6 @@ interface LandingPage {
 export const onRequest = async (context: { env: Env }) => {
   const { env } = context;
   const baseUrl = "https://huepress.co";
-  const apiUrl = env.API_URL || "https://api.huepress.co";
 
   // Static pages
   const staticPages = [
@@ -56,42 +56,61 @@ export const onRequest = async (context: { env: Env }) => {
     }
   };
 
+  // Helper to escape XML special characters
+  const escapeXml = (text: string): string => {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  };
+
   try {
     let assets: Asset[] = [];
     let posts: Post[] = [];
-
-    // Fetch assets via API
-    try {
-      const res = await fetch(`${apiUrl}/api/assets?limit=1000`);
-      if (res.ok) {
-        const data = await res.json() as { assets?: Asset[] };
-        assets = data.assets || [];
-      }
-    } catch (err) {
-      console.error("Failed to fetch assets for sitemap:", err);
-    }
-
-    // Fetch blog posts via API
-    try {
-      const res = await fetch(`${apiUrl}/api/posts?limit=100`);
-      if (res.ok) {
-        const data = await res.json() as { posts?: Post[] };
-        posts = data.posts || [];
-      }
-    } catch (err) {
-      console.error("Failed to fetch posts for sitemap:", err);
-    }
-
-    // Fetch landing pages via API
     let landingPages: LandingPage[] = [];
+
+    // Fetch assets directly from D1 (published only)
     try {
-      const res = await fetch(`${apiUrl}/api/seo/sitemap`);
-      if (res.ok) {
-        const data = await res.json() as { pages?: LandingPage[] };
-        landingPages = data.pages || [];
-      }
+      const result = await env.DB.prepare(
+        `SELECT id, slug, asset_id, title, image_url, updated_at, created_at 
+         FROM assets 
+         WHERE status = 'published' 
+         ORDER BY created_at DESC 
+         LIMIT 2000`
+      ).all();
+      assets = result.results as unknown as Asset[];
     } catch (err) {
-       console.error("Failed to fetch landing pages for sitemap:", err);
+      console.error("Failed to fetch assets from D1:", err);
+    }
+
+    // Fetch blog posts from D1 (published only)
+    try {
+      const result = await env.DB.prepare(
+        `SELECT slug, published_at, updated_at 
+         FROM posts 
+         WHERE published_at IS NOT NULL 
+         ORDER BY published_at DESC 
+         LIMIT 200`
+      ).all();
+      posts = result.results as unknown as Post[];
+    } catch (err) {
+      console.error("Failed to fetch posts from D1:", err);
+    }
+
+    // Fetch landing pages from D1
+    try {
+      const result = await env.DB.prepare(
+        `SELECT slug, updated_at, created_at 
+         FROM landing_pages 
+         WHERE status = 'published' 
+         ORDER BY created_at DESC 
+         LIMIT 500`
+      ).all();
+      landingPages = result.results as unknown as LandingPage[];
+    } catch (err) {
+      console.error("Failed to fetch landing pages from D1:", err);
     }
 
     // Generate XML
@@ -99,30 +118,43 @@ export const onRequest = async (context: { env: Env }) => {
 
     // Static pages
     for (const page of staticPages) {
+      const lastMod = formatDate(new Date().toISOString());
       xmlEntries += `
   <url>
     <loc>${page.loc}</loc>
+    <lastmod>${lastMod}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`;
     }
 
-    // Assets
+    // Assets (coloring pages) with image sitemaps
     for (const asset of assets) {
       const slug = asset.slug || "design";
       const id = asset.asset_id || asset.id;
       const url = `${baseUrl}/coloring-pages/${slug}-${id}`;
       const lastMod = formatDate(asset.updated_at || asset.created_at);
+      const title = escapeXml(asset.title || "Coloring Page");
+      const imageUrl = asset.image_url || "";
+      
       xmlEntries += `
   <url>
     <loc>${url}</loc>
-    <lastmod>${lastMod}</lastmod>
+    <lastmod>${lastMod}</lastmod>`;
+      
+      // Add image sitemap if image URL exists
+      if (imageUrl) {
+        xmlEntries += `
     <image:image>
-      <image:loc>${asset.image_url}</image:loc>
-      <image:caption>${asset.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</image:caption>
-    </image:image>
+      <image:loc>${imageUrl}</image:loc>
+      <image:caption>${title}</image:caption>
+      <image:title>${title}</image:title>
+    </image:image>`;
+      }
+      
+      xmlEntries += `
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>`;
     }
 
@@ -139,7 +171,7 @@ export const onRequest = async (context: { env: Env }) => {
   </url>`;
     }
 
-    // Landing Pages (pSEO)
+    // Landing Pages (pSEO collections)
     for (const page of landingPages) {
       const url = `${baseUrl}/collection/${page.slug}`;
       const lastMod = formatDate(page.updated_at || page.created_at);
@@ -159,8 +191,8 @@ export const onRequest = async (context: { env: Env }) => {
 
     return new Response(xml, {
       headers: {
-        "Content-Type": "application/xml",
-        "Cache-Control": "public, max-age=3600",
+        "Content-Type": "application/xml; charset=utf-8",
+        "Cache-Control": "public, max-age=3600, s-maxage=7200",
       },
     });
   } catch (err) {
