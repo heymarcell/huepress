@@ -119,6 +119,38 @@ export const analytics = {
     });
   },
 
+  /** Track when user favorites/likes an asset */
+  addToWishlist: (assetId: string, assetName: string, category?: string) => {
+    pushToDataLayer('add_to_wishlist', {
+      currency: 'USD',
+      value: 0,
+      items: [{
+        item_id: assetId,
+        item_name: assetName,
+        item_category: category,
+      }],
+    });
+  },
+
+  /** Track when user shares content */
+  share: (method: string, contentType: string, itemId: string) => {
+    pushToDataLayer('share', {
+      method, // e.g., 'facebook', 'twitter', 'pinterest', 'email'
+      content_type: contentType, // e.g., 'coloring_page', 'collection'
+      item_id: itemId,
+    });
+  },
+
+  /** Track scroll depth for engagement */
+  scrollDepth: (percentage: number, pageType: string) => {
+    if (percentage === 25 || percentage === 50 || percentage === 75 || percentage === 100) {
+      pushToDataLayer('scroll', {
+        percent_scrolled: percentage,
+        page_type: pageType,
+      });
+    }
+  },
+
   // ===== LEGACY ALIASES (for backward compatibility) =====
   checkoutStarted: (plan: string) => {
     const value = plan.includes('annual') ? 45 : 5;
