@@ -1,9 +1,9 @@
 // Generate bot-friendly grid for /vault and /collection pages
-// Uses API endpoint since Pages Functions don't have direct D1 access
+// Uses API endpoint (Pages Functions don't have D1 access)
 export async function generateBotGrid(): Promise<string> {
   try {
-    // Fetch from API endpoint (which has D1 access)
-    const response = await fetch('https://api.huepress.co/v1/assets?status=published&limit=100&sort=created_at&order=desc');
+    // Correct API endpoint: /assets (not /v1/assets)
+    const response = await fetch('https://api.huepress.co/assets?limit=100');
     
     if (!response.ok) {
       console.error('API fetch failed:', response.status);
