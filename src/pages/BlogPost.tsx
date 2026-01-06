@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import SEO from "@/components/SEO";
+import { StructuredData } from "@/components/StructuredData";
 import { ArrowLeft, Calendar, BookOpen } from "lucide-react";
 
 interface BlogPost {
@@ -127,6 +128,32 @@ export default function BlogPost() {
         description={post.excerpt || undefined}
         image={post.cover_image || undefined}
         type="article"
+      />
+      <StructuredData 
+        type="Article"
+        data={{
+          headline: post.title,
+          description: post.excerpt || post.title,
+          image: post.cover_image ? [post.cover_image] : [],
+          datePublished: post.published_at || post.created_at,
+          dateModified: post.updated_at,
+          author: {
+            "@type": "Organization",
+            name: "HuePress"
+          },
+          publisher: {
+            "@type": "Organization",
+            name: "HuePress",
+            logo: {
+              "@type": "ImageObject",
+              url: "https://huepress.co/logo.svg"
+            }
+          },
+          mainEntityOfPage: {
+            "@type": "WebPage",
+            "@id": `https://huepress.co/blog/${post.slug}`
+          }
+        }}
       />
 
       <article className="min-h-screen bg-white">
