@@ -1,7 +1,6 @@
 // Cloudflare Pages Middleware for Bot Detection and SEO
 // This middleware detects search engine bots and serves them HTML with visible navigation
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Env {
   ASSETS: unknown;
 }
@@ -171,6 +170,39 @@ function generateTitleFromUrl(url: URL): string {
   return staticTitles[path] || 'HuePress | Coloring Pages';
 }
 
+// Generate page description from URL
+function generateDescriptionFromUrl(url: URL): string {
+  const path = url.pathname;
+  
+  if (path.startsWith('/collection/')) {
+    const slug = path.split('/collection/')[1];
+    const title = slug.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+    return `Explore our curated ${title} coloring page collection. Therapy-grade, printable designs perfect for kids, families, and educators.`;
+  }
+  
+  if (path.startsWith('/coloring-pages/')) {
+    const slug = path.split('/coloring-pages/')[1];
+    const parts = slug.split('-');
+    const titleParts = parts.slice(0, -1);
+    const title = titleParts.map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+    return `Printable ${title} coloring page. Bold, therapy-grade design perfect for fine motor development. Download instantly.`;
+  }
+  
+  const staticDescriptions: Record<string, string> = {
+    '/': 'Therapy-grade, bold coloring pages curated for design-conscious parents and pediatric therapists. No ads, no clutter—just fridge-worthy art.',
+    '/vault': 'Browse 500+ therapy-grade coloring pages. Filter by category, skill level, and theme. Perfect for kids, families, and educators.',
+    '/about': 'HuePress delivers therapy-grade coloring pages designed by occupational therapists for children with autism, ADHD, and sensory processing needs.',
+    '/pricing': 'Join HuePress Club for unlimited downloads. Therapy-grade coloring pages designed by OTs. Cancel anytime.',
+    '/blog': 'Expert tips on using coloring for therapy, fine motor development, and family bonding. Written by pediatric occupational therapists.',
+  };
+  
+  return staticDescriptions[path] || 'Therapy-grade coloring pages for kids and families.';
+}
+
 // SEO content block for bots (adds 200+ words)
 const SEO_CONTENT_BLOCK = `
 <div style="max-width: 800px; margin: 2rem auto; padding: 0 1rem; line-height: 1.8; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
@@ -202,7 +234,7 @@ const SEO_CONTENT_BLOCK = `
 `;
 
 export const onRequest: PagesFunction<Env> = async (context) => {
-  const { request, next, env } = context;
+  const { request, next } = context;
   const userAgent = request.headers.get('user-agent') || '';
   
   // Get the response from the asset
@@ -224,18 +256,41 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       const h1Text = generateH1FromUrl(new URL(request.url));
       const h1Tag = `<h1 style="font-size: 2.5rem; font-weight: 700; margin: 2rem 0 1rem; padding: 0 1rem; max-width: 800px; margin-left: auto; margin-right: auto; font-family: Georgia, serif;">${h1Text}</h1>`;
       
+      // Generate page-specific description and image
+      const pageDescription = generateDescriptionFromUrl(new URL(request.url));
+      const pageImage = 'https://huepress.co/og-image.png'; // Default OG image
+      const canonicalUrl = request.url;
+      
       // Inject bot-friendly meta tags and UNIQUE title in head
       if (html.includes('<head>')) {
         const botMetaTags = `
     <!-- Bot-friendly meta tags -->
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-    <meta name="robots" content="index, follow">`;
+    <meta name="robots" content="index, follow">
+    <meta name="description" content="${pageDescription}">
+    <link rel="canonical" href="${canonicalUrl}">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="${pageTitle}">
+    <meta property="og:description" content="${pageDescription}">
+    <meta property="og:image" content="${pageImage}">
+    <meta property="og:url" content="${canonicalUrl}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="HuePress">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="${pageTitle}">
+    <meta name="twitter:description" content="${pageDescription}">
+    <meta name="twitter:image" content="${pageImage}">
+    <meta name="twitter:creator" content="@huepress">`;
         
         html = html.replace('<head>', `<head>${botMetaTags}`);
         
-        // Replace the static title with page-specific title
+        // Replace the static title and description with page-specific ones
         html = html.replace(/<title>.*?<\/title>/, `<title>${pageTitle}</title>`);
+        html = html.replace(/<meta name="description" content=".*?"/, `<meta name="description" content="${pageDescription}"`);
       }
       
       // Inject H1 right after opening body tag

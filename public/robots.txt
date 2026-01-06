@@ -1,3 +1,12 @@
 User-agent: *
 Allow: /
-Sitemap: https://huepress.co/sitemap.xml
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /admin/
+Disallow: /api/
+Disallow: /*?*utm_*
+
+# Preferred domain
+Host: https://huepress.co
+
+# Sitemaps

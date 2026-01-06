@@ -9,6 +9,8 @@ interface Asset {
   id: string;
   slug: string;
   asset_id: string;
+  title: string;
+  image_url: string;
   updated_at?: string;
   created_at?: string;
 }
@@ -115,6 +117,10 @@ export const onRequest = async (context: { env: Env }) => {
   <url>
     <loc>${url}</loc>
     <lastmod>${lastMod}</lastmod>
+    <image:image>
+      <image:loc>${asset.image_url}</image:loc>
+      <image:caption>${asset.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</image:caption>
+    </image:image>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>`;
@@ -147,7 +153,8 @@ export const onRequest = async (context: { env: Env }) => {
     }
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${xmlEntries}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${xmlEntries}
 </urlset>`;
 
     return new Response(xml, {

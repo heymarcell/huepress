@@ -14,6 +14,7 @@ import {
 } from "@/components/ui";
 import { FreeSampleBanner } from "@/components/features/FreeSampleBanner";
 import SEO from "@/components/SEO";
+import { OrganizationSchema, WebSiteSchema } from "@/components/OrganizationSchema";
 import { 
   Sparkles, 
   Leaf, 
@@ -114,6 +115,8 @@ export default function HomePage() {
           { name: "Home", url: "https://huepress.co/" }
         ]}
       />
+      <OrganizationSchema />
+      <WebSiteSchema />
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-accent via-white to-accent overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-28">

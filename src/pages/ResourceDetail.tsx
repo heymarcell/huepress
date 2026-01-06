@@ -204,6 +204,9 @@ export default function ResourceDetailPage() {
         <StructuredData 
           type="Product"
           data={{
+            "@id": canonicalUrl,
+            mainEntityOfPage: canonicalUrl,
+            inLanguage: "en-US",
             name: asset.title,
             description: asset.description,
             image: asset.image_url,
@@ -234,10 +237,16 @@ export default function ResourceDetailPage() {
             }),
             offers: {
               "@type": "Offer",
+              "url": canonicalUrl,
               "price": "5.00",
               "priceCurrency": "USD",
               "availability": "https://schema.org/InStock",
               "priceValidUntil": priceValidUntil.toISOString().split('T')[0],
+              "seller": {
+                "@type": "Organization",
+                "name": "HuePress",
+                "url": "https://huepress.co"
+              },
               "shippingDetails": {
                 "@type": "OfferShippingDetails",
                 "shippingRate": {

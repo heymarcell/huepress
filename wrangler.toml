@@ -54,7 +54,7 @@ enabled = true
 [[containers]]
 class_name = "ProcessingContainer"
 image = "./container/Dockerfile"
-instance_type = "standard-1"
+instance_type = "standard"
 max_instances = 3
 
 # Container Durable Object binding

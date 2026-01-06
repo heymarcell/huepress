@@ -12,6 +12,7 @@ import {
   Star
 } from "lucide-react";
 import SEO from "@/components/SEO";
+ import { PricingFAQSchema } from "@/components/FAQSchema";
 import { Breadcrumbs } from "@/components/navigation/Breadcrumbs";
 
 
@@ -135,6 +136,7 @@ export default function PricingPage() {
           { name: "Pricing", url: "https://huepress.co/pricing" }
         ]}
       />
+      <PricingFAQSchema />
       {/* Hero */}
       <Section background="accent" size="md">
         <Breadcrumbs 

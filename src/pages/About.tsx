@@ -1,4 +1,5 @@
 import SEO from "@/components/SEO";
+import { AboutFAQSchema } from "@/components/FAQSchema";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui";
 import { Breadcrumbs } from "@/components/navigation/Breadcrumbs";
@@ -15,6 +16,7 @@ export default function AboutPage() {
           { name: "About", url: "https://huepress.co/about" }
         ]}
       />
+      <AboutFAQSchema />
       
       {/* Hero */}
       <section className="bg-accent py-16 lg:py-24">
