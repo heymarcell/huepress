@@ -1,8 +1,10 @@
 // Cloudflare Pages Middleware for Bot Detection and SEO
 // This middleware detects search engine bots and serves them HTML with visible navigation
+/// <reference types="@cloudflare/workers-types" />
 
 interface Env {
   ASSETS: unknown;
+  DB?: D1Database; // D1 database for bot SSR
 }
 
 type PagesFunction<T = unknown> = (context: {
@@ -464,8 +466,10 @@ const SEO_CONTENT_BLOCK = `
 </div>
 `;
 
+import { generateBotGrid } from './_bot-grid';
+
 export const onRequest: PagesFunction<Env> = async (context) => {
-  const { request, next } = context;
+  const { request, next, env } = context;
   const userAgent = request.headers.get('user-agent') || '';
   
   // Get the response from the asset
@@ -559,10 +563,20 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         html = html.slice(0, bodyTagEnd) + `\n${h1Tag}\n` + html.slice(bodyTagEnd);
       }
       
-      // Inject SEO content block before footer
-      // This adds 200+ words to satisfy Ahrefs word count requirements
-      if (html.includes('</body>')) {
-        html = html.replace('</body>', `${SEO_CONTENT_BLOCK}\n${STATIC_FOOTER_HTML}</body>`);
+      // Inject bot grid for /vault and /collection pages (hybrid SSR)
+      const url = new URL(request.url);
+      if (url.pathname === '/vault' || url.pathname.startsWith('/collection/')) {
+        const botGrid = await generateBotGrid(env.DB);
+        if (botGrid && html.includes('</body>')) {
+          html = html.replace('</body>', `${botGrid}\n${SEO_CONTENT_BLOCK}\n${STATIC_FOOTER_HTML}</body>`);
+        } else if (html.includes('</body>')) {
+          html = html.replace('</body>', `${SEO_CONTENT_BLOCK}\n${STATIC_FOOTER_HTML}</body>`);
+        }
+      } else {
+        // Inject SEO content block before footer for other pages
+        if (html.includes('</body>')) {
+          html = html.replace('</body>', `${SEO_CONTENT_BLOCK}\n${STATIC_FOOTER_HTML}</body>`);
+        }
       }
         
       // Return modified response

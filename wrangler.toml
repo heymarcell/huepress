@@ -43,6 +43,12 @@ pages_build_output_dir = "dist"
 [placement]
 mode = "smart"
 
+# D1 Database bindings for Pages Functions (enables bot SSR)
+[[d1_databases]]
+binding = "DB"
+database_name = "huepress-db"
+database_id = "53c9b8ee-8ac3-411f-9f09-abe402cc36ff"
+
 
 # Cloudflare Container for resource-intensive processing
 # Cloudflare Container for resource-intensive processing
