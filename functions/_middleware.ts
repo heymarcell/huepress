@@ -580,10 +580,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }
         
       // Return modified response
+      const headers = new Headers(response.headers);
+      headers.set('Vary', 'User-Agent');
+
       return new Response(html, {
         status: response.status,
         statusText: response.statusText,
-        headers: response.headers,
+        headers: headers,
       });
     } catch (error) {
       console.error('Error injecting bot navigation:', error);
