@@ -376,37 +376,44 @@ function generateTitleFromUrl(url: URL): string {
   // Collection pages
   if (path.startsWith('/collection/')) {
     const slug = path.split('/collection/')[1];
-    const title = slug.split('-').map(word => 
+    let title = slug.split('-').map(word => 
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
-    return `${title} Collection | HuePress`;
+    
+    // Optimization: Remove "Collection" and condense common phrases
+    // "Seasonal Flower Coloring Pages For All Ages" -> "Seasonal Flower Coloring Pages (All Ages)"
+    title = title.replace(/ For /g, ' ').replace(/All Ages/g, '(All Ages)');
+    
+    return `${title} | HuePress`;
   }
   
   // Coloring pages  
   if (path.startsWith('/coloring-pages/')) {
     const slug = path.split('/coloring-pages/')[1];
     const parts = slug.split('-');
+    // Extract ID (last part) to just get title
     const titleParts = parts.slice(0, -1);
     const title = titleParts.map(word => 
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
-    return `${title} - Coloring Page | HuePress`;
+    
+    return `${title} (PDF) | HuePress`;
   }
   
-  // Static pages with unique titles
+  // Static pages with unique titles (Optimized lengths)
   const staticTitles: Record<string, string> = {
-    '/': 'HuePress | 500+ Therapy-Grade Coloring Pages for Kids & Families',
-    '/vault': 'The Vault - Browse All Coloring Pages | HuePress',
-    '/about': 'About HuePress - Our Story & Mission',
-    '/pricing': 'Pricing Plans - Join HuePress Club | HuePress',
-    '/blog': 'Coloring Tips & Parenting Blog | HuePress',
+    '/': 'HuePress | Therapy-Grade Coloring Pages for Kids & Families',
+    '/vault': 'The Vault: 500+ Therapy-Grade Coloring Pages | HuePress',
+    '/about': 'About HuePress: Our Mission & Story | HuePress',
+    '/pricing': 'HuePress Club Pricing: Unlimited PDF Downloads',
+    '/blog': 'Coloring Tips & OT Advice Blog | HuePress',
     '/sitemap': 'Site Map | HuePress',
     '/request-design': 'Request a Custom Coloring Page | HuePress',
     '/privacy': 'Privacy Policy | HuePress',
     '/terms': 'Terms of Service | HuePress',
   };
   
-  return staticTitles[path] || 'HuePress | Coloring Pages';
+  return staticTitles[path] || 'HuePress | Therapy-Grade Coloring Pages';
 }
 
 // Generate page description from URL
@@ -418,7 +425,8 @@ function generateDescriptionFromUrl(url: URL): string {
     const title = slug.split('-').map(word => 
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
-    return `Explore our curated ${title} coloring page collection. Therapy-grade, printable designs perfect for kids, families, and educators.`;
+    // Concise: ~140 chars
+    return `Download ${title} coloring pages. Therapy-grade PDFs designed for fine motor skills. Perfect for kids, adults & OTs. Instant print.`;
   }
   
   if (path.startsWith('/coloring-pages/')) {
@@ -428,18 +436,19 @@ function generateDescriptionFromUrl(url: URL): string {
     const title = titleParts.map(word => 
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
-    return `Printable ${title} coloring page. Bold, therapy-grade design perfect for fine motor development. Download instantly.`;
+    // Concise: ~130 chars
+    return `Printable ${title} coloring page (PDF). Simple, bold lines perfect for autism, ADHD & fine motor practice. Download & print instantly.`;
   }
   
   const staticDescriptions: Record<string, string> = {
-    '/': 'Therapy-grade, bold coloring pages curated for design-conscious parents and pediatric therapists. No ads, no clutter—just fridge-worthy art.',
-    '/vault': 'Browse 500+ therapy-grade coloring pages. Filter by category, skill level, and theme. Perfect for kids, families, and educators.',
-    '/about': 'HuePress delivers therapy-grade coloring pages designed by occupational therapists for children with autism, ADHD, and sensory processing needs.',
-    '/pricing': 'Join HuePress Club for unlimited downloads. Therapy-grade coloring pages designed by OTs. Cancel anytime.',
-    '/blog': 'Expert tips on using coloring for therapy, fine motor development, and family bonding. Written by pediatric occupational therapists.',
+    '/': 'Therapy-grade coloring pages for kids & adults. Designed by OTs for autism, ADHD & fine motor skills. Bold, simple lines. Join the Club today!',
+    '/vault': 'Browse 500+ printable coloring pages. Filter by skill level & category. OT-approved designs for focus, calm & creativity. Unlimited downloads.',
+    '/about': 'HuePress creates therapy-grade art for neurodiverse kids. Founded by design-conscious parents & OTs to build confidence through coloring.',
+    '/pricing': 'Join HuePress Club for $9/mo. Get unlimited access to 500+ therapy-grade coloring pages. New designs weekly. Cancel anytime.',
+    '/blog': 'Expert advice from OTs on using coloring for therapy. Learn about fine motor milestones, grip strength, and sensory processing activities.',
   };
   
-  return staticDescriptions[path] || 'Therapy-grade coloring pages for kids and families.';
+  return staticDescriptions[path] || 'Therapy-grade coloring pages designed by OTs for focus and calm.';
 }
 
 // SEO content block for bots (adds 200+ words)
