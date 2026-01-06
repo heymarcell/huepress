@@ -1,9 +1,8 @@
 // Cloudflare Pages Function for sitemap generation
-// Direct D1 access for better performance and reliability
-/// <reference types="@cloudflare/workers-types" />
+// Uses API endpoints because Pages Functions don't have direct D1 access
 
 interface Env {
-  DB: D1Database;
+  API_URL?: string;
 }
 
 interface Asset {
@@ -31,6 +30,7 @@ interface LandingPage {
 export const onRequest = async (context: { env: Env }) => {
   const { env } = context;
   const baseUrl = "https://huepress.co";
+  const apiUrl = env.API_URL || "https://api.huepress.co";
 
   // Static pages
   const staticPages = [
@@ -71,46 +71,43 @@ export const onRequest = async (context: { env: Env }) => {
     let posts: Post[] = [];
     let landingPages: LandingPage[] = [];
 
-    // Fetch assets directly from D1 (published only)
+    // Fetch assets via API (Pages Functions don't have D1 binding)
     try {
-      const result = await env.DB.prepare(
-        `SELECT id, slug, asset_id, title, image_url, updated_at, created_at 
-         FROM assets 
-         WHERE status = 'published' 
-         ORDER BY created_at DESC 
-         LIMIT 2000`
-      ).all();
-      assets = result.results as unknown as Asset[];
+      const res = await fetch(`${apiUrl}/api/assets?limit=2000`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        const data = await res.json() as { assets?: Asset[] };
+        assets = data.assets || [];
+      }
     } catch (err) {
-      console.error("Failed to fetch assets from D1:", err);
+      console.error("Failed to fetch assets for sitemap:", err);
     }
 
-    // Fetch blog posts from D1 (published only)
+    // Fetch blog posts via API
     try {
-      const result = await env.DB.prepare(
-        `SELECT slug, published_at, updated_at 
-         FROM posts 
-         WHERE published_at IS NOT NULL 
-         ORDER BY published_at DESC 
-         LIMIT 200`
-      ).all();
-      posts = result.results as unknown as Post[];
+      const res = await fetch(`${apiUrl}/api/posts?limit=200`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        const data = await res.json() as { posts?: Post[] };
+        posts = data.posts || [];
+      }
     } catch (err) {
-      console.error("Failed to fetch posts from D1:", err);
+      console.error("Failed to fetch posts for sitemap:", err);
     }
 
-    // Fetch landing pages from D1
+    // Fetch landing pages via API
     try {
-      const result = await env.DB.prepare(
-        `SELECT slug, updated_at, created_at 
-         FROM landing_pages 
-         WHERE status = 'published' 
-         ORDER BY created_at DESC 
-         LIMIT 500`
-      ).all();
-      landingPages = result.results as unknown as LandingPage[];
+      const res = await fetch(`${apiUrl}/api/seo/sitemap`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        const data = await res.json() as { pages?: LandingPage[] };
+        landingPages = data.pages || [];
+      }
     } catch (err) {
-      console.error("Failed to fetch landing pages from D1:", err);
+       console.error("Failed to fetch landing pages for sitemap:", err);
     }
 
     // Generate XML
