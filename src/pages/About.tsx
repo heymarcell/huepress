@@ -55,7 +55,7 @@ export default function AboutPage() {
               So, I wrote a script to generate a perfect SVG dinosaur with 3pt thick lines—heavy enough for Leo to stay inside them. I printed it. He loved it. And for the first time in weeks, the living room was quiet.
             </p>
 
-            <h3 className="font-serif text-ink text-2xl font-bold mt-10 mb-4">The "Bold Lines" Philosophy</h3>
+            <h2 className="font-serif text-ink text-2xl font-bold mt-10 mb-4">The "Bold Lines" Philosophy</h2>
             <p className="mb-6">
               I didn’t just build HuePress to look good. I built it to work. I worked with my friend Emily (a pediatric Occupational Therapist) to define our "Therapy-Grade" standard:
             </p>
@@ -70,7 +70,7 @@ export default function AboutPage() {
           </div>
 
           <div className="mt-16 text-center border-t border-gray-100 pt-10">
-            <h3 className="font-serif text-ink text-xl font-bold mb-4">Ready to join us?</h3>
+            <p className="font-serif text-ink text-xl font-bold mb-4">Ready to join us?</p>
             <Link to="/pricing">
               <Button variant="primary" size="lg">Join the Club ($5/mo)</Button>
             </Link>
