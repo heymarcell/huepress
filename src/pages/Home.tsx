@@ -108,7 +108,12 @@ export default function HomePage() {
 
   return (
     <>
-      <SEO />
+      <SEO 
+        canonical="https://huepress.co/"
+        breadcrumbs={[
+          { name: "Home", url: "https://huepress.co/" }
+        ]}
+      />
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-accent via-white to-accent overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-28">

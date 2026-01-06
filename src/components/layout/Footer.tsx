@@ -9,6 +9,8 @@ const footerLinks = {
     { to: "/pricing", label: "Pricing" },
     { to: "/vault?skill=Easy", label: "For Therapists" },
     { to: "/about", label: "About" },
+    { to: "/request-design", label: "Request Design" },
+    { to: "/sitemap", label: "Sitemap" },
   ],
   legal: [
     { to: "/privacy", label: "Privacy Policy" },

@@ -12,6 +12,7 @@ import {
   Star
 } from "lucide-react";
 import SEO from "@/components/SEO";
+import { Breadcrumbs } from "@/components/navigation/Breadcrumbs";
 
 
 const plans = [
@@ -127,12 +128,26 @@ export default function PricingPage() {
     <>
       <SEO 
         title="Pricing | $5/mo Unlimited Downloads | HuePress"
-        description="Join The Club for $5/month. Unlimited access to 500+ therapy-grade coloring pages. Cancel anytime, no questions asked."
+        description="Join The Club for $5/month or $45/year. Unlimited access to 500+ therapy-grade coloring pages. Cancel anytime, no questions asked."
+        canonical="https://huepress.co/pricing"
+        breadcrumbs={[
+          { name: "Home", url: "https://huepress.co/" },
+          { name: "Pricing", url: "https://huepress.co/pricing" }
+        ]}
       />
       {/* Hero */}
-      <Section background="accent" className="text-center" size="md">
-        <Heading as="h1" variant="display" className="mb-4">Simple, Joyful Pricing</Heading>
-        <Text variant="large" className="max-w-2xl mx-auto">One plan, unlimited creativity. Less than a latte for endless quiet time activities.</Text>
+      <Section background="accent" size="md">
+        <Breadcrumbs 
+          items={[
+            { name: "Home", url: "/" },
+            { name: "Pricing", url: "/pricing" }
+          ]}
+          className="mb-8"
+        />
+        <div className="text-center">
+          <Heading as="h1" variant="display" className="mb-4">Simple, Joyful Pricing</Heading>
+          <Text variant="large" className="max-w-2xl mx-auto">One plan, unlimited creativity. Less than a latte for endless quiet time activities.</Text>
+        </div>
       </Section>
 
       {/* Pricing Cards */}

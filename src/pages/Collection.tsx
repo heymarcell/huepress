@@ -83,6 +83,12 @@ export default function CollectionPage() {
         description={pageData.meta_description}
         image={ogImage}
         keywords={`coloring pages, ${pageData.target_keyword}, printable, pdf, ${pageData.assets.slice(0, 3).map(a => a.tags[0]).join(', ')}`}
+        canonical={`https://huepress.co/collection/${slug}`}
+        breadcrumbs={[
+          { name: "Home", url: "https://huepress.co/" },
+          { name: "Collections", url: "https://huepress.co/vault" },
+          { name: pageData.title, url: `https://huepress.co/collection/${slug}` }
+        ]}
       />
       
       {/* Schema.org for Collection */}

@@ -184,13 +184,19 @@ export default function ResourceDetailPage() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <SEO 
+      <SEO  
         title={`${asset.title} - Coloring Page | HuePress`}
         description={asset.description}
         image={asset.image_url}
         canonical={canonicalUrl}
         type="product"
         keywords={asset.meta_keywords}
+        breadcrumbs={[
+          { name: "Home", url: "https://huepress.co/" },
+          { name: "Vault", url: "https://huepress.co/vault" },
+          ...(asset.category ? [{ name: asset.category, url: `https://huepress.co/vault?category=${encodeURIComponent(asset.category)}` }] : []),
+          { name: asset.title, url: canonicalUrl }
+        ]}
       />
       
       {asset.asset_id && (

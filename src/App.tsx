@@ -17,6 +17,7 @@ const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfService"));
 
 const RequestDesignPage = lazy(() => import("./pages/RequestDesign"));
+const SitemapPage = lazy(() => import("./pages/Sitemap"));
 
 // Admin pages - lazy loaded
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
@@ -86,6 +87,7 @@ export default function App() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="blog" element={<BlogIndex />} />
         <Route path="blog/:slug" element={<BlogPost />} />
+        <Route path="sitemap" element={<SitemapPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 

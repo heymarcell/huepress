@@ -7,6 +7,7 @@ import { useState } from "react";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { Loader2, CreditCard, LogOut, User, Mail } from "lucide-react";
 import { Navigate } from "react-router-dom";
+import SEO from "@/components/SEO";
 
 export default function Settings() {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -55,6 +56,11 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-4 sm:px-6">
+      <SEO 
+        title="Account Settings" 
+        description="Manage your account settings and subscription."
+        noindex={true}
+      />
       <div className="max-w-3xl mx-auto space-y-6">
         <h1 className="text-3xl font-serif text-ink font-medium">Account Settings</h1>
 

@@ -73,7 +73,11 @@ export default function UserDashboard() {
 
   return (
     <div className="min-h-screen bg-neutral-50 pb-20 pt-24 px-4 sm:px-6">
-      <SEO title="My Dashboard" description="Manage your downloads and favorites." />
+      <SEO 
+        title="My Dashboard" 
+        description="Manage your downloads and favorites." 
+        noindex={true}
+      />
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header */}

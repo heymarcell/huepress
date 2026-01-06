@@ -1,20 +1,35 @@
 import SEO from "@/components/SEO";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui";
+import { Breadcrumbs } from "@/components/navigation/Breadcrumbs";
 
 export default function AboutPage() {
   return (
     <div className="bg-white min-h-screen">
-      <SEO 
+      <SEO  
         title="About Us | HuePress"
-        description="We believe in the power of bold lines and quiet moments. Learn about the mission behind HuePress."
+        description="We believe in the power of bold lines and quiet moments. Learn about the mission behind HuePress and our therapy-grade coloring page philosophy."
+        canonical="https://huepress.co/about"
+        breadcrumbs={[
+          { name: "Home", url: "https://huepress.co/" },
+          { name: "About", url: "https://huepress.co/about" }
+        ]}
       />
       
       {/* Hero */}
       <section className="bg-accent py-16 lg:py-24">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="font-serif text-display text-ink mb-6">Bold Lines, Quiet Minds</h1>
-          <p className="text-gray-600 text-lg">The story behind the fridge-worthy art.</p>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Breadcrumbs 
+            items={[
+              { name: "Home", url: "/" },
+              { name: "About", url: "/about" }
+            ]}
+            className="mb-8"
+          />
+          <div className="text-center">
+            <h1 className="font-serif text-display text-ink mb-6">Bold Lines, Quiet Minds</h1>
+            <p className="text-gray-600 text-lg">The story behind the fridge-worthy art.</p>
+          </div>
         </div>
       </section>
 
