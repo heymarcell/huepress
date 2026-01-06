@@ -315,6 +315,8 @@ export default function ResourceDetailPage() {
                        <img 
                          src={asset.image_url} 
                          alt={asset.title}
+                         width="1024"
+                         height="1024"
                          className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500 select-none"
                          style={{ clipPath: 'inset(0 0 8% 0)', transform: 'translateY(4%)' }}
                          onError={() => setImageError(true)}
