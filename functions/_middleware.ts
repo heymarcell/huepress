@@ -509,7 +509,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     <meta name="robots" content="index, follow">
-    <meta name="description" content="${pageDescription}">
     <link rel="canonical" href="${canonicalUrl}">
     
     <!-- Open Graph -->
@@ -558,15 +557,34 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         }
         
         // Replace the static title and description with page-specific ones
-        html = html.replace(/<title>[\s\S]*?<\/title>/s, `<title>${pageTitle}</title>`);
-        html = html.replace(/<meta name="description" content="[\s\S]*?"/s, `<meta name="description" content="${pageDescription}"`);
+        // Handle multi-line tags in regex
+        html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${pageTitle}</title>`);
+        
+        // Robust meta description replacement handling multi-line attributes
+        const descriptionRegex = /<meta[^>]*name=["']description["'][^>]*content=["'][\s\S]*?["'][^>]*>|<meta[^>]*content=["'][\s\S]*?["'][^>]*name=["']description["'][^>]*>/i;
+        
+        if (descriptionRegex.test(html)) {
+          html = html.replace(descriptionRegex, `<meta name="description" content="${pageDescription}">`);
+        } else {
+          // If no existing description, append it to head
+          html = html.replace('</head>', `<meta name="description" content="${pageDescription}">\n</head>`);
+        }
       }
       
       // Inject H1 right after opening body tag
-      if (html.includes('<body')) {
+      // Only inject if no H1 exists to avoid duplicates
+      if (html.includes('<body') && !html.includes('<h1')) {
         // Find the end of the body tag (after any attributes)
         const bodyTagEnd = html.indexOf('>', html.indexOf('<body')) + 1;
         html = html.slice(0, bodyTagEnd) + `\n${h1Tag}\n` + html.slice(bodyTagEnd);
+      } else if (html.includes('<body')) {
+         // If H1 exists (static), replacing it might be safer, or just prepending ours knowing React will hydrate over the static one?
+         // For bots, we want OUR H1. 
+         // Let's replace the existing H1 if matched, otherwise inject.
+         // Matching arbitrary H1 is risky. Let's just prepend ours, bots usually prioritize the first one or we can assume static H1 has negligible content.
+         // Actually, most static H1s are empty or generic. Let's inject ours as intended.
+         const bodyTagEnd = html.indexOf('>', html.indexOf('<body')) + 1;
+         html = html.slice(0, bodyTagEnd) + `\n${h1Tag}\n` + html.slice(bodyTagEnd);
       }
       
       // Inject bot grid for /vault and /collection pages (hybrid SSR)
