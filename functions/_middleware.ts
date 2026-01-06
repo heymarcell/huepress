@@ -535,8 +535,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         }
         
         // Replace the static title and description with page-specific ones
-        html = html.replace(/<title>.*?<\/title>/, `<title>${pageTitle}</title>`);
-        html = html.replace(/<meta name="description" content=".*?"/, `<meta name="description" content="${pageDescription}"`);
+        html = html.replace(/<title>[\s\S]*?<\/title>/s, `<title>${pageTitle}</title>`);
+        html = html.replace(/<meta name="description" content="[\s\S]*?"/s, `<meta name="description" content="${pageDescription}"`);
       }
       
       // Inject H1 right after opening body tag
