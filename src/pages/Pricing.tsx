@@ -246,7 +246,7 @@ export default function PricingPage() {
           
            {/* Comparison Table */}
            <div className="max-w-2xl mx-auto mt-12 mb-8">
-             <Heading as="h3" className="text-center mb-6">Why switch to Annual?</Heading>
+             <Heading as="h2" className="text-center mb-6">Why switch to Annual?</Heading>
              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm text-xs sm:text-sm">
                <div className="grid grid-cols-3 border-b border-gray-200 bg-gray-50">
                  <div className="p-2 sm:p-4 font-medium text-gray-500">Feature</div>
