@@ -2,8 +2,8 @@
 // Uses API endpoint (Pages Functions don't have D1 access)
 export async function generateBotGrid(): Promise<string> {
   try {
-    // Correct API endpoint: /assets (not /v1/assets)
-    const response = await fetch('https://api.huepress.co/assets?limit=100');
+    // Correct API endpoint: /api/assets (routes are mounted at /api prefix)
+    const response = await fetch('https://api.huepress.co/api/assets?limit=100');
     
     if (!response.ok) {
       console.error('API fetch failed:', response.status);
