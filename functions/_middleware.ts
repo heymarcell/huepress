@@ -288,21 +288,24 @@ const STATIC_FOOTER_HTML = `
         </ul>
       </div>
       
+      <!-- Popular Collections -->
+      <div>
+        <h3 style="font-size: 1rem; margin-bottom: 1rem; color: white;">Collections</h3>
+        <ul style="list-style: none; padding: 0; line-height: 2;">
+          <li><a href="/collection/seasonal-flower-coloring-pages-for-all-ages" style="color: #cbd5e0; text-decoration: none;">Seasonal Flowers</a></li>
+          <li><a href="/collection/fun-shapes-coloring-pages-for-preschoolers" style="color: #cbd5e0; text-decoration: none;">Fun Shapes</a></li>
+          <li><a href="/collection/animal-coloring-pages-for-kids" style="color: #cbd5e0; text-decoration: none;">Animals for Kids</a></li>
+        </ul>
+      </div>
+      
       <!-- Company -->
       <div>
         <h3 style="font-size: 1rem; margin-bottom: 1rem; color: white;">Company</h3>
         <ul style="list-style: none; padding: 0; line-height: 2;">
           <li><a href="/about" style="color: #cbd5e0; text-decoration: none;">About Us</a></li>
           <li><a href="/pricing" style="color: #cbd5e0; text-decoration: none;">Pricing</a></li>
-        </ul>
-      </div>
-      
-      <!-- Legal -->
-      <div>
-        <h3 style="font-size: 1rem; margin-bottom: 1rem; color: white;">Legal</h3>
-        <ul style="list-style: none; padding: 0; line-height: 2;">
-          <li><a href="/privacy" style="color: #cbd5e0; text-decoration: none;">Privacy Policy</a></li>
-          <li><a href="/terms" style="color: #cbd5e0; text-decoration: none;">Terms of Service</a></li>
+          <li><a href="/privacy" style="color: #cbd5e0; text-decoration: none;">Privacy</a></li>
+          <li><a href="/terms" style="color: #cbd5e0; text-decoration: none;">Terms</a></li>
         </ul>
       </div>
     </div>
