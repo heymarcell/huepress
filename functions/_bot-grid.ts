@@ -3,7 +3,7 @@
 export async function generateBotGrid(): Promise<string> {
   try {
     // Correct API endpoint: /api/assets (routes are mounted at /api prefix)
-    const response = await fetch('https://api.huepress.co/api/assets?limit=1000');
+    const response = await fetch('https://api.huepress.co/api/assets?limit=500');
     
     if (!response.ok) {
       console.error('API fetch failed:', response.status);
@@ -25,7 +25,7 @@ export async function generateBotGrid(): Promise<string> {
     }
 
     return `
-<!-- Bot-friendly coloring page grid (1000+ pages for discovery) -->
+<!-- Bot-friendly coloring page grid (500+ pages for discovery) -->
 <div style="max-width: 1200px; margin: 3rem auto; padding: 0 1rem;">
   <h2 style="font-size: 2rem; margin-bottom: 2rem; color: #1a1a1a;">Explore All Coloring Pages</h2>
   <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem;">
