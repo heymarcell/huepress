@@ -43,5 +43,5 @@ export function optimizeColoringPageTitle(assetTitle: string): string {
   const cleanTitle = assetTitle.replace(/\s*-\s*Coloring Page\s*$/i, '').trim();
   
   // Add back standardized suffix
-  return optimizeSeoTitle(cleanTitle, " - Coloring Page | HuePress");
+  return optimizeSeoTitle(cleanTitle, " (PDF) | HuePress");
 }

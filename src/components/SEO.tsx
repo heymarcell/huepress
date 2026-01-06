@@ -34,7 +34,7 @@ export function SEO({
   noindex = false,
   breadcrumbs,
 }: SEOProps) {
-  const fullTitle = title === defaults.title ? title : `${title} | HuePress`;
+  const fullTitle = title.endsWith(" | HuePress") ? title : `${title} | HuePress`;
   // Ensure absolute URL for image if it starts with /
   const fullImage = image
     ? (image.startsWith('http') ? image : `https://huepress.co${image}`)
