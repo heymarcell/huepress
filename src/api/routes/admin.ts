@@ -246,6 +246,11 @@ app.patch("/assets/:id/status", async (c) => {
       if (asset) {
         c.executionCtx.waitUntil(
           notifyIndexNow(buildAssetUrl(asset.asset_id, asset.slug))
+            .then(result => {
+              if (result.throttled) {
+                console.warn('[IndexNow] Single asset notification throttled');
+              }
+            })
             .catch(err => console.error('[IndexNow] Notification failed:', err))
         );
       }
@@ -561,6 +566,11 @@ app.post("/assets", async (c) => {
         if (status === 'published') {
           c.executionCtx.waitUntil(
             notifyIndexNow(buildAssetUrl(assetId, slug))
+              .then(result => {
+                if (result.throttled) {
+                  console.warn('[IndexNow] Asset creation notification throttled');
+                }
+              })
               .catch(err => console.error('[IndexNow] Notification failed:', err))
           );
         }
@@ -830,7 +840,13 @@ app.post("/assets/bulk-status", async (c) => {
           
           if (assets.results && assets.results.length > 0) {
             const urls = assets.results.map(a => buildAssetUrl(a.asset_id, a.slug));
-            await notifyIndexNowBatch(urls);
+            const result = await notifyIndexNowBatch(urls);
+            
+            if (result.throttled) {
+              console.warn(`[IndexNow] Bulk operation throttled. ${urls.length} URLs not submitted. Consider implementing a queue.`);
+            } else if (result.count < urls.length) {
+              console.log(`[IndexNow] Submitted ${result.count}/${urls.length} URLs (${urls.length - result.count} were duplicates)`);
+            }
           }
         } catch (err) {
           console.error('[IndexNow] Bulk notification failed:', err);

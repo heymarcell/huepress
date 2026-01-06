@@ -13,10 +13,19 @@ const SITE_HOST = "huepress.co";
 // IndexNow endpoint
 const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
 
+// Rate limiting state
+let lastSubmissionTime = 0;
+const COOLDOWN_MS = 60000; // 60 seconds between submissions
+
+// Track recently submitted URLs (prevent duplicates within 24h)
+const recentSubmissions = new Map<string, number>();
+const DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
+
 interface IndexNowResult {
   success: boolean;
   url: string;
   count: number;
+  throttled?: boolean;
 }
 
 /**
@@ -56,6 +65,53 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
 }
 
 /**
+ * Check if we should throttle this submission
+ */
+function shouldThrottle(): { throttle: boolean; waitMs: number } {
+  const now = Date.now();
+  const timeSinceLastSubmission = now - lastSubmissionTime;
+  
+  if (timeSinceLastSubmission < COOLDOWN_MS) {
+    return {
+      throttle: true,
+      waitMs: COOLDOWN_MS - timeSinceLastSubmission
+    };
+  }
+  
+  return { throttle: false, waitMs: 0 };
+}
+
+/**
+ * Deduplicate URLs based on recent submission history
+ */
+function deduplicateUrls(urls: string[]): string[] {
+  const now = Date.now();
+  const unique: string[] = [];
+  
+  for (const url of urls) {
+    const lastSubmitted = recentSubmissions.get(url);
+    
+    // Skip if submitted within 24 hours
+    if (lastSubmitted && (now - lastSubmitted) < DUPLICATE_WINDOW_MS) {
+      console.log(`[IndexNow] Skipping recently submitted URL: ${url}`);
+      continue;
+    }
+    
+    unique.push(url);
+    recentSubmissions.set(url, now);
+  }
+  
+  // Cleanup old entries (prevent memory leak)
+  for (const [url, timestamp] of recentSubmissions.entries()) {
+    if ((now - timestamp) > DUPLICATE_WINDOW_MS) {
+      recentSubmissions.delete(url);
+    }
+  }
+  
+  return unique;
+}
+
+/**
  * Notify search engines about a single URL change
  * Proxies to batch method for consistency
  */
@@ -64,7 +120,8 @@ export async function notifyIndexNow(url: string): Promise<IndexNowResult> {
   return {
     success: result.success,
     url,
-    count: result.count
+    count: result.count,
+    throttled: result.throttled
   };
 }
 
@@ -72,8 +129,23 @@ export async function notifyIndexNow(url: string): Promise<IndexNowResult> {
  * Notify search engines about multiple URL changes (batch)
  * More efficient for bulk operations & uses POST
  */
-export async function notifyIndexNowBatch(urls: string[]): Promise<{ success: boolean; count: number }> {
+export async function notifyIndexNowBatch(urls: string[]): Promise<{ success: boolean; count: number; throttled?: boolean }> {
   if (urls.length === 0) {
+    return { success: true, count: 0 };
+  }
+
+  // Check cooldown
+  const throttleCheck = shouldThrottle();
+  if (throttleCheck.throttle) {
+    console.warn(`[IndexNow] Throttled: Wait ${Math.ceil(throttleCheck.waitMs / 1000)}s before next submission`);
+    return { success: false, count: 0, throttled: true };
+  }
+
+  // Deduplicate URLs
+  const uniqueUrls = deduplicateUrls(urls);
+  
+  if (uniqueUrls.length === 0) {
+    console.log('[IndexNow] All URLs recently submitted, skipping');
     return { success: true, count: 0 };
   }
 
@@ -87,13 +159,14 @@ export async function notifyIndexNowBatch(urls: string[]): Promise<{ success: bo
       body: JSON.stringify({
         host: SITE_HOST,
         key: INDEXNOW_KEY,
-        urlList: urls
+        urlList: uniqueUrls
       })
     });
     
     if (response.ok || response.status === 202) {
-      console.log(`[IndexNow] Successfully notified ${urls.length} URLs (Status: ${response.status})`);
-      return { success: true, count: urls.length };
+      lastSubmissionTime = Date.now(); // Update cooldown tracker
+      console.log(`[IndexNow] Successfully notified ${uniqueUrls.length} URLs (Status: ${response.status})`);
+      return { success: true, count: uniqueUrls.length };
     } else {
       console.warn(`[IndexNow] Notification failed with status ${response.status}`);
       return { success: false, count: 0 };
@@ -117,3 +190,13 @@ export function buildAssetUrl(assetId: string, slug: string): string {
 export function buildBlogUrl(slug: string): string {
   return `https://${SITE_HOST}/blog/${slug}`;
 }
+
+/**
+ * Reset state for testing purposes
+ * @internal
+ */
+export function resetIndexNowState(): void {
+  lastSubmissionTime = 0;
+  recentSubmissions.clear();
+}
+

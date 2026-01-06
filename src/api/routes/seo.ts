@@ -463,7 +463,13 @@ app.post("/generate", async (c) => {
       // SOTA: Instant Indexing via IndexNow
       // Fire-and-forget to avoid slowing down response
       const pageUrl = `https://huepress.co/collection/${slug}`;
-      notifyIndexNow(pageUrl).catch((e: unknown) => console.error("IndexNow failed", e));
+      notifyIndexNow(pageUrl)
+        .then(result => {
+          if (result.throttled) {
+            console.warn('[IndexNow] Landing page notification throttled');
+          }
+        })
+        .catch((e: unknown) => console.error("IndexNow failed", e));
 
   } catch (e) {
       console.error("DB Insert failed", e);
