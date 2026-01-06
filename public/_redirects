@@ -1,9 +1,16 @@
-# SPA fallback - serve index.html for all routes except static files
+# Cloudflare Pages Redirects
+# Trailing slash normalization (prevents duplicate content)
+/vault/     /vault      301
+/pricing/   /pricing    301
+/about/     /about      301
+/blog/      /blog       301
+
 # IndexNow key file (must be served as-is)
 /6036370EF1A6D786631BBA0C2FE92864.txt  /6036370EF1A6D786631BBA0C2FE92864.txt  200
-# Exclude /index.html itself to prevent infinite loop
+
+# External redirects
+/review  https://www.trustpilot.com/review/huepress.co  301
+
+# SPA fallback - serve index.html for all routes except static files
 /index.html  /index.html  200
 /*    /index.html   200
-
-# Redirects
-/review  https://www.trustpilot.com/review/huepress.co  301
