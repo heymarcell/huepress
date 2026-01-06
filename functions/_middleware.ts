@@ -131,6 +131,46 @@ function generateH1FromUrl(url: URL): string {
   return staticPages[path] || 'HuePress Coloring Pages';
 }
 
+// Generate page title from URL (for <title> tag)
+function generateTitleFromUrl(url: URL): string {
+  const path = url.pathname;
+  
+  // Collection pages
+  if (path.startsWith('/collection/')) {
+    const slug = path.split('/collection/')[1];
+    const title = slug.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+    return `${title} Collection | HuePress`;
+  }
+  
+  // Coloring pages  
+  if (path.startsWith('/coloring-pages/')) {
+    const slug = path.split('/coloring-pages/')[1];
+    const parts = slug.split('-');
+    const titleParts = parts.slice(0, -1);
+    const title = titleParts.map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+    return `${title} - Coloring Page | HuePress`;
+  }
+  
+  // Static pages with unique titles
+  const staticTitles: Record<string, string> = {
+    '/': 'HuePress | 500+ Therapy-Grade Coloring Pages for Kids & Families',
+    '/vault': 'The Vault - Browse All Coloring Pages | HuePress',
+    '/about': 'About HuePress - Our Story & Mission',
+    '/pricing': 'Pricing Plans - Join HuePress Club | HuePress',
+    '/blog': 'Coloring Tips & Parenting Blog | HuePress',
+    '/sitemap': 'Site Map | HuePress',
+    '/request-design': 'Request a Custom Coloring Page | HuePress',
+    '/privacy': 'Privacy Policy | HuePress',
+    '/terms': 'Terms of Service | HuePress',
+  };
+  
+  return staticTitles[path] || 'HuePress | Coloring Pages';
+}
+
 // SEO content block for bots (adds 200+ words)
 const SEO_CONTENT_BLOCK = `
 <div style="max-width: 800px; margin: 2rem auto; padding: 0 1rem; line-height: 1.8; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
@@ -179,11 +219,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     try {
       let html = await response.text();
       
-      // Generate H1 from URL
+      // Generate unique title and H1 from URL
+      const pageTitle = generateTitleFromUrl(new URL(request.url));
       const h1Text = generateH1FromUrl(new URL(request.url));
       const h1Tag = `<h1 style="font-size: 2.5rem; font-weight: 700; margin: 2rem 0 1rem; padding: 0 1rem; max-width: 800px; margin-left: auto; margin-right: auto; font-family: Georgia, serif;">${h1Text}</h1>`;
       
-      // Inject bot-friendly meta tags in head
+      // Inject bot-friendly meta tags and UNIQUE title in head
       if (html.includes('<head>')) {
         const botMetaTags = `
     <!-- Bot-friendly meta tags -->
@@ -192,6 +233,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     <meta name="robots" content="index, follow">`;
         
         html = html.replace('<head>', `<head>${botMetaTags}`);
+        
+        // Replace the static title with page-specific title
+        html = html.replace(/<title>.*?<\/title>/, `<title>${pageTitle}</title>`);
       }
       
       // Inject H1 right after opening body tag
