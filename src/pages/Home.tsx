@@ -229,19 +229,26 @@ export default function HomePage() {
 
             </div>
 
-            {/* Right: Hero Image - Real thumbnails on white paper */}
+            {/* Right: Hero Image - Responsive WebP optimization */}
             <div className="relative w-full max-w-[400px] mx-auto lg:max-w-none">
                 <div className="relative rounded-2xl shadow-xl overflow-hidden border border-gray-100 rotate-1 hover:rotate-0 transition-transform duration-500 aspect-square">
-                  <img 
-                    src="/hero_lifestyle.webp" 
-                    alt="Child coloring a HuePress page with markers"
-                    width="662"
-                    height="662"
-                    className="w-full h-full object-cover"
-                    loading="eager"
-                    fetchPriority="high"
-                    decoding="async"
-                  />
+                  <picture>
+                    <source
+                      srcSet="/hero-600w.webp 600w, /hero-1200w.webp 1200w"
+                      sizes="(max-width: 768px) 600px, 1200px"
+                      type="image/webp"
+                    />
+                    <img 
+                      src="/hero_lifestyle.webp" 
+                      alt="Child coloring a HuePress page with markers"
+                      width="662"
+                      height="662"
+                      className="w-full h-full object-cover"
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                    />
+                  </picture>
                   {/* Subtle overlay to blend if needed */}
                   <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-2xl"></div>
                 </div>

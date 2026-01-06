@@ -7,6 +7,15 @@
     <link rel="preconnect" href="https://www.googletagmanager.com">
     <link rel="dns-prefetch" href="https://js.stripe.com">
     <link rel="dns-prefetch" href="https://connect.facebook.net">
+    <!-- Preload hero image (LCP optimization) with responsive srcset -->
+    <link
+      rel="preload"
+      as="image"
+      href="/hero-600w.webp"
+      imagesrcset="/hero-600w.webp 600w, /hero-1200w.webp 1200w"
+      imagesizes="(max-width: 768px) 600px, 1200px"
+      fetchpriority="high"
+    />
     <!-- Preload fonts to avoid layout shifts -->
     <link
       rel="preload"
